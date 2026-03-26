@@ -1,8 +1,8 @@
 const TypingIndicator = () => (
-  <div className="flex items-center gap-1.5 py-0.5">
-    <div className="w-[6px] h-[6px] rounded-full bg-muted-foreground animate-dot-1" />
-    <div className="w-[6px] h-[6px] rounded-full bg-muted-foreground animate-dot-2" />
-    <div className="w-[6px] h-[6px] rounded-full bg-muted-foreground animate-dot-3" />
+  <div className="flex items-center gap-[5px] py-1 px-0.5">
+    <div className="w-[7px] h-[7px] rounded-full bg-muted-foreground/50 animate-dot-1" />
+    <div className="w-[7px] h-[7px] rounded-full bg-muted-foreground/50 animate-dot-2" />
+    <div className="w-[7px] h-[7px] rounded-full bg-muted-foreground/50 animate-dot-3" />
   </div>
 );
 
