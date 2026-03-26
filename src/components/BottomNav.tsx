@@ -13,8 +13,8 @@ const BottomNav = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-t border-border z-50">
-      <div className="max-w-md mx-auto flex justify-around" style={{ padding: "8px 0 calc(8px + env(safe-area-inset-bottom))" }}>
+    <nav className="fixed-bottom-nav bg-background/95 backdrop-blur-xl border-t border-border">
+      <div className="flex justify-around" style={{ padding: "8px 0 calc(8px + env(safe-area-inset-bottom))" }}>
         {navItems.map(({ icon: Icon, label, path }) => {
           const active = location.pathname === path;
           return (

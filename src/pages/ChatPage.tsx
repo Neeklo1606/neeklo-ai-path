@@ -115,7 +115,7 @@ const ChatPage = () => {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-background border-b border-border">
-        <div className="max-w-md mx-auto flex items-center gap-3 h-[56px]" style={{ padding: "0 20px" }}>
+        <div className="flex items-center gap-3 h-[56px] px-5">
           <div className="w-[38px] h-[38px] rounded-full bg-card border border-border flex items-center justify-center">
             <Sparkles size={16} className="text-foreground" />
           </div>
@@ -131,7 +131,7 @@ const ChatPage = () => {
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <div className="max-w-md mx-auto pt-5 pb-40 space-y-3.5" style={{ padding: "20px 20px 160px" }}>
+        <div className="space-y-3.5" style={{ padding: "20px 20px 160px" }}>
           {items.map((item, i) => {
             if (item.type === "message") {
               return <ChatMessage key={i} role={item.role} content={item.content} />;
