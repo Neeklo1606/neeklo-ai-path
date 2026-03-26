@@ -116,13 +116,13 @@ const ChatPage = () => {
       {/* Header */}
       <header className="sticky top-0 z-30 bg-background border-b border-border">
         <div className="flex items-center gap-3 h-[56px] px-5">
-          <div className="w-[38px] h-[38px] rounded-full bg-card border border-border flex items-center justify-center">
-            <Sparkles size={16} className="text-foreground" />
+          <div className="w-[32px] h-[32px] rounded-full bg-card border border-border flex items-center justify-center">
+            <Sparkles size={13} className="text-foreground" />
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-[15px] font-semibold text-foreground leading-none mb-1">neeklo AI</h1>
             <div className="flex items-center gap-1.5">
-              <span className="w-[5px] h-[5px] rounded-full bg-green-500" />
+              <span className="w-[5px] h-[5px] rounded-full bg-emerald-500" />
               <span className="text-[12px] text-muted-foreground leading-none">онлайн</span>
             </div>
           </div>
@@ -141,7 +141,7 @@ const ChatPage = () => {
             }
             if (item.type === "typing") {
               return (
-                <div key={i} className="flex items-end gap-2 animate-message-in">
+                <div key={i} className="flex items-end gap-2.5 animate-message-in">
                   <AIAvatar />
                   <div className="message-bubble-ai">
                     <TypingIndicator />
@@ -153,8 +153,8 @@ const ChatPage = () => {
               return (
                 <BriefCard
                   key={i}
-                  projectType="Landing Page"
-                  budget="$500–$2000"
+                  projectType="Лендинг"
+                  budget="$500–$2 000"
                   timeline="2–3 недели"
                   onApprove={handleApproveBrief}
                 />

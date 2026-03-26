@@ -10,7 +10,7 @@ interface BriefCardProps {
 const BriefCard = ({ projectType, budget, timeline, onApprove }: BriefCardProps) => (
   <div className="game-card-reward animate-brief-in ml-[42px]">
     <div className="flex items-center gap-2.5 mb-5">
-      <div className="w-7 h-7 rounded-lg bg-card flex items-center justify-center">
+      <div className="w-7 h-7 rounded-xl bg-card flex items-center justify-center">
         <FileText size={14} className="text-foreground" />
       </div>
       <span className="text-[12px] font-semibold uppercase tracking-[0.1em] text-foreground">Бриф</span>
