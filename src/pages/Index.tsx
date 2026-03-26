@@ -61,10 +61,10 @@ const LandingPage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24">
+    <div className="flex-1 bg-background text-foreground pb-24">
       <div className="px-5">
         {/* HERO */}
-        <section className="min-h-screen flex flex-col items-center justify-center relative">
+        <section className="min-h-[85dvh] md:min-h-0 md:py-16 flex flex-col items-center justify-center relative">
           <div className="relative z-10 flex flex-col items-center text-center w-full">
             <div className="animate-logo-appear">
               <p className="text-[32px] font-extrabold tracking-tight mb-0.5">neeklo</p>

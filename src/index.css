@@ -63,14 +63,16 @@
   .app-frame {
     position: relative;
     min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
   }
 
   /* Desktop: center app in a phone-like frame */
   @media (min-width: 768px) {
     .app-shell {
-      background: hsl(0 0% 95%);
+      background: hsl(0 0% 94%);
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: center;
       padding: 24px 0;
       min-height: 100dvh;
@@ -79,14 +81,19 @@
     .app-frame {
       width: 100%;
       max-width: var(--app-max-width);
-      min-height: calc(100dvh - 48px);
+      height: calc(100dvh - 48px);
+      min-height: 0;
       background: hsl(var(--background));
       border-radius: 24px;
       box-shadow:
         0 0 0 1px hsl(0 0% 88%),
-        0 8px 40px -12px hsl(0 0% 0% / 0.12);
+        0 8px 40px -12px hsl(0 0% 0% / 0.12),
+        0 20px 60px -20px hsl(0 0% 0% / 0.08);
       overflow: hidden;
+      overflow-y: auto;
       position: relative;
+      display: flex;
+      flex-direction: column;
     }
   }
 
@@ -96,8 +103,8 @@
     }
 
     .app-frame {
-      max-width: 420px;
-      min-height: calc(100dvh - 64px);
+      max-width: 390px;
+      height: calc(100dvh - 64px);
       border-radius: 28px;
     }
   }
@@ -227,7 +234,9 @@
      PAGE LAYOUT
      ======================================== */
   .page-container {
-    @apply min-h-screen bg-background;
+    @apply bg-background;
+    min-height: 100%;
+    flex: 1;
     padding-bottom: 6rem;
   }
 

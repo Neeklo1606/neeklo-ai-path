@@ -48,7 +48,7 @@ const ManagerChatPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="flex-1 bg-background flex flex-col">
       <header className="sticky top-0 z-30 bg-background border-b border-border">
         <div className="flex items-center gap-3 h-[56px] px-5">
           <button
