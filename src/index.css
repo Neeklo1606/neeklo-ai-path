@@ -137,6 +137,15 @@
     padding: 24px 20px 0;
   }
 
+  /* Desktop centering — mobile app feel on large screens */
+  @media (min-width: 768px) {
+    .page-container,
+    .min-h-screen {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
   .page-title {
     @apply text-[22px] font-semibold text-foreground leading-tight;
     margin-bottom: 24px;

@@ -107,7 +107,7 @@ const ChatPage = () => {
         return [...withoutTyping, { type: "message", role: "ai", content: "Подключаю менеджера... Один момент" }];
       });
       scrollToBottom();
-      setTimeout(() => navigate("/projects"), 1500);
+      setTimeout(() => navigate("/manager-chat"), 1500);
     }, 1000);
   }, [navigate, scrollToBottom]);
 
