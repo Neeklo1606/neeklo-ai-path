@@ -114,25 +114,25 @@ const ChatPage = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-border">
-        <div className="max-w-md mx-auto flex items-center gap-3 px-4 py-3">
-          <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center animate-glow-pulse">
-            <Sparkles size={16} className="text-primary" />
+      {/* Top bar — Telegram style */}
+      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-xl border-b border-border">
+        <div className="max-w-md mx-auto flex items-center gap-3 px-4 h-14">
+          <div className="w-10 h-10 rounded-full bg-primary/8 border border-primary/15 flex items-center justify-center animate-glow-pulse">
+            <Sparkles size={18} className="text-primary" />
           </div>
-          <div className="flex-1">
-            <h1 className="text-[15px] font-semibold text-foreground leading-tight">neeklo AI</h1>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-[15px] font-semibold text-foreground leading-none mb-0.5">neeklo AI</h1>
             <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+              <span className="w-[5px] h-[5px] rounded-full bg-accent" />
               <span className="text-[12px] text-muted-foreground">онлайн</span>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pt-5 pb-40">
-        <div className="max-w-md mx-auto space-y-5">
+      {/* Chat body */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+        <div className="max-w-md mx-auto px-4 pt-4 pb-36 space-y-3">
           {items.map((item, i) => {
             if (item.type === "message") {
               return <ChatMessage key={i} role={item.role} content={item.content} />;
@@ -142,7 +142,7 @@ const ChatPage = () => {
             }
             if (item.type === "typing") {
               return (
-                <div key={i} className="flex items-start gap-2.5 animate-message-in">
+                <div key={i} className="flex items-end gap-2 animate-message-in">
                   <AIAvatar />
                   <div className="message-bubble-ai">
                     <TypingIndicator />

@@ -4,12 +4,13 @@ interface QuickChipsProps {
 }
 
 const QuickChips = ({ options, onSelect }: QuickChipsProps) => (
-  <div className="flex flex-wrap gap-2 pl-[42px] animate-message-in">
-    {options.map((option) => (
+  <div className="flex flex-wrap gap-2 pl-10">
+    {options.map((option, i) => (
       <button
         key={option}
         onClick={() => onSelect(option)}
-        className="chip-button"
+        className="chip-button animate-chip-pop"
+        style={{ animationDelay: `${i * 50}ms` }}
       >
         {option}
       </button>

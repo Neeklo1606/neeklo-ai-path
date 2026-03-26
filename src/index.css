@@ -76,18 +76,25 @@
 }
 
 @layer components {
+  /* Telegram-style message bubbles — user */
   .message-bubble-user {
-    @apply bg-primary text-primary-foreground rounded-2xl rounded-br-md px-4 py-3;
+    @apply bg-primary text-primary-foreground px-4 py-2.5;
+    border-radius: 20px 20px 6px 20px;
   }
 
+  /* Telegram-style message bubbles — AI */
   .message-bubble-ai {
-    @apply bg-card text-card-foreground rounded-2xl rounded-bl-md px-4 py-3 border border-border;
+    @apply bg-card text-card-foreground px-4 py-2.5 border border-border;
+    border-radius: 20px 20px 20px 6px;
   }
 
+  /* Quick action chips */
   .chip-button {
-    @apply px-4 py-2.5 bg-secondary text-foreground rounded-xl border border-border
-           transition-all duration-200 active:scale-95 hover:border-primary/50 hover:glow-primary
-           text-sm font-medium;
+    @apply px-4 py-2.5 bg-card text-foreground rounded-full border border-border
+           text-[13px] font-medium
+           transition-all duration-200
+           active:scale-[0.94]
+           hover:border-primary/40;
   }
 
   .game-card {
@@ -98,21 +105,14 @@
   .game-card-reward {
     @apply game-card border-primary/30 glow-primary;
   }
-
-  .bottom-nav-item {
-    @apply flex flex-col items-center gap-1 text-muted-foreground transition-colors duration-200;
-  }
-
-  .bottom-nav-item-active {
-    @apply text-primary;
-  }
 }
 
-/* Animations */
+/* === Animations === */
+
 @keyframes message-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -120,13 +120,27 @@
   }
 }
 
+@keyframes chip-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(4px);
+  }
+  70% {
+    transform: scale(1.03) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
 @keyframes card-reward {
   0% {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.94);
   }
   60% {
-    transform: scale(1.02);
+    transform: scale(1.015);
   }
   100% {
     opacity: 1;
@@ -136,8 +150,8 @@
 
 @keyframes dot-pulse {
   0%, 60%, 100% {
-    opacity: 0.3;
-    transform: scale(0.8);
+    opacity: 0.25;
+    transform: scale(0.75);
   }
   30% {
     opacity: 1;
@@ -147,10 +161,10 @@
 
 @keyframes glow-pulse {
   0%, 100% {
-    box-shadow: 0 0 8px hsl(217 91% 53% / 0.2);
+    box-shadow: 0 0 6px hsl(217 91% 53% / 0.15);
   }
   50% {
-    box-shadow: 0 0 20px hsl(217 91% 53% / 0.4);
+    box-shadow: 0 0 16px hsl(217 91% 53% / 0.35);
   }
 }
 
@@ -179,23 +193,27 @@
 }
 
 .animate-message-in {
-  animation: message-in 0.2s ease-out forwards;
+  animation: message-in 0.2s ease-out both;
+}
+
+.animate-chip-pop {
+  animation: chip-pop 0.25s ease-out both;
 }
 
 .animate-card-reward {
-  animation: card-reward 0.4s ease-out forwards;
+  animation: card-reward 0.4s ease-out both;
 }
 
 .animate-glow-pulse {
-  animation: glow-pulse 2s ease-in-out infinite;
+  animation: glow-pulse 2.5s ease-in-out infinite;
 }
 
 .animate-logo-appear {
-  animation: logo-appear 0.6s ease-out forwards;
+  animation: logo-appear 0.6s ease-out both;
 }
 
 .animate-slide-up {
-  animation: slide-up 0.4s ease-out forwards;
+  animation: slide-up 0.4s ease-out both;
 }
 
 .animate-dot-1 { animation: dot-pulse 1.4s ease-in-out infinite; }
