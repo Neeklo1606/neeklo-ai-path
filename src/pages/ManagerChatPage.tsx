@@ -50,15 +50,15 @@ const ManagerChatPage = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-30 bg-background border-b border-border">
-        <div className="max-w-md mx-auto flex items-center gap-3 h-[56px]" style={{ padding: "0 20px" }}>
+        <div className="flex items-center gap-3 h-[56px] px-5">
           <button
             onClick={() => navigate("/projects")}
             className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center active:scale-95 transition-transform"
           >
             <ArrowLeft size={16} className="text-foreground" />
           </button>
-          <div className="w-[34px] h-[34px] rounded-full bg-card border border-border flex items-center justify-center">
-            <User size={15} className="text-foreground" />
+          <div className="w-[32px] h-[32px] rounded-full bg-card border border-border flex items-center justify-center">
+            <User size={13} className="text-foreground" />
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-[15px] font-semibold text-foreground leading-none mb-1">Алексей К.</h1>
@@ -71,19 +71,19 @@ const ManagerChatPage = () => {
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <div className="max-w-md mx-auto space-y-3" style={{ padding: "20px 20px 160px" }}>
+        <div className="space-y-4" style={{ padding: "20px 20px 160px" }}>
           {messages.map((msg, i) => (
             <div
               key={i}
-              className={`flex items-end ${msg.role === "user" ? "justify-end" : "justify-start gap-2"} animate-message-in`}
+              className={`flex items-end ${msg.role === "user" ? "justify-end" : "justify-start gap-2.5"} animate-message-in`}
             >
               {msg.role === "manager" && (
-                <div className="w-[30px] h-[30px] rounded-full bg-card border border-border flex items-center justify-center flex-shrink-0">
+                <div className="w-[32px] h-[32px] rounded-full bg-card border border-border flex items-center justify-center flex-shrink-0">
                   <User size={13} className="text-foreground" />
                 </div>
               )}
-              <div className={`max-w-[80%] ${msg.role === "user" ? "message-bubble-user" : "message-bubble-ai"}`}>
-                <p className="text-[14px] leading-[1.6]">{msg.content}</p>
+              <div className={`max-w-[78%] ${msg.role === "user" ? "message-bubble-user" : "message-bubble-ai"}`}>
+                <p className="text-[14px] leading-[1.65]">{msg.content}</p>
                 <p className={`text-[10px] mt-1 ${msg.role === "user" ? "text-primary-foreground/50" : "text-muted-foreground/50"}`}>
                   {msg.time}
                 </p>
@@ -93,7 +93,7 @@ const ManagerChatPage = () => {
         </div>
       </div>
 
-      <div className="fixed-bottom-bar bg-background border-t border-border" style={{ bottom: "calc(60px + env(safe-area-inset-bottom))", padding: "10px 20px" }}>
+      <div className="fixed-bottom-bar bg-background border-t border-border" style={{ bottom: "calc(60px + env(safe-area-inset-bottom))", padding: "12px 20px" }}>
         <div className="flex items-center gap-2.5">
           <input
             type="text"
@@ -101,15 +101,15 @@ const ManagerChatPage = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder="Напишите сообщение..."
-            className="flex-1 bg-background rounded-full text-[14px] text-foreground placeholder:text-muted-foreground outline-none border border-border focus:border-foreground/20 transition-colors duration-200"
-            style={{ padding: "11px 20px" }}
+            className="flex-1 bg-card rounded-full text-[14px] text-foreground placeholder:text-muted-foreground outline-none border-none focus:ring-0 transition-colors duration-200"
+            style={{ padding: "12px 20px" }}
           />
           <button
             onClick={handleSend}
             disabled={!input.trim()}
-            className="w-[44px] h-[44px] rounded-full bg-primary text-primary-foreground flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-20 flex-shrink-0"
+            className="w-[46px] h-[46px] rounded-full bg-primary text-primary-foreground flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-15 flex-shrink-0 shadow-sm"
           >
-            <Send size={17} className="translate-x-[1px]" />
+            <Send size={18} className="translate-x-[1px]" />
           </button>
         </div>
       </div>

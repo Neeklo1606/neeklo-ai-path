@@ -57,8 +57,8 @@ const ProjectDetailPage = () => {
 
         <div className="game-card mb-3 animate-message-in">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-11 h-11 rounded-xl bg-card border border-border flex items-center justify-center">
-              <Icon size={20} className="text-foreground" />
+            <div className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center">
+              <Icon size={16} className="text-foreground" />
             </div>
             <div className="flex-1">
               <h2 className="text-[15px] font-semibold text-foreground">{project.title}</h2>
@@ -72,7 +72,7 @@ const ProjectDetailPage = () => {
         </div>
 
         <div className="game-card mb-3 animate-message-in" style={{ animationDelay: "60ms" }}>
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2.5 mb-3">
             <FileText size={15} className="text-muted-foreground" />
             <span className="text-[12px] text-muted-foreground uppercase tracking-wide font-medium">Описание</span>
           </div>
@@ -80,17 +80,17 @@ const ProjectDetailPage = () => {
         </div>
 
         <div className="game-card mb-3 animate-message-in" style={{ animationDelay: "120ms" }}>
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2.5 mb-3">
             <MessageSquare size={15} className="text-muted-foreground" />
             <span className="text-[12px] text-muted-foreground uppercase tracking-wide font-medium">Менеджер</span>
           </div>
           <p className="text-[14px] text-foreground font-medium">{project.manager}</p>
         </div>
 
-        <div className="space-y-2.5 animate-slide-up" style={{ animationDelay: "180ms" }}>
+        <div className="animate-slide-up" style={{ animationDelay: "180ms" }}>
           <button
             onClick={() => navigate("/manager-chat")}
-            className="btn-primary flex items-center justify-center gap-2"
+            className="btn-accent"
           >
             <MessageSquare size={16} />
             Написать менеджеру
