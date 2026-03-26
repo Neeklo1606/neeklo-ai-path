@@ -20,7 +20,7 @@ const RegisterPage = () => {
 
   return (
     <div className="flex-1 bg-background flex flex-col items-center justify-center px-8">
-      <div className="w-full max-w-[340px]">
+      <div className="w-full max-w-[380px]">
         <div className="flex flex-col items-center mb-10 animate-logo-appear">
           <h1 className="text-[24px] font-bold text-foreground tracking-tight">Создать аккаунт</h1>
         </div>
