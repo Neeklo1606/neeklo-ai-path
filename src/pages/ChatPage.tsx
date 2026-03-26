@@ -164,16 +164,10 @@ const ChatPage = () => {
               return (
                 <ProposalCard
                   key={i}
-                  price="$850"
-                  timeline="14 дней"
-                  deliverables={[
-                    "Дизайн и разработка лендинга",
-                    "SEO-оптимизация и аналитика",
-                    "2 раунда правок + 30 дней поддержки",
-                  ]}
                   onConnect={handleConnectManager}
                 />
               );
+            }
             }
             return null;
           })}
