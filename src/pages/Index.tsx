@@ -132,9 +132,9 @@ const LandingPage = () => {
       </section>
 
       {/* WORKS GALLERY */}
-      <section id="works" className="mt-8 mb-14 px-5 md:px-0">
+      <section id="works" className="mt-8 mb-14 px-5 md:px-0" ref={worksSection.ref}>
         <div className="max-w-[1200px] mx-auto">
-          <div className="flex items-center justify-between mb-5 md:mb-8">
+          <div className="flex items-center justify-between mb-5 md:mb-8" style={revealStyle(worksSection.visible)}>
             <h2 className="text-[22px] md:text-[28px] font-bold">Наши работы</h2>
             <div className="flex items-center gap-1">
               <Star size={12} className="text-foreground fill-foreground" />
@@ -149,6 +149,7 @@ const LandingPage = () => {
                 className={`relative rounded-2xl overflow-hidden group active:scale-[0.97] transition-transform duration-200 ${
                   i === 0 ? "col-span-2 md:col-span-2 aspect-[16/9]" : "aspect-square md:aspect-[4/3]"
                 }`}
+                style={revealStyle(worksSection.visible, i * 100)}
               >
                 <img src={w.img} alt={w.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
