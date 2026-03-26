@@ -51,6 +51,7 @@ const LandingPage = () => {
   const navigate = useNavigate();
 
   const stats = useScrollReveal(0.4);
+  const worksSection = useScrollReveal(0.15);
   const productsSection = useScrollReveal(0.15);
   const stepsSection = useScrollReveal(0.15);
   const ctaSection = useScrollReveal(0.3);
