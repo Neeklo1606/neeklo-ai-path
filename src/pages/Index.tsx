@@ -9,18 +9,21 @@ const products = [
     price: "от 25 000 ₽",
     desc: "Рекламные ролики с нейросетями",
     badge: "ХИТ",
+    slug: "ai-roliki",
   },
   {
     icon: Globe,
     title: "Сайт под ключ",
     price: "от 95 000 ₽",
     desc: "Лендинг или корп. сайт с AI",
+    slug: "sajt-pod-klyuch",
   },
   {
     icon: Smartphone,
     title: "Telegram Mini App",
     price: "от 65 000 ₽",
     desc: "Приложение прямо в Telegram",
+    slug: "telegram-mini-app",
   },
   {
     icon: Sparkles,
@@ -28,6 +31,7 @@ const products = [
     price: "от 150 000 ₽",
     desc: "Автоматизация продаж и процессов",
     badge: "ТОП",
+    slug: "ai-agent",
   },
 ];
 
@@ -100,9 +104,10 @@ const LandingPage = () => {
           <h2 className="text-[22px] font-bold mb-5">Что делаем</h2>
           <div className="grid grid-cols-2 gap-3">
             {products.map((p) => (
-              <div
+              <button
                 key={p.title}
-                className="game-card relative"
+                onClick={() => navigate(`/services/${p.slug}`)}
+                className="game-card relative text-left active:scale-[0.97] transition-transform duration-100"
               >
                 {p.badge && (
                   <span className="absolute top-4 right-4 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary text-primary-foreground">
@@ -115,7 +120,7 @@ const LandingPage = () => {
                 <p className="text-[15px] font-bold mb-1">{p.title}</p>
                 <p className="text-[13px] text-muted-foreground font-medium mb-1">{p.price}</p>
                 <p className="text-[13px] text-muted-foreground leading-snug">{p.desc}</p>
-              </div>
+              </button>
             ))}
           </div>
         </section>
