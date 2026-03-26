@@ -225,6 +225,7 @@ const LandingPage = () => {
         </div>
       </section>
 
+      <Footer />
       <BottomNav />
     </div>
   );

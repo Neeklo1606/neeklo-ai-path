@@ -14,6 +14,7 @@ import SettingsPage from "./pages/SettingsPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
 import ManagerChatPage from "./pages/ManagerChatPage";
 import ServiceDetailPage from "./pages/ServiceDetailPage";
+import LegalPage from "./pages/LegalPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
