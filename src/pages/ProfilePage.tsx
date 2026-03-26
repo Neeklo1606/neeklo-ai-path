@@ -1,40 +1,57 @@
+import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { User, Settings, LogOut, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
 
-const ProfilePage = () => (
-  <div className="page-container">
-    <div className="page-content">
-      <h1 className="page-title">Профиль</h1>
+const ProfilePage = () => {
+  const navigate = useNavigate();
 
-      {/* Avatar */}
-      <div className="flex flex-col items-center pb-8 animate-message-in">
-        <div className="w-[72px] h-[72px] rounded-full bg-primary/8 border border-primary/12 flex items-center justify-center mb-4">
-          <User size={28} className="text-primary" />
+  const handleLogout = () => {
+    toast.success("Вы вышли из аккаунта");
+    setTimeout(() => navigate("/"), 500);
+  };
+
+  return (
+    <div className="page-container">
+      <div className="page-content">
+        <h1 className="page-title">Профиль</h1>
+
+        <div className="flex flex-col items-center pb-8 animate-message-in">
+          <div className="w-[72px] h-[72px] rounded-full bg-primary/8 border border-primary/12 flex items-center justify-center mb-4">
+            <User size={28} className="text-primary" />
+          </div>
+          <h2 className="text-[16px] font-semibold text-foreground leading-tight">Пользователь</h2>
+          <p className="text-[13px] text-muted-foreground mt-1">user@neeklo.app</p>
         </div>
-        <h2 className="text-[16px] font-semibold text-foreground leading-tight">Пользователь</h2>
-        <p className="text-[13px] text-muted-foreground mt-1">user@neeklo.app</p>
-      </div>
 
-      {/* Menu */}
-      <div className="space-y-2.5">
-        <button className="w-full game-card flex items-center gap-3.5 text-left animate-message-in" style={{ animationDelay: "60ms" }}>
-          <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0">
-            <Settings size={16} className="text-muted-foreground" />
-          </div>
-          <span className="text-[14px] text-foreground flex-1">Настройки</span>
-          <ChevronRight size={15} className="text-muted-foreground/30" />
-        </button>
+        <div className="space-y-2.5">
+          <button
+            onClick={() => navigate("/settings")}
+            className="w-full game-card flex items-center gap-3.5 text-left animate-message-in active:scale-[0.98] transition-transform"
+            style={{ animationDelay: "60ms" }}
+          >
+            <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0">
+              <Settings size={16} className="text-muted-foreground" />
+            </div>
+            <span className="text-[14px] text-foreground flex-1">Настройки</span>
+            <ChevronRight size={15} className="text-muted-foreground/30" />
+          </button>
 
-        <button className="w-full game-card flex items-center gap-3.5 text-left animate-message-in" style={{ animationDelay: "100ms" }}>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "hsl(0 72% 55% / 0.08)" }}>
-            <LogOut size={16} className="text-destructive" />
-          </div>
-          <span className="text-[14px] text-destructive flex-1">Выйти</span>
-        </button>
+          <button
+            onClick={handleLogout}
+            className="w-full game-card flex items-center gap-3.5 text-left animate-message-in active:scale-[0.98] transition-transform"
+            style={{ animationDelay: "100ms" }}
+          >
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "hsl(0 72% 55% / 0.08)" }}>
+              <LogOut size={16} className="text-destructive" />
+            </div>
+            <span className="text-[14px] text-destructive flex-1">Выйти</span>
+          </button>
+        </div>
       </div>
+      <BottomNav />
     </div>
-    <BottomNav />
-  </div>
-);
+  );
+};
 
 export default ProfilePage;

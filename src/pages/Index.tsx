@@ -8,7 +8,7 @@ const HomePage = () => {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-8 relative overflow-hidden">
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[260px] h-[260px] rounded-full bg-primary/4 blur-[100px] pointer-events-none" />
 
-      <div className="relative z-10 flex flex-col items-center text-center w-full max-w-[280px]">
+      <div className="relative z-10 flex flex-col items-center text-center w-full max-w-[340px]">
         <div className="animate-logo-appear mb-12">
           <div className="w-14 h-14 rounded-2xl bg-primary/8 border border-primary/15 flex items-center justify-center animate-glow-pulse">
             <Sparkles size={22} className="text-primary" />
@@ -26,14 +26,22 @@ const HomePage = () => {
           <br />и подключит менеджера
         </p>
 
-        <button
-          onClick={() => navigate("/chat")}
-          className="w-full btn-primary flex items-center justify-center gap-2 animate-slide-up"
-          style={{ animationDelay: "220ms" }}
-        >
-          Начать
-          <ArrowRight size={17} />
-        </button>
+        <div className="w-full space-y-3 animate-slide-up" style={{ animationDelay: "220ms" }}>
+          <button
+            onClick={() => navigate("/login")}
+            className="btn-primary flex items-center justify-center gap-2"
+          >
+            Войти
+            <ArrowRight size={17} />
+          </button>
+          <button
+            onClick={() => navigate("/register")}
+            className="w-full bg-card text-foreground border border-border rounded-xl font-semibold text-[14px] active:scale-[0.97] transition-transform duration-150 flex items-center justify-center gap-2"
+            style={{ padding: "13px 0" }}
+          >
+            Создать аккаунт
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { FolderOpen, Briefcase, Palette } from "lucide-react";
 
@@ -29,10 +30,14 @@ const projects: Project[] = [
   },
 ];
 
-const ProjectCard = ({ project, index }: { project: Project; index: number }) => {
+const ProjectCard = ({ project, index, onClick }: { project: Project; index: number; onClick: () => void }) => {
   const Icon = project.icon;
   return (
-    <div className="game-card animate-message-in" style={{ animationDelay: `${index * 60}ms` }}>
+    <button
+      onClick={onClick}
+      className="w-full game-card text-left animate-message-in active:scale-[0.98] transition-transform"
+      style={{ animationDelay: `${index * 60}ms` }}
+    >
       <div className="flex items-center gap-3 mb-3.5">
         <div className="w-10 h-10 rounded-xl bg-primary/8 border border-primary/10 flex items-center justify-center flex-shrink-0">
           <Icon size={18} className="text-primary" />
@@ -46,7 +51,7 @@ const ProjectCard = ({ project, index }: { project: Project; index: number }) =>
         <span className="tag-primary">{project.price}</span>
         <span className="tag-accent">{project.timeline}</span>
       </div>
-    </div>
+    </button>
   );
 };
 
@@ -61,23 +66,32 @@ const EmptyState = () => (
   </div>
 );
 
-const ProjectsPage = () => (
-  <div className="page-container">
-    <div className="page-content">
-      <h1 className="page-title">Проекты</h1>
+const ProjectsPage = () => {
+  const navigate = useNavigate();
 
-      {projects.length > 0 ? (
-        <div className="space-y-3">
-          {projects.map((project, i) => (
-            <ProjectCard key={project.id} project={project} index={i} />
-          ))}
-        </div>
-      ) : (
-        <EmptyState />
-      )}
+  return (
+    <div className="page-container">
+      <div className="page-content">
+        <h1 className="page-title">Проекты</h1>
+
+        {projects.length > 0 ? (
+          <div className="space-y-3">
+            {projects.map((project, i) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                index={i}
+                onClick={() => navigate(`/projects/${project.id}`)}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyState />
+        )}
+      </div>
+      <BottomNav />
     </div>
-    <BottomNav />
-  </div>
-);
+  );
+};
 
 export default ProjectsPage;
