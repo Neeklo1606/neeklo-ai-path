@@ -114,15 +114,15 @@ const ChatPage = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-xl border-b border-border">
+      <header className="sticky top-0 z-30 bg-background border-b border-border">
         <div className="max-w-md mx-auto flex items-center gap-3 h-[56px]" style={{ padding: "0 20px" }}>
-          <div className="w-[38px] h-[38px] rounded-full bg-primary/8 border border-primary/12 flex items-center justify-center animate-glow-pulse">
-            <Sparkles size={16} className="text-primary" />
+          <div className="w-[38px] h-[38px] rounded-full bg-card border border-border flex items-center justify-center">
+            <Sparkles size={16} className="text-foreground" />
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-[15px] font-semibold text-foreground leading-none mb-1">neeklo AI</h1>
             <div className="flex items-center gap-1.5">
-              <span className="w-[5px] h-[5px] rounded-full bg-accent" />
+              <span className="w-[5px] h-[5px] rounded-full bg-green-500" />
               <span className="text-[12px] text-muted-foreground leading-none">онлайн</span>
             </div>
           </div>
