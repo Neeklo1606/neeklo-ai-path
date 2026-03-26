@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import DesktopNav from "@/components/DesktopNav";
 import Index from "./pages/Index";
 import ChatPage from "./pages/ChatPage";
 import ProjectsPage from "./pages/ProjectsPage";
@@ -23,8 +24,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <div className="app-shell">
-          <div className="app-frame">
+        <div className="min-h-screen flex flex-col">
+          <DesktopNav />
+          <div className="flex-1 flex flex-col">
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<LoginPage />} />
