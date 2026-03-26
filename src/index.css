@@ -8,34 +8,24 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 0 0% 0%;
-
     --card: 0 0% 96%;
     --card-foreground: 0 0% 0%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 0%;
-
     --primary: 0 0% 0%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 0%;
-
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 42%;
-
     --accent: 0 0% 0%;
     --accent-foreground: 0 0% 100%;
-
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 0% 100%;
-
     --border: 0 0% 90%;
     --input: 0 0% 90%;
     --ring: 0 0% 0%;
-
     --radius: 0.875rem;
-
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 0%;
     --sidebar-primary: 0 0% 0%;
@@ -44,6 +34,8 @@
     --sidebar-accent-foreground: 0 0% 0%;
     --sidebar-border: 0 0% 90%;
     --sidebar-ring: 0 0% 0%;
+
+    --app-max-width: 430px;
   }
 }
 
@@ -61,7 +53,84 @@
 }
 
 @layer components {
-  /* === Message bubbles === */
+  /* ========================================
+     APP SHELL — Desktop device frame
+     ======================================== */
+  .app-shell {
+    min-height: 100dvh;
+  }
+
+  .app-frame {
+    position: relative;
+    min-height: 100dvh;
+  }
+
+  /* Desktop: center app in a phone-like frame */
+  @media (min-width: 768px) {
+    .app-shell {
+      background: hsl(0 0% 95%);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 0;
+      min-height: 100dvh;
+    }
+
+    .app-frame {
+      width: 100%;
+      max-width: var(--app-max-width);
+      min-height: calc(100dvh - 48px);
+      background: hsl(var(--background));
+      border-radius: 24px;
+      box-shadow:
+        0 0 0 1px hsl(0 0% 88%),
+        0 8px 40px -12px hsl(0 0% 0% / 0.12);
+      overflow: hidden;
+      position: relative;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .app-shell {
+      padding: 32px 0;
+    }
+
+    .app-frame {
+      max-width: 420px;
+      min-height: calc(100dvh - 64px);
+      border-radius: 28px;
+    }
+  }
+
+  /* ========================================
+     FIXED ELEMENTS — Constrain to frame
+     ======================================== */
+  .fixed-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+  }
+
+  .fixed-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+  }
+
+  @media (min-width: 768px) {
+    .fixed-bottom-bar,
+    .fixed-bottom-nav {
+      position: absolute;
+    }
+  }
+
+  /* ========================================
+     MESSAGE BUBBLES
+     ======================================== */
   .message-bubble-user {
     @apply bg-primary text-primary-foreground;
     padding: 10px 16px;
@@ -74,7 +143,16 @@
     border-radius: 20px 20px 20px 6px;
   }
 
-  /* === Chips === */
+  @media (min-width: 768px) {
+    .message-bubble-user,
+    .message-bubble-ai {
+      padding: 12px 18px;
+    }
+  }
+
+  /* ========================================
+     CHIPS
+     ======================================== */
   .chip-button {
     @apply bg-primary text-primary-foreground rounded-full
            text-[13px] font-medium leading-none
@@ -83,7 +161,16 @@
     padding: 10px 18px;
   }
 
-  /* === Cards === */
+  @media (min-width: 768px) {
+    .chip-button {
+      padding: 11px 20px;
+      font-size: 14px;
+    }
+  }
+
+  /* ========================================
+     CARDS
+     ======================================== */
   .game-card {
     @apply bg-background border border-border rounded-2xl
            transition-all duration-200;
@@ -94,7 +181,15 @@
     @apply game-card border-foreground/15;
   }
 
-  /* === Primary action button === */
+  @media (min-width: 768px) {
+    .game-card {
+      padding: 24px;
+    }
+  }
+
+  /* ========================================
+     BUTTONS
+     ======================================== */
   .btn-primary {
     @apply w-full bg-primary text-primary-foreground rounded-xl
            font-semibold text-[14px]
@@ -110,22 +205,31 @@
     padding: 13px 0;
   }
 
-  /* === Page layout === */
+  @media (min-width: 768px) {
+    .btn-primary,
+    .btn-accent {
+      padding: 15px 0;
+      font-size: 15px;
+    }
+  }
+
+  /* ========================================
+     PAGE LAYOUT
+     ======================================== */
   .page-container {
     @apply min-h-screen bg-background;
     padding-bottom: 6rem;
   }
 
   .page-content {
-    @apply max-w-md mx-auto;
+    @apply mx-auto;
     padding: 24px 20px 0;
+    max-width: var(--app-max-width);
   }
 
   @media (min-width: 768px) {
-    .page-container,
-    .min-h-screen {
-      display: flex;
-      flex-direction: column;
+    .page-content {
+      padding: 28px 24px 0;
     }
   }
 
@@ -134,7 +238,16 @@
     margin-bottom: 24px;
   }
 
-  /* === Tag pills === */
+  @media (min-width: 768px) {
+    .page-title {
+      font-size: 24px;
+      margin-bottom: 28px;
+    }
+  }
+
+  /* ========================================
+     TAG PILLS
+     ======================================== */
   .tag-primary {
     @apply text-foreground font-medium text-[11px] rounded-lg;
     background: hsl(0 0% 0% / 0.06);
@@ -148,7 +261,9 @@
   }
 }
 
-/* === Animations === */
+/* ========================================
+   ANIMATIONS
+   ======================================== */
 
 @keyframes message-in {
   from { opacity: 0; transform: translateY(6px); }

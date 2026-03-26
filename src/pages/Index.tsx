@@ -42,7 +42,7 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24">
-      <div className="max-w-[390px] mx-auto px-5">
+      <div className="px-5">
         {/* HERO */}
         <section className="min-h-screen flex flex-col items-center justify-center relative">
           <div className="relative z-10 flex flex-col items-center text-center w-full">
