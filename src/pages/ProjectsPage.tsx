@@ -38,9 +38,9 @@ const ProjectCard = ({ project, index, onClick }: { project: Project; index: num
       className="w-full game-card text-left animate-message-in active:scale-[0.98] transition-transform"
       style={{ animationDelay: `${index * 60}ms` }}
     >
-      <div className="flex items-center gap-3 mb-3.5">
-        <div className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center flex-shrink-0">
-          <Icon size={18} className="text-foreground" />
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center flex-shrink-0">
+          <Icon size={16} className="text-foreground" />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-[14px] font-semibold text-foreground leading-tight truncate">{project.title}</h3>

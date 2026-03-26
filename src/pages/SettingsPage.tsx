@@ -26,11 +26,11 @@ const SettingsPage = () => {
           <h1 className="text-[22px] font-bold text-foreground leading-tight">Настройки</h1>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-3">
           {menuItems.map((item, i) => (
             <button
               key={item.label}
-              className="w-full game-card flex items-center gap-3.5 text-left animate-message-in"
+              className="w-full game-card flex items-center gap-3 text-left animate-message-in"
               style={{ animationDelay: `${i * 40}ms` }}
             >
               <div className="w-9 h-9 rounded-xl bg-card flex items-center justify-center flex-shrink-0">

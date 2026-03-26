@@ -66,13 +66,14 @@ const LandingPage = () => {
             <div className="w-full space-y-3 mb-12">
               <button
                 onClick={() => navigate("/chat")}
-                className="w-full h-[52px] bg-primary text-primary-foreground font-semibold text-[15px] rounded-xl active:scale-[0.97] transition-transform duration-150"
+                className="btn-primary flex items-center justify-center gap-2"
               >
                 Заказать проект
               </button>
               <button
                 onClick={() => navigate("/projects")}
-                className="w-full h-[52px] bg-transparent text-foreground font-semibold text-[15px] rounded-xl border border-border active:scale-[0.97] transition-transform duration-150"
+                className="w-full bg-transparent text-foreground font-semibold text-[14px] rounded-xl border border-border active:scale-[0.97] transition-transform duration-150"
+                style={{ padding: "13px 0" }}
               >
                 Смотреть работы
               </button>
@@ -101,18 +102,18 @@ const LandingPage = () => {
             {products.map((p) => (
               <div
                 key={p.title}
-                className="bg-background rounded-2xl p-5 relative border border-border"
+                className="game-card relative"
               >
                 {p.badge && (
-                  <span className="absolute top-3 right-3 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary text-primary-foreground">
+                  <span className="absolute top-4 right-4 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary text-primary-foreground">
                     {p.badge}
                   </span>
                 )}
                 <div className="w-9 h-9 rounded-xl bg-card flex items-center justify-center mb-3">
-                  <p.icon size={18} className="text-foreground" />
+                  <p.icon size={16} className="text-foreground" />
                 </div>
-                <p className="text-[16px] font-bold mb-1">{p.title}</p>
-                <p className="text-[14px] text-muted-foreground font-medium mb-1.5">{p.price}</p>
+                <p className="text-[15px] font-bold mb-1">{p.title}</p>
+                <p className="text-[13px] text-muted-foreground font-medium mb-1">{p.price}</p>
                 <p className="text-[13px] text-muted-foreground leading-snug">{p.desc}</p>
               </div>
             ))}
@@ -137,15 +138,15 @@ const LandingPage = () => {
 
         {/* CTA */}
         <section className="mt-12 mb-4">
-          <div className="bg-card rounded-2xl p-6 text-center">
+          <div className="game-card text-center">
             <p className="text-[20px] font-bold mb-2">Готов начать?</p>
             <p className="text-[14px] text-muted-foreground mb-5">Первая консультация бесплатно</p>
             <button
               onClick={() => navigate("/chat")}
-              className="w-full h-[52px] bg-primary text-primary-foreground font-semibold text-[15px] rounded-xl active:scale-[0.97] transition-transform duration-150 flex items-center justify-center gap-2"
+              className="btn-accent"
             >
               Написать в чат
-              <ArrowRight size={17} />
+              <ArrowRight size={16} />
             </button>
           </div>
         </section>
