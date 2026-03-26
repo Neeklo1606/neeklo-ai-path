@@ -72,8 +72,8 @@ const LandingPage = () => {
               </button>
               <button
                 onClick={() => navigate("/projects")}
-                className="w-full bg-transparent text-foreground font-semibold text-[14px] rounded-xl border border-border active:scale-[0.97] transition-transform duration-150"
-                style={{ padding: "13px 0" }}
+                className="w-full bg-transparent text-foreground font-semibold text-[14px] rounded-xl border border-border active:scale-[0.97] transition-transform duration-100"
+                style={{ padding: "13px 0", WebkitTapHighlightColor: "transparent" }}
               >
                 Смотреть работы
               </button>

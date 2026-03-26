@@ -63,7 +63,7 @@ const ManagerChatPage = () => {
           <div className="flex-1 min-w-0">
             <h1 className="text-[15px] font-semibold text-foreground leading-none mb-1">Алексей К.</h1>
             <div className="flex items-center gap-1.5">
-              <span className="w-[5px] h-[5px] rounded-full bg-green-500" />
+              <span className="w-[5px] h-[5px] rounded-full bg-emerald-500" />
               <span className="text-[12px] text-muted-foreground leading-none">менеджер</span>
             </div>
           </div>
