@@ -1,6 +1,7 @@
 import { Play, Globe, Smartphone, Sparkles, ArrowRight, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
+import Footer from "@/components/Footer";
 
 import workFashion from "@/assets/work-fashion.png";
 import workRacing from "@/assets/work-racing.jpg";
