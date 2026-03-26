@@ -1,0 +1,59 @@
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Bell, Moon, Shield, HelpCircle, ChevronRight, Globe } from "lucide-react";
+import BottomNav from "@/components/BottomNav";
+
+const menuItems = [
+  { icon: Bell, label: "Уведомления", description: "Включены" },
+  { icon: Moon, label: "Тема", description: "Тёмная" },
+  { icon: Globe, label: "Язык", description: "Русский" },
+  { icon: Shield, label: "Безопасность", description: "" },
+  { icon: HelpCircle, label: "Помощь", description: "" },
+];
+
+const SettingsPage = () => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="page-container">
+      <div className="page-content">
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={() => navigate("/profile")}
+            className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center active:scale-95 transition-transform"
+          >
+            <ArrowLeft size={16} className="text-foreground" />
+          </button>
+          <h1 className="text-[22px] font-semibold text-foreground leading-tight">Настройки</h1>
+        </div>
+
+        <div className="space-y-2">
+          {menuItems.map((item, i) => (
+            <button
+              key={item.label}
+              className="w-full game-card flex items-center gap-3.5 text-left animate-message-in"
+              style={{ animationDelay: `${i * 40}ms` }}
+            >
+              <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0">
+                <item.icon size={16} className="text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[14px] text-foreground">{item.label}</span>
+                {item.description && (
+                  <p className="text-[12px] text-muted-foreground mt-0.5">{item.description}</p>
+                )}
+              </div>
+              <ChevronRight size={15} className="text-muted-foreground/30 flex-shrink-0" />
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-8 text-center">
+          <p className="text-[12px] text-muted-foreground/40">neeklo v1.0.0</p>
+        </div>
+      </div>
+      <BottomNav />
+    </div>
+  );
+};
+
+export default SettingsPage;
