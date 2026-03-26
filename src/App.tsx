@@ -39,6 +39,7 @@ const App = () => (
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/services/:slug" element={<ServiceDetailPage />} />
               <Route path="/manager-chat" element={<ManagerChatPage />} />
+              <Route path="/legal/:slug" element={<LegalPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>
