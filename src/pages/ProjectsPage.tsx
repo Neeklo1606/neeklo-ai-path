@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
-import { FolderOpen, Briefcase, Palette } from "lucide-react";
+import { FolderOpen, Briefcase, Palette, Star } from "lucide-react";
 
 interface Project {
   id: string;
@@ -47,9 +47,13 @@ const ProjectCard = ({ project, index, onClick }: { project: Project; index: num
           <p className="text-[12px] text-muted-foreground mt-0.5">{project.status}</p>
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2 mt-3">
         <span className="tag-primary">{project.price}</span>
         <span className="tag-accent">{project.timeline}</span>
+        <span className="ml-auto flex items-center gap-1">
+          <Star size={10} className="text-foreground fill-foreground" />
+          <span className="text-[11px] text-muted-foreground">4.9</span>
+        </span>
       </div>
     </button>
   );
