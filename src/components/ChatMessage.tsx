@@ -11,16 +11,18 @@ const AIAvatar = () => (
   </div>
 );
 
-const ChatMessage = ({ role, content }: ChatMessageProps) => {
-  return (
-    <div className={`flex ${role === "user" ? "justify-end" : "justify-start gap-2.5"} animate-message-in`}>
-      {role === "ai" && <AIAvatar />}
-      <div className={`max-w-[78%] ${role === "user" ? "message-bubble-user" : "message-bubble-ai"}`}>
-        <p className="text-[14px] leading-[1.6]">{content}</p>
-      </div>
+const ChatMessage = ({ role, content }: ChatMessageProps) => (
+  <div
+    className={`flex items-end ${
+      role === "user" ? "justify-end" : "justify-start gap-2"
+    } animate-message-in`}
+  >
+    {role === "ai" && <AIAvatar />}
+    <div className={`max-w-[80%] ${role === "user" ? "message-bubble-user" : "message-bubble-ai"}`}>
+      <p className="text-[14px] leading-[1.55] whitespace-pre-wrap">{content}</p>
     </div>
-  );
-};
+  </div>
+);
 
 export { AIAvatar };
 export default ChatMessage;
