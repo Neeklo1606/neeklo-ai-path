@@ -93,8 +93,8 @@ const ManagerChatPage = () => {
         </div>
       </div>
 
-      <div className="fixed bottom-[calc(60px+env(safe-area-inset-bottom))] left-0 right-0 bg-background border-t border-border z-40" style={{ padding: "10px 20px" }}>
-        <div className="max-w-md mx-auto flex items-center gap-2.5">
+      <div className="fixed-bottom-bar bg-background border-t border-border" style={{ bottom: "calc(60px + env(safe-area-inset-bottom))", padding: "10px 20px" }}>
+        <div className="flex items-center gap-2.5">
           <input
             type="text"
             value={input}
