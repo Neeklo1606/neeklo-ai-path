@@ -122,10 +122,21 @@ const ProposalCard = ({ onConnect }: ProposalCardProps) => {
         })}
       </div>
 
+      <div className="flex items-center justify-center gap-3 mt-4 mb-3">
+        <div className="flex items-center gap-1">
+          <Star size={11} className="text-foreground fill-foreground" />
+          <span className="text-[12px] font-medium text-foreground">4.9</span>
+        </div>
+        <span className="w-px h-3 bg-border" />
+        <span className="text-[12px] text-muted-foreground">150+ проектов</span>
+        <span className="w-px h-3 bg-border" />
+        <span className="text-[12px] text-muted-foreground">проверенная студия</span>
+      </div>
+
       <button
         onClick={handleConnect}
         disabled={connecting}
-        className="btn-accent mt-4"
+        className="btn-accent"
       >
         {connecting ? (
           <>
