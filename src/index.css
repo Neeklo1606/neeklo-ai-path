@@ -310,3 +310,34 @@
 .animate-dot-1 { animation: dot-bounce 1.2s ease-in-out infinite; }
 .animate-dot-2 { animation: dot-bounce 1.2s ease-in-out 0.15s infinite; }
 .animate-dot-3 { animation: dot-bounce 1.2s ease-in-out 0.3s infinite; }
+
+/* Hero stagger animations */
+@keyframes hero-line-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hero-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes hero-scale-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.hero-line {
+  opacity: 0;
+  animation: hero-line-in 600ms ease-out both;
+}
+
+.hero-fade {
+  opacity: 0;
+  animation: hero-fade 500ms ease-out both;
+}
+
+.hero-scale {
+  opacity: 0;
+  animation: hero-scale-in 400ms ease-out both;
+}
