@@ -6,20 +6,20 @@ interface ChatMessageProps {
 }
 
 const AIAvatar = () => (
-  <div className="w-[30px] h-[30px] rounded-full bg-card border border-border flex items-center justify-center flex-shrink-0">
-    <Sparkles size={13} className="text-foreground" />
+  <div className="w-[32px] h-[32px] rounded-full bg-card border border-border flex items-center justify-center flex-shrink-0 animate-avatar-breathe">
+    <Sparkles size={13} className="text-foreground/70" />
   </div>
 );
 
 const ChatMessage = ({ role, content }: ChatMessageProps) => (
   <div
     className={`flex items-end ${
-      role === "user" ? "justify-end" : "justify-start gap-2"
+      role === "user" ? "justify-end" : "justify-start gap-2.5"
     } animate-message-in`}
   >
     {role === "ai" && <AIAvatar />}
-    <div className={`max-w-[80%] ${role === "user" ? "message-bubble-user" : "message-bubble-ai"}`}>
-      <p className="text-[14px] leading-[1.6] whitespace-pre-wrap">{content}</p>
+    <div className={`max-w-[78%] ${role === "user" ? "message-bubble-user" : "message-bubble-ai"}`}>
+      <p className="text-[14px] leading-[1.65] whitespace-pre-wrap">{content}</p>
     </div>
   </div>
 );
