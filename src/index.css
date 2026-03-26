@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,47 +6,44 @@
 
 @layer base {
   :root {
-    --background: 0 0% 4%;
-    --foreground: 213 31% 96%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
 
-    --card: 0 0% 6.5%;
-    --card-foreground: 213 31% 96%;
+    --card: 0 0% 96%;
+    --card-foreground: 0 0% 0%;
 
-    --popover: 0 0% 6.5%;
-    --popover-foreground: 213 31% 96%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
 
-    --primary: 217 91% 53%;
+    --primary: 0 0% 0%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 213 31% 96%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 0%;
 
-    --muted: 0 0% 10%;
-    --muted-foreground: 215 16% 52%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 42%;
 
-    --accent: 187 92% 43%;
+    --accent: 0 0% 0%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 55%;
+    --destructive: 0 72% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 14%;
-    --input: 0 0% 14%;
-    --ring: 217 91% 53%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 0%;
 
     --radius: 0.875rem;
 
-    --glow-primary: 0 0 20px hsl(217 91% 53% / 0.25);
-    --glow-accent: 0 0 20px hsl(187 92% 43% / 0.2);
-
-    --sidebar-background: 0 0% 5%;
-    --sidebar-foreground: 213 31% 96%;
-    --sidebar-primary: 217 91% 53%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 0%;
+    --sidebar-primary: 0 0% 0%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 10%;
-    --sidebar-accent-foreground: 213 31% 96%;
-    --sidebar-border: 0 0% 14%;
-    --sidebar-ring: 217 91% 53%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 0%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 0 0% 0%;
   }
 }
 
@@ -63,16 +60,6 @@
   }
 }
 
-@layer utilities {
-  .glow-primary {
-    box-shadow: var(--glow-primary);
-  }
-
-  .glow-accent {
-    box-shadow: var(--glow-accent);
-  }
-}
-
 @layer components {
   /* === Message bubbles === */
   .message-bubble-user {
@@ -82,14 +69,14 @@
   }
 
   .message-bubble-ai {
-    @apply bg-card text-card-foreground border border-border;
+    @apply bg-card text-card-foreground;
     padding: 10px 16px;
     border-radius: 20px 20px 20px 6px;
   }
 
   /* === Chips === */
   .chip-button {
-    @apply bg-card text-foreground rounded-full border border-border
+    @apply bg-primary text-primary-foreground rounded-full
            text-[13px] font-medium leading-none
            transition-all duration-150
            active:scale-[0.95];
@@ -98,31 +85,28 @@
 
   /* === Cards === */
   .game-card {
-    @apply bg-card border border-border rounded-2xl
+    @apply bg-background border border-border rounded-2xl
            transition-all duration-200;
     padding: 20px;
   }
 
   .game-card-reward {
-    @apply game-card;
-    border-color: hsl(217 91% 53% / 0.25);
-    box-shadow: var(--glow-primary);
+    @apply game-card border-foreground/15;
   }
 
   /* === Primary action button === */
   .btn-primary {
     @apply w-full bg-primary text-primary-foreground rounded-xl
            font-semibold text-[14px]
-           active:scale-[0.97] transition-transform duration-150
-           glow-primary;
+           active:scale-[0.97] transition-transform duration-150;
     padding: 13px 0;
   }
 
   .btn-accent {
-    @apply w-full bg-accent text-accent-foreground rounded-xl
+    @apply w-full bg-primary text-primary-foreground rounded-xl
            font-semibold text-[14px]
            active:scale-[0.97] transition-transform duration-150
-           glow-accent flex items-center justify-center gap-2;
+           flex items-center justify-center gap-2;
     padding: 13px 0;
   }
 
@@ -137,7 +121,6 @@
     padding: 24px 20px 0;
   }
 
-  /* Desktop centering — mobile app feel on large screens */
   @media (min-width: 768px) {
     .page-container,
     .min-h-screen {
@@ -147,20 +130,20 @@
   }
 
   .page-title {
-    @apply text-[22px] font-semibold text-foreground leading-tight;
+    @apply text-[22px] font-bold text-foreground leading-tight;
     margin-bottom: 24px;
   }
 
   /* === Tag pills === */
   .tag-primary {
-    @apply text-primary font-medium text-[11px] rounded-lg;
-    background: hsl(217 91% 53% / 0.08);
+    @apply text-foreground font-medium text-[11px] rounded-lg;
+    background: hsl(0 0% 0% / 0.06);
     padding: 5px 10px;
   }
 
   .tag-accent {
-    @apply text-accent font-medium text-[11px] rounded-lg;
-    background: hsl(187 92% 43% / 0.08);
+    @apply text-muted-foreground font-medium text-[11px] rounded-lg;
+    background: hsl(0 0% 0% / 0.04);
     padding: 5px 10px;
   }
 }
@@ -189,11 +172,6 @@
   30% { opacity: 0.9; transform: scale(1); }
 }
 
-@keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 6px hsl(217 91% 53% / 0.12); }
-  50% { box-shadow: 0 0 14px hsl(217 91% 53% / 0.3); }
-}
-
 @keyframes logo-appear {
   from { opacity: 0; transform: scale(0.92); filter: blur(3px); }
   to { opacity: 1; transform: scale(1); filter: blur(0); }
@@ -207,7 +185,6 @@
 .animate-message-in { animation: message-in 0.2s ease-out both; }
 .animate-chip-pop { animation: chip-pop 0.25s ease-out both; }
 .animate-card-reward { animation: card-reward 0.35s ease-out both; }
-.animate-glow-pulse { animation: glow-pulse 2.5s ease-in-out infinite; }
 .animate-logo-appear { animation: logo-appear 0.5s ease-out both; }
 .animate-slide-up { animation: slide-up 0.35s ease-out both; }
 

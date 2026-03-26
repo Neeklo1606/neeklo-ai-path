@@ -6,8 +6,8 @@ interface ChatMessageProps {
 }
 
 const AIAvatar = () => (
-  <div className="w-[30px] h-[30px] rounded-full bg-primary/8 border border-primary/15 flex items-center justify-center flex-shrink-0 animate-glow-pulse">
-    <Sparkles size={13} className="text-primary" />
+  <div className="w-[30px] h-[30px] rounded-full bg-card border border-border flex items-center justify-center flex-shrink-0">
+    <Sparkles size={13} className="text-foreground" />
   </div>
 );
 

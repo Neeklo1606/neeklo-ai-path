@@ -32,7 +32,7 @@ const ProjectDetailPage = () => {
     return (
       <div className="page-container">
         <div className="page-content">
-          <button onClick={() => navigate("/projects")} className="text-primary text-[14px]">
+          <button onClick={() => navigate("/projects")} className="text-foreground text-[14px] underline">
             ← Назад к проектам
           </button>
         </div>
@@ -45,7 +45,6 @@ const ProjectDetailPage = () => {
   return (
     <div className="page-container">
       <div className="page-content">
-        {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <button
             onClick={() => navigate("/projects")}
@@ -53,14 +52,13 @@ const ProjectDetailPage = () => {
           >
             <ArrowLeft size={16} className="text-foreground" />
           </button>
-          <h1 className="text-[18px] font-semibold text-foreground leading-tight truncate flex-1">{project.title}</h1>
+          <h1 className="text-[18px] font-bold text-foreground leading-tight truncate flex-1">{project.title}</h1>
         </div>
 
-        {/* Status card */}
         <div className="game-card mb-3 animate-message-in">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-11 h-11 rounded-xl bg-primary/8 border border-primary/10 flex items-center justify-center">
-              <Icon size={20} className="text-primary" />
+            <div className="w-11 h-11 rounded-xl bg-card border border-border flex items-center justify-center">
+              <Icon size={20} className="text-foreground" />
             </div>
             <div className="flex-1">
               <h2 className="text-[15px] font-semibold text-foreground">{project.title}</h2>
@@ -73,7 +71,6 @@ const ProjectDetailPage = () => {
           </div>
         </div>
 
-        {/* Description */}
         <div className="game-card mb-3 animate-message-in" style={{ animationDelay: "60ms" }}>
           <div className="flex items-center gap-2 mb-3">
             <FileText size={15} className="text-muted-foreground" />
@@ -82,7 +79,6 @@ const ProjectDetailPage = () => {
           <p className="text-[14px] text-foreground/80 leading-relaxed">{project.description}</p>
         </div>
 
-        {/* Manager */}
         <div className="game-card mb-3 animate-message-in" style={{ animationDelay: "120ms" }}>
           <div className="flex items-center gap-2 mb-3">
             <MessageSquare size={15} className="text-muted-foreground" />
@@ -91,7 +87,6 @@ const ProjectDetailPage = () => {
           <p className="text-[14px] text-foreground font-medium">{project.manager}</p>
         </div>
 
-        {/* Actions */}
         <div className="space-y-2.5 animate-slide-up" style={{ animationDelay: "180ms" }}>
           <button
             onClick={() => navigate("/manager-chat")}

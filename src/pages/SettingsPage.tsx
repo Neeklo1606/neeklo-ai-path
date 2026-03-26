@@ -4,7 +4,7 @@ import BottomNav from "@/components/BottomNav";
 
 const menuItems = [
   { icon: Bell, label: "Уведомления", description: "Включены" },
-  { icon: Moon, label: "Тема", description: "Тёмная" },
+  { icon: Moon, label: "Тема", description: "Светлая" },
   { icon: Globe, label: "Язык", description: "Русский" },
   { icon: Shield, label: "Безопасность", description: "" },
   { icon: HelpCircle, label: "Помощь", description: "" },
@@ -23,7 +23,7 @@ const SettingsPage = () => {
           >
             <ArrowLeft size={16} className="text-foreground" />
           </button>
-          <h1 className="text-[22px] font-semibold text-foreground leading-tight">Настройки</h1>
+          <h1 className="text-[22px] font-bold text-foreground leading-tight">Настройки</h1>
         </div>
 
         <div className="space-y-2">
@@ -33,7 +33,7 @@ const SettingsPage = () => {
               className="w-full game-card flex items-center gap-3.5 text-left animate-message-in"
               style={{ animationDelay: `${i * 40}ms` }}
             >
-              <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-card flex items-center justify-center flex-shrink-0">
                 <item.icon size={16} className="text-muted-foreground" />
               </div>
               <div className="flex-1 min-w-0">

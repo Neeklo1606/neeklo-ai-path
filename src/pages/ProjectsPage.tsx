@@ -39,8 +39,8 @@ const ProjectCard = ({ project, index, onClick }: { project: Project; index: num
       style={{ animationDelay: `${index * 60}ms` }}
     >
       <div className="flex items-center gap-3 mb-3.5">
-        <div className="w-10 h-10 rounded-xl bg-primary/8 border border-primary/10 flex items-center justify-center flex-shrink-0">
-          <Icon size={18} className="text-primary" />
+        <div className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center flex-shrink-0">
+          <Icon size={18} className="text-foreground" />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-[14px] font-semibold text-foreground leading-tight truncate">{project.title}</h3>
@@ -57,7 +57,7 @@ const ProjectCard = ({ project, index, onClick }: { project: Project; index: num
 
 const EmptyState = () => (
   <div className="flex flex-col items-center justify-center pt-28 px-8">
-    <div className="w-12 h-12 rounded-2xl bg-secondary border border-border flex items-center justify-center mb-4">
+    <div className="w-12 h-12 rounded-2xl bg-card border border-border flex items-center justify-center mb-4">
       <FolderOpen size={20} className="text-muted-foreground" />
     </div>
     <p className="text-[14px] text-muted-foreground text-center">
