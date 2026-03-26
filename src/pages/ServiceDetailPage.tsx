@@ -2,6 +2,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Play, Globe, Smartphone, Sparkles, ArrowRight } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 
+import workFashion from "@/assets/work-fashion.png";
+import workRacing from "@/assets/work-racing.jpg";
+import workStudio from "@/assets/work-studio.jpg";
+import workVision from "@/assets/work-vision.jpg";
+import workAssistant from "@/assets/work-assistant.jpg";
+import workEcommerce from "@/assets/work-ecommerce.jpg";
+
 interface ServiceData {
   icon: typeof Play;
   title: string;
@@ -9,7 +16,7 @@ interface ServiceData {
   desc: string;
   fullDesc: string;
   features: string[];
-  videos: { title: string; thumb: string; duration: string }[];
+  videos: { title: string; img: string; duration: string }[];
 }
 
 const services: Record<string, ServiceData> = {
@@ -27,9 +34,9 @@ const services: Record<string, ServiceData> = {
       "Озвучка и музыка",
     ],
     videos: [
-      { title: "Промо-ролик бренда", thumb: "🎬", duration: "0:30" },
-      { title: "Рекламный видеоролик", thumb: "🎥", duration: "0:45" },
-      { title: "Имиджевый ролик", thumb: "🎞️", duration: "1:00" },
+      { title: "Имиджевый ролик", img: workFashion, duration: "0:30" },
+      { title: "Промо для бренда", img: workRacing, duration: "0:45" },
+      { title: "Рекламный ролик", img: workStudio, duration: "1:00" },
     ],
   },
   "sajt-pod-klyuch": {
@@ -46,9 +53,9 @@ const services: Record<string, ServiceData> = {
       "Подключение аналитики",
     ],
     videos: [
-      { title: "Лендинг для стартапа", thumb: "🌐", duration: "0:25" },
-      { title: "Корпоративный сайт", thumb: "💼", duration: "0:40" },
-      { title: "Портфолио-сайт", thumb: "🎨", duration: "0:30" },
+      { title: "Лендинг студии", img: workStudio, duration: "0:25" },
+      { title: "Интернет-магазин", img: workEcommerce, duration: "0:40" },
+      { title: "Портфолио-сайт", img: workFashion, duration: "0:30" },
     ],
   },
   "telegram-mini-app": {
@@ -65,9 +72,9 @@ const services: Record<string, ServiceData> = {
       "Аналитика и push-уведомления",
     ],
     videos: [
-      { title: "Магазин в Telegram", thumb: "🛒", duration: "0:35" },
-      { title: "Сервис записи", thumb: "📅", duration: "0:28" },
-      { title: "Программа лояльности", thumb: "⭐", duration: "0:32" },
+      { title: "Vision AI App", img: workVision, duration: "0:35" },
+      { title: "AI-ассистент", img: workAssistant, duration: "0:28" },
+      { title: "Интернет-магазин", img: workEcommerce, duration: "0:32" },
     ],
   },
   "ai-agent": {
@@ -84,9 +91,9 @@ const services: Record<string, ServiceData> = {
       "Аналитика и отчёты",
     ],
     videos: [
-      { title: "AI-консультант", thumb: "🤖", duration: "0:40" },
-      { title: "Автоматизация продаж", thumb: "📈", duration: "0:35" },
-      { title: "Чат-бот для поддержки", thumb: "💬", duration: "0:30" },
+      { title: "AI-ассистент", img: workAssistant, duration: "0:40" },
+      { title: "Vision AI", img: workVision, duration: "0:35" },
+      { title: "Автоматизация", img: workStudio, duration: "0:30" },
     ],
   },
 };
@@ -155,24 +162,29 @@ const ServiceDetailPage = () => {
           </div>
         </div>
 
-        {/* Video examples */}
+        {/* Video examples with real images */}
         <h2 className="text-[18px] font-bold text-foreground mb-4">Примеры работ</h2>
         <div className="space-y-3 mb-6">
           {service.videos.map((v, i) => (
             <div
               key={i}
-              className="game-card flex items-center gap-3 animate-message-in"
-              style={{ animationDelay: `${i * 60}ms` }}
+              className="relative rounded-2xl overflow-hidden animate-message-in active:scale-[0.98] transition-transform cursor-pointer"
+              style={{ animationDelay: `${i * 80}ms` }}
             >
-              <div className="w-16 h-16 rounded-xl bg-card border border-border flex items-center justify-center flex-shrink-0 text-2xl">
-                {v.thumb}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-semibold text-foreground truncate">{v.title}</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">{v.duration}</p>
-              </div>
-              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                <Play size={14} className="text-primary-foreground ml-0.5" fill="currentColor" />
+              <img
+                src={v.img}
+                alt={v.title}
+                className="w-full aspect-video object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
+                <div>
+                  <p className="text-[14px] font-semibold text-white">{v.title}</p>
+                  <p className="text-[12px] text-white/70 mt-0.5">{v.duration}</p>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+                  <Play size={16} className="text-white ml-0.5" fill="currentColor" />
+                </div>
               </div>
             </div>
           ))}
