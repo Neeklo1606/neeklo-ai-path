@@ -54,7 +54,7 @@
 
 @layer components {
   /* ========================================
-     APP SHELL — Desktop device frame
+     APP SHELL — Full-width layout
      ======================================== */
   .app-shell {
     min-height: 100dvh;
@@ -67,50 +67,8 @@
     flex-direction: column;
   }
 
-  /* Desktop: center app in a phone-like frame */
-  @media (min-width: 768px) {
-    .app-shell {
-      background: hsl(0 0% 94%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px 0;
-      min-height: 100dvh;
-    }
-
-    .app-frame {
-      width: 100%;
-      max-width: var(--app-max-width);
-      height: calc(100dvh - 48px);
-      min-height: 0;
-      background: hsl(var(--background));
-      border-radius: 24px;
-      box-shadow:
-        0 0 0 1px hsl(0 0% 88%),
-        0 8px 40px -12px hsl(0 0% 0% / 0.12),
-        0 20px 60px -20px hsl(0 0% 0% / 0.08);
-      overflow: hidden;
-      overflow-y: auto;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-    }
-  }
-
-  @media (min-width: 1280px) {
-    .app-shell {
-      padding: 32px 0;
-    }
-
-    .app-frame {
-      max-width: 390px;
-      height: calc(100dvh - 64px);
-      border-radius: 28px;
-    }
-  }
-
   /* ========================================
-     FIXED ELEMENTS — Constrain to frame
+     FIXED ELEMENTS — Bottom bars (mobile only)
      ======================================== */
   .fixed-bottom-bar {
     position: fixed;
@@ -118,6 +76,13 @@
     left: 0;
     right: 0;
     z-index: 40;
+  }
+
+  @media (min-width: 768px) {
+    .fixed-bottom-bar {
+      position: static;
+      border-top: none;
+    }
   }
 
   .fixed-bottom-nav {
