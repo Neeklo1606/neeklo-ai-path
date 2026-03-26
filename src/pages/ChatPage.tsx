@@ -131,7 +131,7 @@ const ChatPage = () => {
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <div className="space-y-3.5" style={{ padding: "20px 20px 160px" }}>
+        <div className="space-y-4" style={{ padding: "20px 20px 160px" }}>
           {items.map((item, i) => {
             if (item.type === "message") {
               return <ChatMessage key={i} role={item.role} content={item.content} />;
