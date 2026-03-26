@@ -179,8 +179,10 @@
      ======================================== */
   .game-card {
     @apply bg-background border border-border rounded-2xl
-           transition-all duration-200;
+           transition-transform duration-100;
     padding: 20px;
+    -webkit-tap-highlight-color: transparent;
+    will-change: transform;
   }
 
   .game-card-reward {
