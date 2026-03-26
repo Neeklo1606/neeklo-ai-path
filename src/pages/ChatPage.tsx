@@ -154,10 +154,9 @@ const ChatPage = () => {
               return (
                 <BriefCard
                   key={i}
-                  title="Лендинг для стартапа"
-                  type="Landing Page"
+                  projectType="Landing Page"
+                  budget="$500–$2000"
                   timeline="2–3 недели"
-                  features={["Адаптивный дизайн", "SEO-оптимизация", "Форма заявки", "Аналитика"]}
                   onApprove={handleApproveBrief}
                 />
               );
@@ -168,7 +167,11 @@ const ChatPage = () => {
                   key={i}
                   price="$850"
                   timeline="14 дней"
-                  scope="Полный цикл: дизайн, разработка, запуск. Включает 2 раунда правок и техподдержку 30 дней."
+                  deliverables={[
+                    "Дизайн и разработка лендинга",
+                    "SEO-оптимизация и аналитика",
+                    "2 раунда правок + 30 дней поддержки",
+                  ]}
                   onConnect={handleConnectManager}
                 />
               );
