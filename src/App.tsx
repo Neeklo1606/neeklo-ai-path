@@ -14,6 +14,7 @@ import SettingsPage from "./pages/SettingsPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
 import ManagerChatPage from "./pages/ManagerChatPage";
 import ServiceDetailPage from "./pages/ServiceDetailPage";
+import LegalPage from "./pages/LegalPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/services/:slug" element={<ServiceDetailPage />} />
               <Route path="/manager-chat" element={<ManagerChatPage />} />
+              <Route path="/legal/:slug" element={<LegalPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>
