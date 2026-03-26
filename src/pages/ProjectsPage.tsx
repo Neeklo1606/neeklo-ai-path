@@ -55,16 +55,28 @@ const ProjectCard = ({ project, index, onClick }: { project: Project; index: num
   );
 };
 
-const EmptyState = () => (
-  <div className="flex flex-col items-center justify-center pt-28 px-8">
-    <div className="w-12 h-12 rounded-2xl bg-card border border-border flex items-center justify-center mb-4">
-      <FolderOpen size={20} className="text-muted-foreground" />
+const EmptyState = () => {
+  const navigate = useNavigate();
+  return (
+    <div className="flex flex-col items-center justify-center pt-28 px-8">
+      <div className="w-11 h-11 rounded-xl bg-card border border-border flex items-center justify-center mb-4">
+        <FolderOpen size={18} className="text-muted-foreground" />
+      </div>
+      <p className="text-[15px] font-medium text-foreground text-center mb-1.5">
+        Здесь появятся все твои проекты
+      </p>
+      <p className="text-[13px] text-muted-foreground text-center mb-6">
+        Создай первый проект через чат
+      </p>
+      <button
+        onClick={() => navigate("/chat")}
+        className="text-[13px] font-medium text-foreground underline underline-offset-2 active:scale-95 transition-transform"
+      >
+        Перейти в чат →
+      </button>
     </div>
-    <p className="text-[14px] text-muted-foreground text-center">
-      Здесь появятся все твои проекты
-    </p>
-  </div>
-);
+  );
+};
 
 const ProjectsPage = () => {
   const navigate = useNavigate();
