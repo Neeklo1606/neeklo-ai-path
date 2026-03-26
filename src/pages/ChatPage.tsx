@@ -166,6 +166,7 @@ const ChatPage = () => {
                   key={i}
                   onConnect={handleConnectManager}
                 />
+              );
             }
             return null;
           })}
