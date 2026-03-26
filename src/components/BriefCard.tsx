@@ -8,47 +8,34 @@ interface BriefCardProps {
 }
 
 const BriefCard = ({ projectType, budget, timeline, onApprove }: BriefCardProps) => (
-  <div className="game-card-reward animate-card-reward ml-10">
-    {/* Header */}
-    <div className="flex items-center gap-2 mb-5">
+  <div className="game-card-reward animate-card-reward ml-[38px]">
+    <div className="flex items-center gap-2.5 mb-5">
       <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-        <FileText size={15} className="text-primary" />
+        <FileText size={14} className="text-primary" />
       </div>
-      <span className="text-[13px] font-semibold uppercase tracking-widest text-primary">Бриф</span>
+      <span className="text-[12px] font-semibold uppercase tracking-[0.1em] text-primary">Бриф</span>
     </div>
 
-    {/* Fields */}
-    <div className="space-y-3.5 mb-6">
-      <div className="flex items-center gap-3">
-        <Layers size={16} className="text-muted-foreground flex-shrink-0" />
-        <div className="flex-1">
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5">Тип проекта</p>
-          <p className="text-[14px] font-medium text-foreground">{projectType}</p>
+    <div className="space-y-0 mb-6">
+      {[
+        { icon: Layers, label: "Тип проекта", value: projectType },
+        { icon: DollarSign, label: "Бюджет", value: budget },
+        { icon: Clock, label: "Срок", value: timeline },
+      ].map((field, idx) => (
+        <div key={field.label}>
+          {idx > 0 && <div className="h-px bg-border my-3" />}
+          <div className="flex items-center gap-3">
+            <field.icon size={15} className="text-muted-foreground flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide leading-none mb-1">{field.label}</p>
+              <p className="text-[14px] font-medium text-foreground leading-tight">{field.value}</p>
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="w-full h-px bg-border" />
-      <div className="flex items-center gap-3">
-        <DollarSign size={16} className="text-muted-foreground flex-shrink-0" />
-        <div className="flex-1">
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5">Бюджет</p>
-          <p className="text-[14px] font-medium text-foreground">{budget}</p>
-        </div>
-      </div>
-      <div className="w-full h-px bg-border" />
-      <div className="flex items-center gap-3">
-        <Clock size={16} className="text-muted-foreground flex-shrink-0" />
-        <div className="flex-1">
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5">Срок</p>
-          <p className="text-[14px] font-medium text-foreground">{timeline}</p>
-        </div>
-      </div>
+      ))}
     </div>
 
-    {/* Action */}
-    <button
-      onClick={onApprove}
-      className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-semibold text-[14px] active:scale-[0.97] transition-transform duration-150 glow-primary"
-    >
+    <button onClick={onApprove} className="btn-primary">
       Утвердить
     </button>
   </div>

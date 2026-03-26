@@ -6,8 +6,8 @@ interface ChatMessageProps {
 }
 
 const AIAvatar = () => (
-  <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 animate-glow-pulse">
-    <Sparkles size={14} className="text-primary" />
+  <div className="w-[30px] h-[30px] rounded-full bg-primary/8 border border-primary/15 flex items-center justify-center flex-shrink-0 animate-glow-pulse">
+    <Sparkles size={13} className="text-primary" />
   </div>
 );
 
@@ -19,7 +19,7 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => (
   >
     {role === "ai" && <AIAvatar />}
     <div className={`max-w-[80%] ${role === "user" ? "message-bubble-user" : "message-bubble-ai"}`}>
-      <p className="text-[14px] leading-[1.55] whitespace-pre-wrap">{content}</p>
+      <p className="text-[14px] leading-[1.6] whitespace-pre-wrap">{content}</p>
     </div>
   </div>
 );

@@ -29,11 +29,11 @@ const projects: Project[] = [
   },
 ];
 
-const ProjectCard = ({ project }: { project: Project }) => {
+const ProjectCard = ({ project, index }: { project: Project; index: number }) => {
   const Icon = project.icon;
   return (
-    <div className="game-card animate-message-in">
-      <div className="flex items-center gap-3 mb-3">
+    <div className="game-card animate-message-in" style={{ animationDelay: `${index * 60}ms` }}>
+      <div className="flex items-center gap-3 mb-3.5">
         <div className="w-10 h-10 rounded-xl bg-primary/8 border border-primary/10 flex items-center justify-center flex-shrink-0">
           <Icon size={18} className="text-primary" />
         </div>
@@ -43,15 +43,15 @@ const ProjectCard = ({ project }: { project: Project }) => {
         </div>
       </div>
       <div className="flex gap-2">
-        <span className="px-2.5 py-1 bg-primary/8 text-primary text-[11px] rounded-lg font-medium">{project.price}</span>
-        <span className="px-2.5 py-1 bg-accent/8 text-accent text-[11px] rounded-lg font-medium">{project.timeline}</span>
+        <span className="tag-primary">{project.price}</span>
+        <span className="tag-accent">{project.timeline}</span>
       </div>
     </div>
   );
 };
 
 const EmptyState = () => (
-  <div className="flex flex-col items-center justify-center pt-32 px-8">
+  <div className="flex flex-col items-center justify-center pt-28 px-8">
     <div className="w-12 h-12 rounded-2xl bg-secondary border border-border flex items-center justify-center mb-4">
       <FolderOpen size={20} className="text-muted-foreground" />
     </div>
@@ -61,29 +61,23 @@ const EmptyState = () => (
   </div>
 );
 
-const ProjectsPage = () => {
-  const hasProjects = projects.length > 0;
+const ProjectsPage = () => (
+  <div className="page-container">
+    <div className="page-content">
+      <h1 className="page-title">Проекты</h1>
 
-  return (
-    <div className="min-h-screen bg-background pb-24">
-      <div className="max-w-md mx-auto px-4 pt-6">
-        <h1 className="text-[22px] font-semibold text-foreground mb-5">Проекты</h1>
-
-        {hasProjects ? (
-          <div className="space-y-3">
-            {projects.map((project, i) => (
-              <div key={project.id} style={{ animationDelay: `${i * 80}ms` }}>
-                <ProjectCard project={project} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState />
-        )}
-      </div>
-      <BottomNav />
+      {projects.length > 0 ? (
+        <div className="space-y-3">
+          {projects.map((project, i) => (
+            <ProjectCard key={project.id} project={project} index={i} />
+          ))}
+        </div>
+      ) : (
+        <EmptyState />
+      )}
     </div>
-  );
-};
+    <BottomNav />
+  </div>
+);
 
 export default ProjectsPage;
