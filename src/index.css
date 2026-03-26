@@ -93,12 +93,6 @@
     z-index: 50;
   }
 
-  @media (min-width: 768px) {
-    .fixed-bottom-bar,
-    .fixed-bottom-nav {
-      position: absolute;
-    }
-  }
 
   /* ========================================
      MESSAGE BUBBLES
