@@ -13,7 +13,7 @@ const BottomNav = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed-bottom-nav bg-background/95 backdrop-blur-xl border-t border-border">
+    <nav className="fixed-bottom-nav bg-background/95 backdrop-blur-xl border-t border-border md:hidden">
       <div className="flex justify-around" style={{ padding: "10px 0 calc(10px + env(safe-area-inset-bottom))" }}>
         {navItems.map(({ icon: Icon, label, path }) => {
           const active = location.pathname === path;

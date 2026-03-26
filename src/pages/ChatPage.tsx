@@ -113,8 +113,8 @@ const ChatPage = () => {
 
   return (
     <div className="flex-1 bg-background flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-background border-b border-border">
+      {/* Header - mobile only */}
+      <header className="sticky top-0 z-30 bg-background border-b border-border md:hidden">
         <div className="flex items-center gap-3 h-[56px] px-5">
           <div className="w-[32px] h-[32px] rounded-full bg-card border border-border flex items-center justify-center">
             <Sparkles size={13} className="text-foreground" />
@@ -131,7 +131,21 @@ const ChatPage = () => {
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <div className="space-y-4" style={{ padding: "20px 20px 160px" }}>
+        <div className="max-w-[700px] mx-auto space-y-4" style={{ padding: "20px 20px 160px" }}>
+          {/* Desktop chat header */}
+          <div className="hidden md:flex items-center gap-3 mb-4 pb-4 border-b border-border">
+            <div className="w-[36px] h-[36px] rounded-full bg-card border border-border flex items-center justify-center">
+              <Sparkles size={14} className="text-foreground" />
+            </div>
+            <div>
+              <h2 className="text-[16px] font-semibold text-foreground leading-none mb-1">neeklo AI</h2>
+              <div className="flex items-center gap-1.5">
+                <span className="w-[5px] h-[5px] rounded-full bg-emerald-500" />
+                <span className="text-[12px] text-muted-foreground leading-none">онлайн</span>
+              </div>
+            </div>
+          </div>
+
           {items.map((item, i) => {
             if (item.type === "message") {
               return <ChatMessage key={i} role={item.role} content={item.content} />;
@@ -173,7 +187,49 @@ const ChatPage = () => {
         </div>
       </div>
 
-      <ChatInput onSend={handleUserInput} disabled={inputDisabled} />
+      {/* Desktop input - inline */}
+      <div className="hidden md:block border-t border-border bg-background">
+        <div className="max-w-[700px] mx-auto py-4 px-5">
+          <div className="flex items-center gap-2.5">
+            <input
+              type="text"
+              placeholder="Напишите сообщение..."
+              disabled={inputDisabled}
+              className="flex-1 bg-card rounded-full text-[14px] text-foreground placeholder:text-muted-foreground outline-none border-none focus:ring-0 transition-colors duration-200"
+              style={{ padding: "12px 20px" }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const target = e.target as HTMLInputElement;
+                  if (target.value.trim()) {
+                    handleUserInput(target.value.trim());
+                    target.value = "";
+                  }
+                }
+              }}
+            />
+            <button
+              disabled={inputDisabled}
+              className="w-[46px] h-[46px] rounded-full bg-primary text-primary-foreground flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-15 flex-shrink-0 shadow-sm"
+              onClick={(e) => {
+                const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
+                if (input.value.trim()) {
+                  handleUserInput(input.value.trim());
+                  input.value = "";
+                }
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="translate-x-[1px]">
+                <path d="m22 2-7 20-4-9-9-4zM22 2 11 13" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile input */}
+      <div className="md:hidden">
+        <ChatInput onSend={handleUserInput} disabled={inputDisabled} />
+      </div>
       <BottomNav />
     </div>
   );

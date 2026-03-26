@@ -48,7 +48,7 @@ const ManagerChatPage = () => {
   };
 
   return (
-    <div className="flex-1 bg-background flex flex-col">
+    <div className="flex-1 bg-background flex flex-col max-w-[800px] md:mx-auto md:w-full">
       <header className="sticky top-0 z-30 bg-background border-b border-border">
         <div className="flex items-center gap-3 h-[56px] px-5">
           <button
@@ -93,7 +93,7 @@ const ManagerChatPage = () => {
         </div>
       </div>
 
-      <div className="fixed-bottom-bar bg-background border-t border-border" style={{ bottom: "calc(60px + env(safe-area-inset-bottom))", padding: "12px 20px" }}>
+      <div className="fixed-bottom-bar md:static md:border-t-0 bg-background border-t border-border" style={{ bottom: "calc(60px + env(safe-area-inset-bottom))", padding: "12px 20px" }}>
         <div className="flex items-center gap-2.5">
           <input
             type="text"
