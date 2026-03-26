@@ -16,7 +16,7 @@ const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
   };
 
   return (
-    <div className="fixed bottom-[calc(3rem+env(safe-area-inset-bottom))] left-0 right-0 bg-background border-t border-border z-40" style={{ padding: "10px 20px" }}>
+    <div className="fixed bottom-[calc(60px+env(safe-area-inset-bottom))] left-0 right-0 bg-background border-t border-border z-40" style={{ padding: "10px 20px" }}>
       <div className="max-w-md mx-auto flex items-center gap-2">
         <input
           type="text"
