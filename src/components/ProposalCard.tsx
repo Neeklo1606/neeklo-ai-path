@@ -51,7 +51,7 @@ const ProposalCard = ({ onConnect }: ProposalCardProps) => {
   return (
     <div className="animate-proposal-in ml-[42px]">
       <div className="flex items-center gap-2.5 mb-3">
-        <div className="w-7 h-7 rounded-lg bg-card flex items-center justify-center">
+        <div className="w-7 h-7 rounded-xl bg-card flex items-center justify-center">
           <Zap size={14} className="text-foreground" />
         </div>
         <span className="text-[12px] font-semibold uppercase tracking-[0.1em] text-foreground">
