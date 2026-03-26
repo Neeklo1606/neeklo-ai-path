@@ -165,7 +165,7 @@ const ChatPage = () => {
                 <ProposalCard
                   key={i}
                   onConnect={handleConnectManager}
-              );
+                />
             }
             return null;
           })}
