@@ -1,7 +1,8 @@
-import { MessageSquare, FolderOpen, User } from "lucide-react";
+import { Home, MessageSquare, FolderOpen, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const navItems = [
+  { icon: Home, label: "Главная", path: "/" },
   { icon: MessageSquare, label: "Чат", path: "/chat" },
   { icon: FolderOpen, label: "Проекты", path: "/projects" },
   { icon: User, label: "Профиль", path: "/profile" },
