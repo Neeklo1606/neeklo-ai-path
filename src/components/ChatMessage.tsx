@@ -18,8 +18,8 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => (
     } animate-message-in`}
   >
     {role === "ai" && <AIAvatar />}
-    <div className={`max-w-[78%] ${role === "user" ? "message-bubble-user" : "message-bubble-ai"}`}>
-      <p className="text-[14px] leading-[1.65] whitespace-pre-wrap">{content}</p>
+    <div className={`max-w-[80%] ${role === "user" ? "message-bubble-user" : "message-bubble-ai"}`}>
+      <p className="text-[14px] md:text-[15px] leading-[1.6] whitespace-pre-wrap">{content}</p>
     </div>
   </div>
 );
