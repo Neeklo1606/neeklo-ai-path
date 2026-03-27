@@ -112,7 +112,7 @@ const ChatPage = () => {
   }, [navigate, scrollToBottom]);
 
   return (
-    <div className="flex-1 bg-background flex flex-col">
+    <div className="flex-1 bg-background flex flex-col max-w-[800px] md:mx-auto md:w-full">
       {/* Header - mobile only */}
       <header className="sticky top-0 z-30 bg-background border-b border-border md:hidden">
         <div className="flex items-center gap-3 h-[56px] px-5">
