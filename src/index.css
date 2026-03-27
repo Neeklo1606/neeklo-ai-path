@@ -99,20 +99,20 @@
      ======================================== */
   .message-bubble-user {
     @apply bg-primary text-primary-foreground;
-    padding: 11px 16px;
-    border-radius: 22px 22px 6px 22px;
+    padding: 12px 18px;
+    border-radius: 20px 20px 6px 20px;
   }
 
   .message-bubble-ai {
     @apply bg-card text-card-foreground;
-    padding: 11px 16px;
-    border-radius: 22px 22px 22px 6px;
+    padding: 12px 18px;
+    border-radius: 20px 20px 20px 6px;
   }
 
   @media (min-width: 768px) {
     .message-bubble-user,
     .message-bubble-ai {
-      padding: 13px 18px;
+      padding: 14px 20px;
     }
   }
 
