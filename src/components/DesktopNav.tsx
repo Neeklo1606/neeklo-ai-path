@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, MessageSquare, FolderOpen, User, Sparkles, Image, Search } from "lucide-react";
+import { Home, MessageSquare, FolderOpen, User, Sparkles, Image, Search, Bell } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SearchOverlay from "@/components/SearchOverlay";
 
@@ -56,6 +56,15 @@ const DesktopNav = () => {
               className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-150 ml-1"
             >
               <Search size={18} strokeWidth={1.8} />
+            </button>
+
+            {/* Notifications */}
+            <button
+              onClick={() => navigate("/notifications")}
+              className="relative flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-150"
+            >
+              <Bell size={18} strokeWidth={1.8} />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-destructive" />
             </button>
 
             {/* Profile */}
