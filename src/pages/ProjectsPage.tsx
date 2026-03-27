@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { FolderOpen, Briefcase, Palette, Star, MessageSquare, ChevronDown } from "lucide-react";
@@ -56,6 +56,22 @@ const projects: Project[] = [
   },
 ];
 
+const SkeletonCard = () => (
+  <div className="game-card">
+    <div className="flex items-center gap-3 mb-3">
+      <div className="w-9 h-9 rounded-xl bg-muted animate-pulse" />
+      <div className="flex-1">
+        <div className="h-4 w-3/4 bg-muted rounded-lg animate-pulse mb-1.5" />
+        <div className="h-3 w-1/2 bg-muted rounded-lg animate-pulse" />
+      </div>
+    </div>
+    <div className="flex gap-2">
+      <div className="h-6 w-16 bg-muted rounded-lg animate-pulse" />
+      <div className="h-6 w-16 bg-muted rounded-lg animate-pulse" />
+    </div>
+  </div>
+);
+
 const ProjectCard = ({ project, index }: { project: Project; index: number }) => {
   const [expanded, setExpanded] = useState(false);
   const navigate = useNavigate();
@@ -93,18 +109,15 @@ const ProjectCard = ({ project, index }: { project: Project; index: number }) =>
         </div>
       </button>
 
-      {/* Expanded content */}
       <div
         className={`overflow-hidden transition-all duration-300 ${
           expanded ? "max-h-[500px] opacity-100 mt-4" : "max-h-0 opacity-0 mt-0"
         }`}
       >
         <div className="border-t border-border pt-4">
-          {/* Timeline */}
           <div className="space-y-0 mb-5">
             {project.steps.map((s, i) => (
               <div key={i} className="flex items-start gap-3">
-                {/* Dot + line */}
                 <div className="flex flex-col items-center">
                   <div
                     className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${
@@ -121,7 +134,6 @@ const ProjectCard = ({ project, index }: { project: Project; index: number }) =>
                     }`} />
                   )}
                 </div>
-                {/* Label */}
                 <span
                   className={`text-[13px] -mt-0.5 ${
                     s.status === "done"
@@ -137,7 +149,6 @@ const ProjectCard = ({ project, index }: { project: Project; index: number }) =>
             ))}
           </div>
 
-          {/* Manager */}
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
               <span className="text-[12px] font-bold text-muted-foreground">
@@ -152,7 +163,8 @@ const ProjectCard = ({ project, index }: { project: Project; index: number }) =>
 
           <button
             onClick={() => navigate("/manager-chat")}
-            className="w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-[13px] font-semibold text-foreground hover:bg-muted transition-colors"
+            className="w-full flex items-center justify-center gap-2 border border-border bg-card h-[48px] text-[13px] font-semibold text-foreground hover:bg-muted transition-colors"
+            style={{ borderRadius: 12 }}
           >
             <MessageSquare size={14} />
             Написать менеджеру
@@ -187,12 +199,23 @@ const EmptyState = () => {
 };
 
 const ProjectsPage = () => {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 600);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <div className="page-container">
       <div className="page-content">
         <h1 className="page-title">Проекты</h1>
 
-        {projects.length > 0 ? (
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2].map((i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : projects.length > 0 ? (
           <div className="space-y-3">
             {projects.map((project, i) => (
               <ProjectCard key={project.id} project={project} index={i} />
