@@ -60,29 +60,29 @@ const ManagerChatPage = () => {
     <div className="flex-1 bg-background flex flex-col max-w-[800px] md:mx-auto md:w-full h-[calc(100dvh-60px)] md:h-dvh">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-background border-b border-border flex-shrink-0">
-        <div className="flex items-center gap-3 h-[56px] px-5">
+        <div className="flex items-center gap-3 h-[56px] px-4">
           <button
             onClick={() => navigate("/projects")}
-            className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center active:scale-95 transition-transform"
+            className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center active:scale-95 transition-transform flex-shrink-0"
           >
-            <ArrowLeft size={16} className="text-foreground" />
+            <ArrowLeft size={18} className="text-foreground" />
           </button>
-          <div className="w-[36px] h-[36px] rounded-full bg-foreground flex items-center justify-center flex-shrink-0">
-            <span className="text-[13px] font-semibold text-background leading-none">АК</span>
+          <div className="w-10 h-10 rounded-full bg-foreground flex items-center justify-center flex-shrink-0">
+            <span className="text-[13px] font-bold text-background leading-none tracking-tight">АК</span>
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-[15px] font-semibold text-foreground leading-none mb-1">Алексей К.</h1>
-            <div className="flex items-center gap-1.5">
-              <span className="w-[5px] h-[5px] rounded-full bg-emerald-500" />
+            <h1 className="text-[16px] font-bold text-foreground leading-tight">Алексей К.</h1>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="w-[6px] h-[6px] rounded-full bg-emerald-500" />
               <span className="text-[12px] text-muted-foreground leading-none">онлайн</span>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <button className="w-9 h-9 rounded-xl flex items-center justify-center active:scale-95 transition-transform text-muted-foreground hover:text-foreground">
-              <Phone size={18} />
+          <div className="flex items-center gap-0.5">
+            <button className="w-10 h-10 rounded-full flex items-center justify-center active:scale-95 transition-transform text-muted-foreground hover:text-foreground">
+              <Phone size={20} />
             </button>
-            <button className="w-9 h-9 rounded-xl flex items-center justify-center active:scale-95 transition-transform text-muted-foreground hover:text-foreground">
-              <Video size={18} />
+            <button className="w-10 h-10 rounded-full flex items-center justify-center active:scale-95 transition-transform text-muted-foreground hover:text-foreground">
+              <Video size={20} />
             </button>
           </div>
         </div>
@@ -90,27 +90,27 @@ const ManagerChatPage = () => {
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
-        <div className="space-y-3 px-5 pt-5 pb-[200px] md:pb-[140px]">
+        <div className="space-y-4 px-4 pt-5 pb-[200px] md:pb-[140px]">
           {messages.map((msg, i) => (
             <div
               key={i}
               className={`flex items-end ${msg.role === "user" ? "justify-end" : "justify-start gap-2.5"} animate-message-in`}
             >
               {msg.role === "manager" && (
-                <div className="w-[32px] h-[32px] rounded-full bg-foreground flex items-center justify-center flex-shrink-0">
-                  <span className="text-[11px] font-semibold text-background leading-none">АК</span>
+                <div className="w-[34px] h-[34px] rounded-full bg-foreground flex items-center justify-center flex-shrink-0 mb-0.5">
+                  <span className="text-[11px] font-bold text-background leading-none tracking-tight">АК</span>
                 </div>
               )}
-              <div className={`max-w-[78%] md:max-w-[70%] ${msg.role === "user" ? "message-bubble-user" : "message-bubble-ai"}`}>
-                <p className="text-[14px] md:text-[15px] leading-[1.65] whitespace-pre-wrap">{msg.content}</p>
-                <div className={`flex items-center gap-1 mt-1 justify-end`}>
-                  <span className={`text-[10px] ${msg.role === "user" ? "text-primary-foreground/50" : "text-muted-foreground/50"}`}>
+              <div className={`max-w-[75%] ${msg.role === "user" ? "message-bubble-user" : "message-bubble-ai"}`}>
+                <p className="text-[14.5px] md:text-[15px] leading-[1.55] whitespace-pre-wrap">{msg.content}</p>
+                <div className="flex items-center gap-1 mt-1.5 justify-end">
+                  <span className={`text-[11px] ${msg.role === "user" ? "text-primary-foreground/40" : "text-muted-foreground/40"}`}>
                     {msg.time}
                   </span>
                   {msg.role === "user" && (
                     msg.status === "read"
-                      ? <CheckCheck size={12} className="text-primary-foreground/50" />
-                      : <Check size={12} className="text-primary-foreground/50" />
+                      ? <CheckCheck size={13} className="text-primary-foreground/40" />
+                      : <Check size={13} className="text-primary-foreground/40" />
                   )}
                 </div>
               </div>
@@ -118,8 +118,8 @@ const ManagerChatPage = () => {
           ))}
           {isTyping && (
             <div className="flex items-end justify-start gap-2.5 animate-message-in">
-              <div className="w-[32px] h-[32px] rounded-full bg-foreground flex items-center justify-center flex-shrink-0">
-                <span className="text-[11px] font-semibold text-background leading-none">АК</span>
+              <div className="w-[34px] h-[34px] rounded-full bg-foreground flex items-center justify-center flex-shrink-0 mb-0.5">
+                <span className="text-[11px] font-bold text-background leading-none tracking-tight">АК</span>
               </div>
               <div className="message-bubble-ai">
                 <TypingIndicator />
@@ -132,21 +132,21 @@ const ManagerChatPage = () => {
       {/* Quick replies + Input */}
       <div className="fixed-bottom-bar md:static bg-background border-t border-border flex-shrink-0" style={{ bottom: "calc(60px + env(safe-area-inset-bottom))" }}>
         {/* Quick replies */}
-        <div className="flex gap-2 px-5 pt-3 pb-1 overflow-x-auto no-scrollbar">
+        <div className="flex gap-2 px-4 pt-3 pb-1.5 overflow-x-auto no-scrollbar">
           {quickReplies.map((text) => (
             <button
               key={text}
               onClick={() => setInput(text)}
-              className="flex-shrink-0 px-4 py-2 rounded-full bg-card border border-border text-[13px] text-foreground active:scale-95 transition-transform hover:bg-accent"
+              className="flex-shrink-0 px-4 py-2.5 rounded-full bg-card border border-border text-[13px] font-medium text-foreground active:scale-95 transition-transform hover:bg-accent"
             >
               {text}
             </button>
           ))}
         </div>
         {/* Input bar */}
-        <div className="flex items-center gap-2.5 px-5 pb-3 pt-2">
-          <button className="w-[42px] h-[42px] rounded-full bg-card flex items-center justify-center flex-shrink-0 text-muted-foreground hover:text-foreground active:scale-90 transition-all">
-            <Paperclip size={18} />
+        <div className="flex items-center gap-2 px-4 pb-3 pt-1.5">
+          <button className="w-[44px] h-[44px] rounded-full bg-card border border-border flex items-center justify-center flex-shrink-0 text-muted-foreground hover:text-foreground active:scale-90 transition-all">
+            <Paperclip size={19} />
           </button>
           <input
             type="text"
@@ -154,15 +154,14 @@ const ManagerChatPage = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder="Написать..."
-            className="flex-1 bg-card rounded-full text-[14px] text-foreground placeholder:text-muted-foreground outline-none border-none focus:ring-0 transition-colors duration-200"
-            style={{ padding: "12px 20px" }}
+            className="flex-1 h-[44px] bg-card rounded-full text-[14px] text-foreground placeholder:text-muted-foreground outline-none border border-border focus:ring-0 transition-colors duration-200 px-5"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim()}
-            className="w-[46px] h-[46px] rounded-full bg-primary text-primary-foreground flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-15 flex-shrink-0 shadow-sm"
+            className="w-[44px] h-[44px] rounded-full bg-muted text-muted-foreground flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-20 flex-shrink-0"
           >
-            <Send size={18} className="translate-x-[1px]" />
+            <Send size={18} className="translate-x-[1px] -translate-y-[0.5px]" />
           </button>
         </div>
       </div>
