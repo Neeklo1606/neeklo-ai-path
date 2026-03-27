@@ -144,9 +144,10 @@
      CARDS
      ======================================== */
   .game-card {
-    @apply bg-background border border-border rounded-2xl
+    @apply bg-background border border-border
            transition-transform duration-100;
-    padding: 20px;
+    border-radius: 12px;
+    padding: 16px;
     -webkit-tap-highlight-color: transparent;
     will-change: transform;
   }
@@ -157,7 +158,7 @@
 
   @media (min-width: 768px) {
     .game-card {
-      padding: 24px;
+      padding: 20px;
     }
   }
 
@@ -165,26 +166,30 @@
      BUTTONS
      ======================================== */
   .btn-primary {
-    @apply w-full bg-primary text-primary-foreground rounded-xl
+    @apply w-full bg-primary text-primary-foreground
            font-semibold text-[14px]
            active:scale-[0.97] transition-transform duration-100;
-    padding: 13px 0;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
     -webkit-tap-highlight-color: transparent;
   }
 
   .btn-accent {
-    @apply w-full bg-primary text-primary-foreground rounded-xl
+    @apply w-full bg-primary text-primary-foreground
            font-semibold text-[14px]
            active:scale-[0.97] transition-transform duration-100
            flex items-center justify-center gap-2;
-    padding: 13px 0;
+    height: 48px;
+    border-radius: 12px;
     -webkit-tap-highlight-color: transparent;
   }
 
   @media (min-width: 768px) {
     .btn-primary,
     .btn-accent {
-      padding: 15px 0;
       font-size: 15px;
     }
   }
@@ -207,13 +212,13 @@
 
   .page-content {
     @apply mx-auto;
-    padding: 24px 20px 0;
+    padding: 24px 16px 0;
     max-width: var(--app-max-width);
   }
 
   @media (min-width: 768px) {
     .page-content {
-      padding: 32px 32px 0;
+      padding: 32px 16px 0;
       max-width: 800px;
     }
   }
@@ -340,4 +345,14 @@
 .hero-scale {
   opacity: 0;
   animation: hero-scale-in 400ms ease-out both;
+}
+
+/* Page transition */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-page-in {
+  animation: page-in 250ms ease-out both;
 }

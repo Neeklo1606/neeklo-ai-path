@@ -24,7 +24,7 @@ const CasesPage = () => {
 
   return (
     <div className="flex-1 bg-background text-foreground pb-24 md:pb-0">
-      <div className="max-w-[1200px] mx-auto px-5 pt-10 md:pt-16">
+      <div className="max-w-[1200px] mx-auto px-4 pt-10 md:pt-16">
         {/* Header */}
         <div className="flex items-center gap-3 mb-2">
           <h1 className="text-[28px] md:text-[36px] font-extrabold tracking-tight">
@@ -63,7 +63,7 @@ const CasesPage = () => {
               className="game-card group overflow-hidden"
             >
               {/* Placeholder image */}
-              <div className="aspect-video bg-muted rounded-xl mb-4 flex items-center justify-center">
+              <div className="aspect-video bg-muted mb-4 flex items-center justify-center" style={{ borderRadius: 12 }}>
                 <Briefcase size={28} className="text-muted-foreground/40" />
               </div>
 
