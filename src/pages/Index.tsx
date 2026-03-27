@@ -39,13 +39,17 @@ const StatItem = ({ target, suffix, label, active }: { target: number; suffix: s
   const value = useCountUp(target, active);
   return (
     <div className="text-center">
-      <p className="text-[24px] md:text-[28px] font-extrabold text-foreground">
+      <p className="text-[40px] md:text-[64px] font-[800] leading-none text-foreground tracking-tight">
         {value}{suffix}
       </p>
-      <p className="text-[11px] text-muted-foreground mt-0.5 uppercase tracking-wide">{label}</p>
+      <p className="text-[12px] md:text-[13px] text-muted-foreground mt-2 uppercase" style={{ letterSpacing: "2px" }}>{label}</p>
     </div>
   );
 };
+
+const marqueeItems = [
+  "AI-ролики", "Сайты под ключ", "Telegram Mini App", "AI-агенты", "Автоматизация", "Контент",
+];
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -67,20 +71,50 @@ const LandingPage = () => {
     transition: `opacity 500ms ease-out ${delay}ms, transform 500ms ease-out ${delay}ms`,
   });
 
+  const marqueeContent = marqueeItems.map((item, i) => (
+    <span key={i} className="flex items-center gap-6 shrink-0">
+      <span>{item}</span>
+      <span className="text-muted-foreground/30">·</span>
+    </span>
+  ));
+
   return (
     <div className="flex-1 bg-background text-foreground pb-24 md:pb-0">
       {/* HERO */}
-      <section className="min-h-[85dvh] md:min-h-0 md:py-24 flex flex-col items-center justify-center relative px-4">
-        <div className="relative z-10 flex flex-col items-center text-center w-full max-w-[600px] mx-auto">
-          {/* Logo (mobile) */}
-          <div className="animate-logo-appear md:hidden">
-            <p className="text-[32px] font-extrabold tracking-tight mb-0.5">neeklo</p>
-            <p className="text-[13px] text-muted-foreground tracking-widest uppercase">AI-продакшн студия</p>
+      <section className="h-[100dvh] flex flex-col items-center justify-center relative px-4 overflow-hidden">
+        {/* Background grid pattern */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `linear-gradient(hsl(var(--foreground) / 0.06) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground) / 0.06) 1px, transparent 1px)`,
+            backgroundSize: "60px 60px",
+          }}
+        />
+        {/* Background glow */}
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            top: "-100px",
+            right: "-100px",
+            width: 600,
+            height: 600,
+            borderRadius: "50%",
+            background: "hsl(var(--foreground) / 0.04)",
+            filter: "blur(120px)",
+          }}
+        />
+
+        <div className="relative z-10 flex flex-col items-center text-center w-full max-w-[780px] mx-auto md:pt-[120px] md:pb-[80px]">
+          {/* Floating badge */}
+          <div className="animate-logo-appear mb-8">
+            <span className="hero-badge inline-flex items-center gap-1.5 bg-foreground text-background text-[13px] font-medium px-4 py-2 rounded-full">
+              ✦ AI-продакшн студия · Москва
+            </span>
           </div>
 
-          {/* Headline — stagger reveal */}
-          <div className="mt-12 md:mt-0">
-            <h1 className="text-[36px] md:text-[52px] lg:text-[60px] font-extrabold leading-[1.1] tracking-tight mb-5 md:mb-6">
+          {/* Headline */}
+          <div>
+            <h1 className="text-[56px] md:text-[96px] font-[800] leading-[0.95] tracking-[-1.5px] md:tracking-[-3px] mb-5 md:mb-6">
               <span className="inline-block hero-line" style={{ animationDelay: "0ms" }}>От идеи</span>
               <br />
               <span className="inline-block hero-line" style={{ animationDelay: "150ms" }}>до результата</span>
@@ -100,14 +134,14 @@ const LandingPage = () => {
             </p>
           </div>
 
-          {/* Buttons — fade + scale */}
+          {/* Buttons */}
           <div
-            className="w-full max-w-[400px] flex flex-col md:flex-row gap-3 mb-14 hero-scale"
+            className="w-full max-w-[440px] flex flex-col md:flex-row gap-3 mb-14 hero-scale"
             style={{ animationDelay: "700ms" }}
           >
             <button
               onClick={() => navigate("/chat")}
-              className="btn-primary flex items-center justify-center gap-2 md:flex-1"
+              className="btn-hero-primary flex items-center justify-center gap-2 md:flex-1"
             >
               Заказать проект
               <ArrowRight size={16} />
@@ -116,18 +150,29 @@ const LandingPage = () => {
               onClick={() => {
                 document.getElementById("works")?.scrollIntoView({ behavior: "smooth" });
               }}
-              className="md:flex-1 bg-transparent text-foreground font-semibold text-[14px] border border-border active:scale-[0.97] transition-transform duration-100 flex items-center justify-center"
-              style={{ height: 48, borderRadius: 12, WebkitTapHighlightColor: "transparent" }}
+              className="btn-hero-secondary md:flex-1"
             >
               Смотреть работы ↓
             </button>
           </div>
 
-          {/* STATS — count up on scroll */}
-          <div ref={stats.ref} className="w-full grid grid-cols-3 gap-4 max-w-[400px]" style={revealStyle(stats.visible)}>
+          {/* STATS */}
+          <div
+            ref={stats.ref}
+            className="w-full max-w-[540px] border-t border-b border-border py-6 grid grid-cols-3 gap-4"
+            style={revealStyle(stats.visible)}
+          >
             <StatItem target={150} suffix="+" label="проектов" active={stats.visible} />
             <StatItem target={48} suffix="ч" label="срок сдачи" active={stats.visible} />
             <StatItem target={95} suffix="%" label="довольны" active={stats.visible} />
+          </div>
+
+          {/* Marquee */}
+          <div className="w-full overflow-hidden mt-8 hero-fade" style={{ animationDelay: "900ms" }}>
+            <div className="hero-marquee flex gap-6 text-[14px] text-muted-foreground whitespace-nowrap">
+              {marqueeContent}
+              {marqueeContent}
+            </div>
           </div>
         </div>
       </section>
