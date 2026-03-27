@@ -116,6 +116,16 @@ const ManagerChatPage = () => {
               </div>
             </div>
           ))}
+          {isTyping && (
+            <div className="flex items-end justify-start gap-2.5 animate-message-in">
+              <div className="w-[32px] h-[32px] rounded-full bg-foreground flex items-center justify-center flex-shrink-0">
+                <span className="text-[11px] font-semibold text-background leading-none">АК</span>
+              </div>
+              <div className="message-bubble-ai">
+                <TypingIndicator />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
