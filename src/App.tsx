@@ -19,6 +19,7 @@ import ServicesPage from "./pages/ServicesPage";
 import ServiceDetailPage from "./pages/ServiceDetailPage";
 import LegalPage from "./pages/LegalPage";
 import CasesPage from "./pages/CasesPage";
+import OrderPage from "./pages/OrderPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ const App = () => {
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/services/:slug" element={<ServiceDetailPage />} />
+              <Route path="/order/:serviceId" element={<OrderPage />} />
               <Route path="/manager-chat" element={<ManagerChatPage />} />
               <Route path="/legal/:slug" element={<LegalPage />} />
               <Route path="*" element={<NotFound />} />
