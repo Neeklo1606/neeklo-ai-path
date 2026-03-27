@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useCountUp } from "@/hooks/useCountUp";
 
+import Plasma from "@/components/Plasma";
 import workFashion from "@/assets/work-fashion.png";
 import workRacing from "@/assets/work-racing.jpg";
 import workStudio from "@/assets/work-studio.jpg";
@@ -70,11 +71,25 @@ const LandingPage = () => {
   return (
     <div className="flex-1 bg-background text-foreground pb-24 md:pb-0">
       {/* HERO */}
-      <section className="flex flex-col items-center justify-center relative px-4" style={{ paddingTop: 80, paddingBottom: 60 }}>
+      <section className="relative flex flex-col items-center justify-center px-4 overflow-hidden" style={{ paddingTop: 80, paddingBottom: 60 }}>
+        {/* Plasma background */}
+        <div className="absolute inset-0 z-0">
+          <Plasma
+            color="#000000"
+            speed={0.6}
+            direction="forward"
+            scale={1.2}
+            opacity={0.15}
+            mouseInteractive={true}
+          />
+          {/* Gradient overlay for readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
+        </div>
+
         <div className="relative z-10 flex flex-col items-center text-center w-full max-w-[780px] mx-auto">
           {/* Badge */}
           <div className="animate-logo-appear mb-8">
-            <span className="inline-flex items-center gap-1.5 text-foreground text-[12px] font-medium px-3.5 py-1.5 rounded-full" style={{ background: "#F5F5F5" }}>
+            <span className="inline-flex items-center gap-1.5 text-foreground text-[12px] font-medium px-3.5 py-1.5 rounded-full border border-border bg-background/80 backdrop-blur-sm">
               ✦ AI-продакшн студия · Москва
             </span>
           </div>
@@ -116,7 +131,7 @@ const LandingPage = () => {
               onClick={() => {
                 document.getElementById("works")?.scrollIntoView({ behavior: "smooth" });
               }}
-              className="btn-hero-secondary md:flex-1"
+              className="btn-hero-secondary md:flex-1 backdrop-blur-sm"
             >
               Смотреть работы ↓
             </button>
@@ -125,7 +140,7 @@ const LandingPage = () => {
           {/* STATS */}
           <div
             ref={stats.ref}
-            className="w-full max-w-[500px] border-t border-b border-border py-6 grid grid-cols-3 gap-4"
+            className="w-full max-w-[500px] border-t border-b border-border/50 py-6 grid grid-cols-3 gap-4 backdrop-blur-sm"
             style={revealStyle(stats.visible)}
           >
             <StatItem target={150} suffix="+" label="проектов" active={stats.visible} />
