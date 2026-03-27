@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import DesktopNav from "@/components/DesktopNav";
+import Onboarding from "@/components/Onboarding";
 import Index from "./pages/Index";
 import ChatPage from "./pages/ChatPage";
 import ProjectsPage from "./pages/ProjectsPage";
@@ -20,7 +22,16 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => !localStorage.getItem("neeklo_onboarded")
+  );
+
+  if (showOnboarding) {
+    return <Onboarding onComplete={() => setShowOnboarding(false)} />;
+  }
+
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -49,6 +60,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
