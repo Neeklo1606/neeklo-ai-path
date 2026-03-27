@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Paperclip, Phone, Video, Check, CheckCheck } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import TypingIndicator from "@/components/TypingIndicator";
 
 interface Message {
   role: "user" | "manager";
