@@ -7,7 +7,7 @@ import BriefCard from "@/components/BriefCard";
 import ProposalCard from "@/components/ProposalCard";
 import BottomNav from "@/components/BottomNav";
 import { useNavigate } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Send } from "lucide-react";
 
 type ChatItem =
   | { type: "message"; role: "user" | "ai"; content: string }
@@ -35,6 +35,7 @@ const ChatPage = () => {
   const [items, setItems] = useState<ChatItem[]>([]);
   const [step, setStep] = useState(0);
   const [inputDisabled, setInputDisabled] = useState(false);
+  const [desktopInput, setDesktopInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const initialized = useRef(false);
@@ -111,41 +112,51 @@ const ChatPage = () => {
     }, 1000);
   }, [navigate, scrollToBottom]);
 
+  const handleDesktopSend = useCallback(() => {
+    if (!desktopInput.trim() || inputDisabled) return;
+    handleUserInput(desktopInput.trim());
+    setDesktopInput("");
+  }, [desktopInput, inputDisabled, handleUserInput]);
+
   return (
-    <div className="flex-1 bg-background flex flex-col max-w-[800px] md:mx-auto md:w-full">
-      {/* Header - mobile only */}
+    <div className="flex-1 bg-background flex flex-col h-[calc(100vh-64px)] md:h-[calc(100vh-64px)]">
+      {/* Mobile header */}
       <header className="sticky top-0 z-30 bg-background border-b border-border md:hidden">
-        <div className="flex items-center gap-3 h-[56px] px-5">
-          <div className="w-[32px] h-[32px] rounded-full bg-card border border-border flex items-center justify-center">
-            <Sparkles size={13} className="text-foreground" />
+        <div className="flex items-center gap-3 h-[56px] px-4">
+          <div className="w-[36px] h-[36px] rounded-full bg-card border border-border flex items-center justify-center">
+            <Sparkles size={14} className="text-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-[15px] font-semibold text-foreground leading-none mb-1">neeklo AI</h1>
+            <h1 className="text-[15px] font-semibold text-foreground leading-none mb-0.5">neeklo AI</h1>
             <div className="flex items-center gap-1.5">
-              <span className="w-[5px] h-[5px] rounded-full bg-emerald-500" />
+              <span className="w-[6px] h-[6px] rounded-full bg-emerald-500" />
               <span className="text-[12px] text-muted-foreground leading-none">онлайн</span>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <div className="max-w-[700px] mx-auto space-y-4" style={{ padding: "20px 20px 160px" }}>
-          {/* Desktop chat header */}
-          <div className="hidden md:flex items-center gap-3 mb-4 pb-4 border-b border-border">
-            <div className="w-[36px] h-[36px] rounded-full bg-card border border-border flex items-center justify-center">
-              <Sparkles size={14} className="text-foreground" />
+      {/* Desktop header */}
+      <div className="hidden md:block border-b border-border bg-background">
+        <div className="max-w-[760px] mx-auto px-6">
+          <div className="flex items-center gap-3 h-[60px]">
+            <div className="w-[40px] h-[40px] rounded-full bg-card border border-border flex items-center justify-center">
+              <Sparkles size={15} className="text-foreground" />
             </div>
             <div>
-              <h2 className="text-[16px] font-semibold text-foreground leading-none mb-1">neeklo AI</h2>
+              <h2 className="text-[16px] font-semibold text-foreground leading-none mb-0.5">neeklo AI</h2>
               <div className="flex items-center gap-1.5">
-                <span className="w-[5px] h-[5px] rounded-full bg-emerald-500" />
+                <span className="w-[6px] h-[6px] rounded-full bg-emerald-500" />
                 <span className="text-[12px] text-muted-foreground leading-none">онлайн</span>
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
+      {/* Messages area - scrollable */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
+        <div className="max-w-[760px] mx-auto px-4 md:px-6 py-5 space-y-3 md:space-y-4 pb-4">
           {items.map((item, i) => {
             if (item.type === "message") {
               return <ChatMessage key={i} role={item.role} content={item.content} />;
@@ -187,40 +198,25 @@ const ChatPage = () => {
         </div>
       </div>
 
-      {/* Desktop input - inline */}
+      {/* Desktop input - pinned bottom */}
       <div className="hidden md:block border-t border-border bg-background">
-        <div className="max-w-[700px] mx-auto py-4 px-5">
-          <div className="flex items-center gap-2.5">
+        <div className="max-w-[760px] mx-auto px-6 py-3">
+          <div className="flex items-center gap-3">
             <input
               type="text"
+              value={desktopInput}
+              onChange={(e) => setDesktopInput(e.target.value)}
               placeholder="Напишите сообщение..."
               disabled={inputDisabled}
-              className="flex-1 bg-card rounded-full text-[14px] text-foreground placeholder:text-muted-foreground outline-none border-none focus:ring-0 transition-colors duration-200"
-              style={{ padding: "12px 20px" }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  const target = e.target as HTMLInputElement;
-                  if (target.value.trim()) {
-                    handleUserInput(target.value.trim());
-                    target.value = "";
-                  }
-                }
-              }}
+              className="flex-1 bg-card rounded-2xl text-[15px] text-foreground placeholder:text-muted-foreground outline-none border-none focus:ring-0 transition-colors duration-200 h-[48px] px-5"
+              onKeyDown={(e) => e.key === "Enter" && handleDesktopSend()}
             />
             <button
-              disabled={inputDisabled}
-              className="w-[46px] h-[46px] rounded-full bg-primary text-primary-foreground flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-15 flex-shrink-0 shadow-sm"
-              onClick={(e) => {
-                const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
-                if (input.value.trim()) {
-                  handleUserInput(input.value.trim());
-                  input.value = "";
-                }
-              }}
+              onClick={handleDesktopSend}
+              disabled={!desktopInput.trim() || inputDisabled}
+              className="w-[48px] h-[48px] rounded-full bg-primary text-primary-foreground flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-15 flex-shrink-0"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="translate-x-[1px]">
-                <path d="m22 2-7 20-4-9-9-4zM22 2 11 13" />
-              </svg>
+              <Send size={18} className="translate-x-[1px]" />
             </button>
           </div>
         </div>
