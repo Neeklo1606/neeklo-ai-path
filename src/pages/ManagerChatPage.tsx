@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Paperclip, Phone, Video, Check, CheckCheck } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import TypingIndicator from "@/components/TypingIndicator";
 
 interface Message {
   role: "user" | "manager";
@@ -23,6 +24,7 @@ const ManagerChatPage = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -33,7 +35,7 @@ const ManagerChatPage = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isTyping]);
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -41,15 +43,17 @@ const ManagerChatPage = () => {
     const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
     setMessages((prev) => [...prev, { role: "user", content: input.trim(), time, status: "read" }]);
     setInput("");
+    setIsTyping(true);
     scrollToBottom();
 
     setTimeout(() => {
+      setIsTyping(false);
       setMessages((prev) => [
         ...prev,
         { role: "manager", content: "Отлично, принял! Вернусь с ответом в ближайшее время.", time },
       ]);
       scrollToBottom();
-    }, 1200);
+    }, 2000);
   };
 
   return (
@@ -112,6 +116,16 @@ const ManagerChatPage = () => {
               </div>
             </div>
           ))}
+          {isTyping && (
+            <div className="flex items-end justify-start gap-2.5 animate-message-in">
+              <div className="w-[32px] h-[32px] rounded-full bg-foreground flex items-center justify-center flex-shrink-0">
+                <span className="text-[11px] font-semibold text-background leading-none">АК</span>
+              </div>
+              <div className="message-bubble-ai">
+                <TypingIndicator />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
