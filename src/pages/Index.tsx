@@ -70,7 +70,7 @@ const LandingPage = () => {
   return (
     <div className="flex-1 bg-background text-foreground pb-24 md:pb-0">
       {/* HERO */}
-      <section className="min-h-[85dvh] md:min-h-0 md:py-24 flex flex-col items-center justify-center relative px-5">
+      <section className="min-h-[85dvh] md:min-h-0 md:py-24 flex flex-col items-center justify-center relative px-4">
         <div className="relative z-10 flex flex-col items-center text-center w-full max-w-[600px] mx-auto">
           {/* Logo (mobile) */}
           <div className="animate-logo-appear md:hidden">
@@ -116,8 +116,8 @@ const LandingPage = () => {
               onClick={() => {
                 document.getElementById("works")?.scrollIntoView({ behavior: "smooth" });
               }}
-              className="md:flex-1 bg-transparent text-foreground font-semibold text-[14px] rounded-xl border border-border active:scale-[0.97] transition-transform duration-100"
-              style={{ padding: "13px 24px", WebkitTapHighlightColor: "transparent" }}
+              className="md:flex-1 bg-transparent text-foreground font-semibold text-[14px] border border-border active:scale-[0.97] transition-transform duration-100 flex items-center justify-center"
+              style={{ height: 48, borderRadius: 12, WebkitTapHighlightColor: "transparent" }}
             >
               Смотреть работы ↓
             </button>
@@ -133,7 +133,7 @@ const LandingPage = () => {
       </section>
 
       {/* WORKS GALLERY */}
-      <section id="works" className="mt-8 mb-14 px-5 md:px-0" ref={worksSection.ref}>
+      <section id="works" className="mt-8 mb-14 px-4 md:px-0" ref={worksSection.ref}>
         <div className="max-w-[1200px] mx-auto">
           <div className="flex items-center justify-between mb-5 md:mb-8" style={revealStyle(worksSection.visible)}>
             <h2 className="text-[22px] md:text-[28px] font-bold">Наши работы</h2>
@@ -165,7 +165,7 @@ const LandingPage = () => {
       </section>
 
       {/* PRODUCTS — fade + slide up on scroll, stagger 100ms */}
-      <section className="mb-14 px-5 md:px-0" ref={productsSection.ref}>
+      <section className="mb-14 px-4 md:px-0" ref={productsSection.ref}>
         <div className="max-w-[1200px] mx-auto">
           <h2 className="text-[22px] md:text-[28px] font-bold mb-5 md:mb-8" style={revealStyle(productsSection.visible)}>Что делаем</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
@@ -192,7 +192,7 @@ const LandingPage = () => {
       </section>
 
       {/* HOW IT WORKS — fade + slide from left, stagger 150ms */}
-      <section className="mb-14 px-5 md:px-0" ref={stepsSection.ref}>
+      <section className="mb-14 px-4 md:px-0" ref={stepsSection.ref}>
         <div className="max-w-[1200px] mx-auto">
           <h2 className="text-[22px] md:text-[28px] font-bold mb-5 md:mb-8" style={revealStyle(stepsSection.visible)}>Как это работает</h2>
           <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-3 md:gap-4">
@@ -214,7 +214,7 @@ const LandingPage = () => {
       </section>
 
       {/* CTA — fade in on scroll */}
-      <section className="mb-4 px-5 md:px-0 md:mb-16" ref={ctaSection.ref}>
+      <section className="mb-4 px-4 md:px-0 md:mb-16" ref={ctaSection.ref}>
         <div className="max-w-[600px] mx-auto" style={revealStyle(ctaSection.visible)}>
           <div className="game-card text-center">
             <p className="text-[20px] md:text-[24px] font-bold mb-2">Готов начать?</p>
