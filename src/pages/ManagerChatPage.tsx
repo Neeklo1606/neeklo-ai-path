@@ -43,15 +43,17 @@ const ManagerChatPage = () => {
     const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
     setMessages((prev) => [...prev, { role: "user", content: input.trim(), time, status: "read" }]);
     setInput("");
+    setIsTyping(true);
     scrollToBottom();
 
     setTimeout(() => {
+      setIsTyping(false);
       setMessages((prev) => [
         ...prev,
         { role: "manager", content: "Отлично, принял! Вернусь с ответом в ближайшее время.", time },
       ]);
       scrollToBottom();
-    }, 1200);
+    }, 2000);
   };
 
   return (
