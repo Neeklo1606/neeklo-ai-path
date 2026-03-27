@@ -347,43 +347,16 @@
   animation: hero-scale-in 400ms ease-out both;
 }
 
-/* Hero badge pulse */
-.hero-badge {
-  animation: hero-badge-pulse 2.5s ease-in-out infinite;
-}
-
-@keyframes hero-badge-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-
-/* Hero buttons */
-.btn-hero-primary {
-  @apply w-full bg-foreground text-background font-semibold text-[14px] active:scale-[0.97] transition-all duration-200;
-  height: 56px;
-  border-radius: 12px;
-  -webkit-tap-highlight-color: transparent;
-}
-
+/* Hero secondary button */
 .btn-hero-secondary {
   @apply w-full bg-transparent text-foreground font-semibold text-[14px] border border-border active:scale-[0.97] transition-all duration-200 flex items-center justify-center;
-  height: 56px;
+  height: 48px;
   border-radius: 12px;
   -webkit-tap-highlight-color: transparent;
 }
 
 .btn-hero-secondary:hover {
   @apply bg-foreground text-background;
-}
-
-/* Hero marquee */
-@keyframes hero-marquee-scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-.hero-marquee {
-  animation: hero-marquee-scroll 30s linear infinite;
 }
 
 /* Page transition */
