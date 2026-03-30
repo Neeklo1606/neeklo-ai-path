@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Play, Globe, Smartphone, Sparkles, ArrowRight, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
@@ -5,7 +6,7 @@ import Footer from "@/components/Footer";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useCountUp } from "@/hooks/useCountUp";
 
-import Plasma from "@/components/Plasma";
+const Plasma = lazy(() => import("@/components/Plasma"));
 import workFashion from "@/assets/work-fashion.webp";
 import workRacing from "@/assets/work-racing.webp";
 import workStudio from "@/assets/work-studio.webp";
@@ -74,14 +75,16 @@ const LandingPage = () => {
       <section className="relative flex flex-col items-center justify-center px-4 overflow-hidden" style={{ paddingTop: 80, paddingBottom: 60 }}>
         {/* Plasma background */}
         <div className="absolute inset-0 z-0">
-          <Plasma
-            color="#000000"
-            speed={0.6}
-            direction="forward"
-            scale={1.2}
-            opacity={0.15}
-            mouseInteractive={true}
-          />
+          <Suspense fallback={null}>
+            <Plasma
+              color="#000000"
+              speed={0.6}
+              direction="forward"
+              scale={1.2}
+              opacity={0.15}
+              mouseInteractive={true}
+            />
+          </Suspense>
           {/* Gradient overlay for readability */}
           <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
         </div>
