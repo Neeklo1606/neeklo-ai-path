@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -9,21 +9,22 @@ import ScrollToTop from "@/components/ScrollToTop";
 import PageTransition from "@/components/PageTransition";
 import Onboarding from "@/components/Onboarding";
 import Index from "./pages/Index";
-import ChatPage from "./pages/ChatPage";
-import ProjectsPage from "./pages/ProjectsPage";
-import ProfilePage from "./pages/ProfilePage";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import SettingsPage from "./pages/SettingsPage";
-import ProjectDetailPage from "./pages/ProjectDetailPage";
-import ManagerChatPage from "./pages/ManagerChatPage";
-import ServicesPage from "./pages/ServicesPage";
-import ServiceDetailPage from "./pages/ServiceDetailPage";
-import LegalPage from "./pages/LegalPage";
-import CasesPage from "./pages/CasesPage";
-import OrderPage from "./pages/OrderPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import NotFound from "./pages/NotFound";
+
+const ChatPage = lazy(() => import("./pages/ChatPage"));
+const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const ProjectDetailPage = lazy(() => import("./pages/ProjectDetailPage"));
+const ManagerChatPage = lazy(() => import("./pages/ManagerChatPage"));
+const ServicesPage = lazy(() => import("./pages/ServicesPage"));
+const ServiceDetailPage = lazy(() => import("./pages/ServiceDetailPage"));
+const LegalPage = lazy(() => import("./pages/LegalPage"));
+const CasesPage = lazy(() => import("./pages/CasesPage"));
+const OrderPage = lazy(() => import("./pages/OrderPage"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => {
           <div className="min-h-screen flex flex-col">
             <DesktopNav />
             <div className="flex-1 flex flex-col">
+              <Suspense fallback={null}>
               <Routes>
                 <Route path="/" element={<P><Index /></P>} />
                 <Route path="/login" element={<P><LoginPage /></P>} />
@@ -68,6 +70,7 @@ const App = () => {
                 <Route path="/legal/:slug" element={<P><LegalPage /></P>} />
                 <Route path="*" element={<P><NotFound /></P>} />
               </Routes>
+              </Suspense>
             </div>
           </div>
         </BrowserRouter>
