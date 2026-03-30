@@ -6,12 +6,12 @@ import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useCountUp } from "@/hooks/useCountUp";
 
 import Plasma from "@/components/Plasma";
-import workFashion from "@/assets/work-fashion.png";
-import workRacing from "@/assets/work-racing.jpg";
-import workStudio from "@/assets/work-studio.jpg";
-import workVision from "@/assets/work-vision.jpg";
-import workAssistant from "@/assets/work-assistant.jpg";
-import workEcommerce from "@/assets/work-ecommerce.jpg";
+import workFashion from "@/assets/work-fashion.webp";
+import workRacing from "@/assets/work-racing.webp";
+import workStudio from "@/assets/work-studio.webp";
+import workVision from "@/assets/work-vision.webp";
+import workAssistant from "@/assets/work-assistant.webp";
+import workEcommerce from "@/assets/work-ecommerce.webp";
 
 const products = [
   { icon: Play, title: "AI-ролики", price: "от 25 000 ₽", desc: "Рекламные ролики с нейросетями", badge: "ХИТ", slug: "ai-roliki" },
@@ -170,7 +170,7 @@ const LandingPage = () => {
                 }`}
                 style={revealStyle(worksSection.visible, i * 100)}
               >
-                <img src={w.img} alt={w.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <img src={w.img} alt={w.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-3.5">
                   <span className="inline-block text-[10px] font-semibold text-white/80 bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-1 mb-1.5">{w.tag}</span>
