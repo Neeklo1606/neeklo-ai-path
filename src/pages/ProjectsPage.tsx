@@ -97,18 +97,18 @@ const ProjectsPage = () => {
 
       {/* Summary */}
       {activeTab === "active" && (
-        <div className="px-5 md:px-10 pt-5 pb-2 -mx-5 md:mx-0">
-          <div className="flex gap-2 overflow-x-auto px-5 md:px-0" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+        <div className="px-5 md:px-10 pt-5 pb-2">
+          <div className="grid grid-cols-3 gap-2">
             {[
               { icon: <Play size={14} />, color: "#0052FF", bg: "#EEF3FF", value: String(inProgressCount), label: "В работе" },
               { icon: <Eye size={14} />, color: "#FF9500", bg: "#FFF8EE", value: String(reviewCount), label: "На проверке" },
               { icon: <span className="text-[14px]">₽</span>, color: "#00B341", bg: "#EEFBF3", value: fmt(totalPrice), label: "Сумма" },
             ].map((c) => (
-              <div key={c.label} className="bg-white rounded-2xl p-3 flex items-center gap-2 flex-1 min-w-[110px]">
+              <div key={c.label} className="bg-white rounded-2xl p-3 flex flex-col items-center text-center gap-1.5">
                 <div className="rounded-lg flex items-center justify-center flex-shrink-0" style={{ width: 32, height: 32, background: c.bg, color: c.color }}>{c.icon}</div>
                 <div>
-                  <div className="font-heading text-[14px] sm:text-[16px] font-[800] text-[#0D0D0B] whitespace-nowrap">{c.value}</div>
-                  <div className="font-body text-[10px] text-[#6A6860] mt-0.5 whitespace-nowrap">{c.label}</div>
+                  <div className="font-heading text-[16px] md:text-[18px] font-[800] text-[#0D0D0B] whitespace-nowrap">{c.value}</div>
+                  <div className="font-body text-[10px] text-[#6A6860] mt-0.5">{c.label}</div>
                 </div>
               </div>
             ))}
