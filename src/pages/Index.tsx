@@ -83,16 +83,17 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
   const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width:768px)").matches;
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  const springX = useSpring(mouseX, { stiffness: 60, damping: 20 });
-  const springY = useSpring(mouseY, { stiffness: 60, damping: 20 });
-  const eyeX = useTransform(springX, [-300, 300], [-6, 6]);
-  const eyeY = useTransform(springY, [-300, 300], [-4, 4]);
+  const springX = useSpring(mouseX, { stiffness: 50, damping: 18 });
+  const springY = useSpring(mouseY, { stiffness: 50, damping: 18 });
+  const eyeX = useTransform(springX, [-400, 400], [-7, 7]);
+  const eyeY = useTransform(springY, [-400, 400], [-5, 5]);
 
   const handleMouse = isMobile ? undefined : (e: React.MouseEvent) => {
     const r = e.currentTarget.getBoundingClientRect();
-    mouseX.set(e.clientX - (r.left + r.width / 2));
-    mouseY.set(e.clientY - (r.top + r.height / 2));
+    mouseX.set(e.clientX - r.left - r.width / 2);
+    mouseY.set(e.clientY - r.top - r.height / 2);
   };
+  const handleMouseLeave = isMobile ? undefined : () => { mouseX.set(0); mouseY.set(0); };
 
   return (
     <section
@@ -104,42 +105,69 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
         backgroundSize: "28px 28px",
       }}
       onMouseMove={handleMouse}
+      onMouseLeave={handleMouseLeave}
     >
       <div className="relative z-10 flex flex-col items-center px-5 sm:px-8" style={{ maxWidth: 640 }}>
         {/* Orb */}
-        <motion.div className="relative mb-8 inline-block" style={{ width: 88, height: 88, flexShrink: 0 }} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease }}>
-          <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }} style={{ willChange: "transform", position: "relative" }}>
+        <motion.div
+          className="relative mb-8"
+          style={{ width: 96, height: 96, flexShrink: 0 }}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 200, damping: 18, delay: 0.1 }}
+        >
+          <motion.div
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            style={{ position: "relative", width: 96, height: 96 }}
+          >
+            {/* Outer glow ring */}
+            <motion.div
+              className="absolute rounded-full"
+              style={{ inset: -6, zIndex: 0, background: "radial-gradient(circle, rgba(0,0,0,0.12) 0%, transparent 70%)" }}
+              animate={{ scale: [1, 1.08, 1], opacity: [0.4, 0.7, 0.4] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            />
+
+            {/* Main sphere */}
             <div
-              className="rounded-full flex items-center justify-center"
+              className="rounded-full"
               style={{
-                width: 88, height: 88, background: "#0D0D0B", position: "relative", overflow: "visible",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.08)",
+                width: 96, height: 96, position: "relative", zIndex: 1, overflow: "hidden",
+                background: "radial-gradient(circle at 35% 35%, #3a3a3a 0%, #1a1a1a 40%, #0a0a0a 100%)",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.4), 0 8px 20px rgba(0,0,0,0.3), inset 0 -8px 20px rgba(0,0,0,0.5), inset 0 8px 16px rgba(255,255,255,0.06), inset 2px 3px 8px rgba(255,255,255,0.04)",
               }}
             >
-              {/* Shine */}
-              <div className="absolute pointer-events-none" style={{ top: 10, left: 14, width: 26, height: 16, borderRadius: "50%", background: "rgba(255,255,255,0.08)", transform: "rotate(-20deg)" }} />
-              {/* Eyes */}
-              <motion.div className="flex items-center" style={{ gap: 10, x: eyeX, y: eyeY }}>
-                {[0, 1].map((i) => (
-                  <motion.div
-                    key={i}
-                    className="rounded-full"
-                    style={{ width: 9, height: 9, background: "#fff", boxShadow: "0 0 6px rgba(255,255,255,0.5)" }}
-                    animate={{ scaleY: [1, 1, 0.1, 1, 1] }}
-                    transition={{ duration: 4, repeat: Infinity, times: [0, 0.44, 0.5, 0.56, 1], delay: i * 0.06 }}
-                  />
-                ))}
-              </motion.div>
-              {/* Smile */}
-              <div className="absolute pointer-events-none" style={{ bottom: 21, left: "50%", transform: "translateX(-50%)", width: 16, height: 7, borderBottom: "2px solid rgba(255,255,255,0.22)", borderRadius: "0 0 8px 8px" }} />
+              {/* Top-left shine */}
+              <div className="absolute pointer-events-none" style={{ top: 12, left: 16, width: 30, height: 20, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 70%)", transform: "rotate(-25deg)" }} />
+              {/* Secondary shine */}
+              <div className="absolute pointer-events-none" style={{ top: 18, right: 20, width: 10, height: 10, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
+              {/* Bottom rim light */}
+              <div className="absolute pointer-events-none" style={{ bottom: 8, left: "50%", transform: "translateX(-50%)", width: 60, height: 20, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(255,255,255,0.04) 0%, transparent 70%)" }} />
+
+              {/* Face */}
+              <div className="absolute" style={{ top: "50%", left: "50%", transform: "translate(-50%, -46%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, zIndex: 2 }}>
+                {/* Eyes */}
+                <motion.div className="flex items-center" style={{ gap: 9, x: eyeX, y: eyeY }}>
+                  <motion.div className="rounded-full" style={{ width: 8, height: 8, background: "#fff", boxShadow: "0 0 8px rgba(255,255,255,0.8), 0 0 16px rgba(255,255,255,0.3)" }} animate={{ scaleY: [1, 1, 0.05, 1, 1] }} transition={{ duration: 3.5, repeat: Infinity, times: [0, 0.42, 0.48, 0.54, 1] }} />
+                  <motion.div className="rounded-full" style={{ width: 8, height: 8, background: "#fff", boxShadow: "0 0 8px rgba(255,255,255,0.8), 0 0 16px rgba(255,255,255,0.3)" }} animate={{ scaleY: [1, 1, 0.05, 1, 1] }} transition={{ duration: 4.2, repeat: Infinity, times: [0, 0.42, 0.48, 0.54, 1], delay: 0.08 }} />
+                </motion.div>
+                {/* Smile */}
+                <div style={{ width: 14, height: 6, borderBottom: "2px solid rgba(255,255,255,0.3)", borderRadius: "0 0 8px 8px", marginTop: 2 }} />
+              </div>
             </div>
+
             {/* Status dot */}
-            <motion.div
-              className="absolute"
-              style={{ bottom: 2, right: 2, width: 14, height: 14, borderRadius: "50%", background: "#00C853", border: "2.5px solid #F0EEE8", boxShadow: "0 0 8px rgba(0,200,83,0.6)", zIndex: 2 }}
-              animate={{ scale: [1, 1.25, 1], opacity: [1, 0.75, 1] }}
-              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-            />
+            <div className="absolute" style={{ bottom: 2, right: 2, width: 16, height: 16, zIndex: 10 }}>
+              {/* Pulse ring */}
+              <motion.div
+                className="absolute rounded-full"
+                style={{ inset: -3, background: "rgba(0,200,83,0.3)" }}
+                animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+              <div className="rounded-full" style={{ width: 16, height: 16, background: "radial-gradient(circle at 40% 35%, #4dff91 0%, #00C853 60%, #009940 100%)", border: "3px solid #F0EEE8", boxShadow: "0 0 10px rgba(0,200,83,0.7), 0 0 20px rgba(0,200,83,0.3)", position: "relative", zIndex: 1 }} />
+            </div>
           </motion.div>
         </motion.div>
 
