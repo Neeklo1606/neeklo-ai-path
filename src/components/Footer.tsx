@@ -1,20 +1,4 @@
-import { Send, Mail, Sparkles } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-
-const productLinks = [
-  { label: "Разработка сайтов", path: "/services/sajt-pod-klyuch" },
-  { label: "Telegram-боты и Mini Apps", path: "/services/telegram-mini-app" },
-  { label: "AI-видео", path: "/services/ai-roliki" },
-  { label: "AI-агент", path: "/services/ai-agent" },
-];
-
-const companyLinks = [
-  { label: "О нас", path: "/" },
-  { label: "Кейсы", path: "/projects" },
-  { label: "Продукты", path: "/#works" },
-  { label: "Процесс", path: "/#how" },
-  { label: "Контакты", path: "/profile" },
-];
+import { Link } from "react-router-dom";
 
 const legalLinks = [
   { label: "Политика конфиденциальности", path: "/legal/privacy" },
@@ -24,161 +8,68 @@ const legalLinks = [
   { label: "Политика Cookie", path: "/legal/cookies" },
 ];
 
-const Footer = () => {
-  const navigate = useNavigate();
+const linkClass =
+  "font-body text-[13px] transition-colors duration-150 hover:text-[#0D0D0B]";
 
-  return (
-    <footer className="bg-muted/40 border-t border-border">
-      {/* Main footer — desktop */}
-      <div className="hidden md:block">
-        <div className="max-w-[1200px] mx-auto px-8 py-14">
-          <div className="grid grid-cols-4 gap-8">
-            {/* Brand */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-                  <Sparkles size={12} className="text-primary-foreground" />
-                </div>
-                <span className="text-[16px] font-bold text-foreground tracking-tight">neeklo</span>
-              </div>
-              <p className="text-[13px] text-muted-foreground leading-relaxed mb-5">
-                Цифровая студия нового поколения.
-                <br />
-                AI-продакшн, сайты и автоматизация.
-              </p>
-              <div className="flex items-center gap-3">
-                <a
-                  href="https://t.me/neeklo"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-lg bg-background border border-border flex items-center justify-center hover:border-foreground/20 transition-colors"
-                  aria-label="Telegram канал"
-                >
-                  <Send size={14} className="text-foreground" />
-                </a>
-                <a
-                  href="mailto:klochkonikita@mail.ru"
-                  className="w-9 h-9 rounded-lg bg-background border border-border flex items-center justify-center hover:border-foreground/20 transition-colors"
-                  aria-label="Email"
-                >
-                  <Mail size={14} className="text-foreground" />
-                </a>
-              </div>
-            </div>
-
-            {/* Products */}
-            <div>
-              <h3 className="text-[14px] font-semibold text-foreground mb-4">Продукты</h3>
-              <ul className="space-y-2.5">
-                {productLinks.map((link) => (
-                  <li key={link.label}>
-                    <button
-                      onClick={() => navigate(link.path)}
-                      className="text-[13px] text-muted-foreground hover:text-foreground transition-colors text-left"
-                    >
-                      {link.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Company */}
-            <div>
-              <h3 className="text-[14px] font-semibold text-foreground mb-4">Компания</h3>
-              <ul className="space-y-2.5">
-                {companyLinks.map((link) => (
-                  <li key={link.label}>
-                    <button
-                      onClick={() => navigate(link.path)}
-                      className="text-[13px] text-muted-foreground hover:text-foreground transition-colors text-left"
-                    >
-                      {link.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Requisites */}
-            <div>
-              <h3 className="text-[14px] font-semibold text-foreground mb-4">Реквизиты</h3>
-              <div className="space-y-1.5 text-[13px] text-muted-foreground mb-5">
-                <p className="text-[11px] uppercase tracking-wide font-medium text-foreground/60">Индивидуальный предприниматель</p>
-                <p className="font-medium text-foreground">Клочко Никита Николаевич</p>
-                <p>ИНН 263520430560</p>
-              </div>
-              <div className="space-y-2.5">
-                <a
-                  href="mailto:klochkonikita@mail.ru"
-                  className="flex items-center gap-2 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Mail size={13} />
-                  klochkonikita@mail.ru
-                </a>
-                <a
-                  href="https://t.me/neeklo"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Send size={13} />
-                  Telegram
-                </a>
-              </div>
-            </div>
+const Footer = () => (
+  <footer
+    className="max-w-[1200px] mx-auto px-4 sm:px-8"
+    style={{ borderTop: "1px solid #F0F0F0", padding: "32px 0" }}
+  >
+    {/* ROW 1 */}
+    <div className="flex flex-col sm:flex-row sm:justify-between gap-6 sm:gap-6 px-4 sm:px-8">
+      {/* Left: brand */}
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 mb-2">
+          <div
+            className="flex items-center justify-center rounded-full"
+            style={{ width: 28, height: 28, background: "#0D0D0B" }}
+          >
+            <span className="text-white text-[13px] leading-none">✦</span>
           </div>
+          <span className="font-body text-[16px] font-[700] text-[#0D0D0B]">neeklo</span>
         </div>
-
-        {/* Bottom bar */}
-        <div className="border-t border-border">
-          <div className="max-w-[1200px] mx-auto px-8 py-5 flex items-center justify-between">
-            <p className="text-[12px] text-muted-foreground">
-              © {new Date().getFullYear()} Neeklo Studio. Все права защищены.
-            </p>
-            <div className="flex items-center gap-5">
-              {legalLinks.map((link) => (
-                <button
-                  key={link.label}
-                  onClick={() => navigate(link.path)}
-                  className="text-[12px] text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {link.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile footer — compact */}
-      <div className="md:hidden px-5 py-6 pb-28">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-            <Sparkles size={10} className="text-primary-foreground" />
-          </div>
-          <span className="text-[14px] font-bold text-foreground">neeklo</span>
-        </div>
-        <p className="text-[12px] text-muted-foreground mb-4">
+        <p className="font-body text-[13px] leading-[1.5]" style={{ color: "#888" }}>
           ИП Клочко Н.Н. · ИНН 263520430560
         </p>
-        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-4">
-          {legalLinks.map((link) => (
-            <button
-              key={link.label}
-              onClick={() => navigate(link.path)}
-              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {link.label}
-            </button>
-          ))}
-        </div>
-        <p className="text-[11px] text-muted-foreground/60">
-          © {new Date().getFullYear()} Neeklo Studio
-        </p>
+        <a
+          href="mailto:hello@neeklo.studio"
+          className={`${linkClass} block mt-1`}
+          style={{ color: "#888" }}
+        >
+          hello@neeklo.studio
+        </a>
       </div>
-    </footer>
-  );
-};
+
+      {/* Right: legal links */}
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-x-4 gap-y-2 sm:max-w-[480px] sm:justify-end">
+        {legalLinks.map((l) => (
+          <Link key={l.path} to={l.path} className={linkClass} style={{ color: "#888" }}>
+            {l.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+
+    {/* ROW 2 */}
+    <div
+      className="flex flex-col sm:flex-row sm:justify-between items-center gap-3 mt-5 pt-5 px-4 sm:px-8"
+      style={{ borderTop: "1px solid #F0F0F0" }}
+    >
+      <span className="font-body text-[13px]" style={{ color: "#888" }}>
+        © 2026 Neeklo Studio
+      </span>
+      <a
+        href="https://t.me/neeklo"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={linkClass}
+        style={{ color: "#888" }}
+      >
+        Telegram →
+      </a>
+    </div>
+  </footer>
+);
 
 export default Footer;
