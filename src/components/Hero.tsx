@@ -205,8 +205,8 @@ const Hero = () => {
                 <p className="font-body" style={{ fontSize: 13, fontWeight: 600, color: "#0D0D0B" }}>
                   47 клиентов доверяют
                 </p>
-                <p className="font-body" style={{ fontSize: 12, color: "#6A6860" }}>
-                  <span style={{ color: "#F5A623" }}>★★★★★</span> 4.9
+                <p className="font-body" style={{ fontSize: 12, color: "#6A6860", marginTop: 2 }}>
+                  <span style={{ color: "#F5A623" }}>★★★★★</span>
                 </p>
               </div>
             </motion.div>
