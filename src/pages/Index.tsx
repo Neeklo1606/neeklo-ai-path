@@ -279,43 +279,40 @@ const WorksSection = () => {
         </motion.div>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
           {items.map((item, i) => (
             <motion.div
               key={item.id}
-              className={`rounded-2xl overflow-hidden relative cursor-pointer hover:scale-[1.015] hover:shadow-xl transition-all duration-200 ${
-                item.featured ? "md:col-span-2" : ""
-              }`}
-              style={{ height: item.featured ? 280 : 200, background: item.bg }}
+              className={item.featured ? "col-span-2 md:col-span-2" : ""}
               {...fadeUp(i * 0.07)}
             >
-              <img
-                src={item.img}
-                alt={item.title}
-                className="absolute inset-0 w-full h-full object-cover"
-                onError={(e) => { e.currentTarget.style.display = "none"; }}
-              />
-              <div
-                className="absolute inset-x-0 bottom-0 p-4"
-                style={{ background: "linear-gradient(to top, rgba(0,0,0,0.72), transparent)" }}
-              >
-                <span
-                  className="font-body rounded-full inline-block"
-                  style={{ fontSize: 11, fontWeight: 600, padding: "4px 12px", background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", color: "#fff" }}
+              <HolographicCard className={`rounded-2xl overflow-hidden relative cursor-pointer ${item.featured ? "" : ""}`}>
+                <div
+                  className="relative w-full"
+                  style={{ height: item.featured ? 280 : 200, background: item.bg }}
                 >
-                  {item.cat}
-                </span>
-                <p className="font-body text-white mt-1.5" style={{ fontSize: 15, fontWeight: 700 }}>{item.title}</p>
-              </div>
+                  <img
+                    src={item.img}
+                    alt={item.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  />
+                  <div
+                    className="absolute inset-x-0 bottom-0 p-4"
+                    style={{ background: "linear-gradient(to top, rgba(0,0,0,0.72), transparent)" }}
+                  >
+                    <span
+                      className="font-body rounded-full inline-block"
+                      style={{ fontSize: 11, fontWeight: 600, padding: "4px 12px", background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", color: "#fff" }}
+                    >
+                      {item.cat}
+                    </span>
+                    <p className="font-body text-white mt-1.5" style={{ fontSize: 15, fontWeight: 700 }}>{item.title}</p>
+                  </div>
+                </div>
+              </HolographicCard>
+              <p className="font-body mt-1.5" style={{ fontSize: 13, fontWeight: 600, color: "#0052FF" }}>{item.result}</p>
             </motion.div>
-          ))}
-        </div>
-        {/* Results below cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3 mt-2">
-          {items.map((item) => (
-            <div key={item.id} className={item.featured ? "md:col-span-2" : ""}>
-              <p className="font-body" style={{ fontSize: 13, fontWeight: 600, color: "#0052FF" }}>{item.result}</p>
-            </div>
           ))}
         </div>
       </div>
