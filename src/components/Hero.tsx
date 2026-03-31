@@ -177,39 +177,6 @@ const Hero = () => {
               </button>
             </motion.div>
 
-            {/* Social proof */}
-            <motion.div
-              className="flex items-center gap-3.5 w-full justify-center lg:justify-start"
-              style={{
-                marginTop: 36, paddingTop: 28,
-                borderTop: "1px solid rgba(0,0,0,0.08)",
-              }}
-              {...fade(0.38)}
-            >
-              <div className="flex items-center">
-                {avatarColors.map((bg, i) => (
-                  <div
-                    key={i}
-                    className="rounded-full"
-                    style={{
-                      width: 28, height: 28, background: bg,
-                      border: "2px solid #F0EEE8",
-                      marginLeft: i === 0 ? 0 : -10,
-                      zIndex: 5 - i,
-                      position: "relative",
-                    }}
-                  />
-                ))}
-              </div>
-              <div>
-                <p className="font-body" style={{ fontSize: 13, fontWeight: 600, color: "#0D0D0B" }}>
-                  47 клиентов доверяют
-                </p>
-                <p className="font-body" style={{ fontSize: 12, color: "#6A6860", marginTop: 2 }}>
-                  <span style={{ color: "#F5A623" }}>★★★★★</span>
-                </p>
-              </div>
-            </motion.div>
           </div>
 
           {/* ===== RIGHT ===== */}
