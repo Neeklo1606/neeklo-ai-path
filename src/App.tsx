@@ -33,6 +33,22 @@ const P = ({ children }: { children: React.ReactNode }) => (
   <PageTransition>{children}</PageTransition>
 );
 
+const HIDE_NAV_ROUTES = ["/chat", "/manager-chat"];
+
+const Layout = ({ children }: { children: React.ReactNode }) => {
+  const { pathname } = useLocation();
+  const hideNav = HIDE_NAV_ROUTES.includes(pathname);
+
+  if (hideNav) return <>{children}</>;
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <DesktopNav />
+      <div className="flex-1 flex flex-col">{children}</div>
+    </div>
+  );
+};
+
 const App = () => {
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem("neeklo_onboarded")
