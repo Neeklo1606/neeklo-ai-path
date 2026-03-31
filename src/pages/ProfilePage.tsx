@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import BottomNav from "@/components/BottomNav";
 import { User, Settings, LogOut, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
@@ -49,7 +48,6 @@ const ProfilePage = () => {
           </button>
         </div>
       </div>
-      <BottomNav />
     </div>
   );
 };

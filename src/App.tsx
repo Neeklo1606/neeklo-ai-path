@@ -1,14 +1,16 @@
 import { useState, lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import DesktopNav from "@/components/DesktopNav";
+import BottomNav from "@/components/BottomNav";
 import ScrollToTop from "@/components/ScrollToTop";
 import PageTransition from "@/components/PageTransition";
 import Onboarding from "@/components/Onboarding";
 import CookieBanner from "@/components/CookieBanner";
+import logoImg from "@/assets/logo.png";
 import Index from "./pages/Index";
 
 const ChatPage = lazy(() => import("./pages/ChatPage"));
@@ -35,6 +37,26 @@ const P = ({ children }: { children: React.ReactNode }) => (
 
 const HIDE_NAV_ROUTES = ["/chat", "/manager-chat"];
 
+const MobileHeader = () => {
+  const navigate = useNavigate();
+  return (
+    <header
+      className="sm:hidden sticky top-0 z-50 flex items-center justify-center"
+      style={{
+        height: 52,
+        background: "rgba(255,255,255,0.92)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderBottom: "1px solid #F0F0F0",
+      }}
+    >
+      <button onClick={() => navigate("/")} className="flex items-center">
+        <img src={logoImg} alt="neeklo" className="h-8 w-auto" />
+      </button>
+    </header>
+  );
+};
+
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { pathname } = useLocation();
   const hideNav = HIDE_NAV_ROUTES.includes(pathname);
@@ -43,8 +65,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <MobileHeader />
       <DesktopNav />
       <div className="flex-1 flex flex-col">{children}</div>
+      <BottomNav />
     </div>
   );
 };

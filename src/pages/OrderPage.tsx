@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, CheckCircle, Play, Globe, Smartphone, Sparkles } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
 
 const serviceMap: Record<string, { name: string; icon: React.ElementType }> = {
   "ai-roliki": { name: "AI-ролики", icon: Play },
@@ -54,7 +53,6 @@ const OrderPage = () => {
             <ArrowRight size={16} />
           </button>
         </div>
-        <BottomNav />
       </div>
     );
   }
@@ -237,7 +235,6 @@ const OrderPage = () => {
           </div>
         )}
       </div>
-      <BottomNav />
     </div>
   );
 };

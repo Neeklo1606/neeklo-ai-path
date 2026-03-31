@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Bell, Moon, Shield, HelpCircle, ChevronRight, Globe } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
 
 const menuItems = [
   { icon: Bell, label: "Уведомления", description: "Включены" },
@@ -51,7 +50,6 @@ const SettingsPage = () => {
           <p className="text-[12px] text-muted-foreground/40">neeklo v1.0.0</p>
         </div>
       </div>
-      <BottomNav />
     </div>
   );
 };

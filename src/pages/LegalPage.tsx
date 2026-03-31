@@ -1,6 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
 import Footer from "@/components/Footer";
 
 const legalDocs: Record<string, { title: string; content: string }> = {
@@ -214,7 +213,6 @@ const LegalPage = () => {
             На главную
           </button>
         </div>
-        <BottomNav />
       </div>
     );
   }
@@ -241,7 +239,6 @@ const LegalPage = () => {
         </div>
       </div>
       <Footer />
-      <BottomNav />
     </div>
   );
 };

@@ -1,6 +1,5 @@
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import BottomNav from "@/components/BottomNav";
 import Footer from "@/components/Footer";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import Hero from "@/components/Hero";
@@ -74,7 +73,6 @@ const LandingPage = () => {
       </section>
 
       <Footer />
-      <BottomNav />
     </div>
   );
 };

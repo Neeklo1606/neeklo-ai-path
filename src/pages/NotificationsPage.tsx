@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { CheckCircle, MessageSquare, ArrowRight, Briefcase } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
 
 interface Notification {
   id: string;
@@ -87,7 +86,6 @@ const NotificationsPage = () => {
           })}
         </div>
       </div>
-      <BottomNav />
     </div>
   );
 };
