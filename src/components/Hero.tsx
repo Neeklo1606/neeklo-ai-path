@@ -20,11 +20,6 @@ const fadeScale = (delay: number) => ({
   transition: { duration: 0.5, ease, delay },
 });
 
-const floatY = (range: number, duration: number, delay: number) => ({
-  animate: { y: [0, -range, 0] },
-  transition: { duration, repeat: Infinity, ease: "easeInOut" as const, delay },
-});
-
 /* ---- Avatars ---- */
 const avatarColors = ["#E8D5C4", "#C4D5E8", "#D5E8C4", "#E8C4D5"];
 
