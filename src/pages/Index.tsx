@@ -61,7 +61,7 @@ const Divider = () => <div className="w-full" style={{ height: 1, background: "#
 /* ━━━ MAIN PAGE ━━━ */
 const LandingPage = () => {
   const navigate = useNavigate();
-  usePageTitle("neeklo — AI-продакшн студия");
+  usePageTitle("neeklo – AI-продакшн студия");
 
   return (
     <div className="flex-1 bg-background text-foreground pb-[100px] sm:pb-0 overflow-x-hidden">
