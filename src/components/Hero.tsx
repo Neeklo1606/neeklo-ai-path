@@ -22,7 +22,7 @@ const fadeScale = (delay: number) => ({
 
 const floatY = (range: number, duration: number, delay: number) => ({
   animate: { y: [0, -range, 0] },
-  transition: { duration, repeat: Infinity, ease: "easeInOut", delay },
+  transition: { duration, repeat: Infinity, ease: "easeInOut" as const, delay },
 });
 
 /* ---- Avatars ---- */
