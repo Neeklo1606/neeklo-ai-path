@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Send } from "lucide-react";
 import ChatMessage, { AIAvatar } from "@/components/ChatMessage";
-import ChatInput from "@/components/ChatInput";
 import QuickChips from "@/components/QuickChips";
 import TypingIndicator from "@/components/TypingIndicator";
 import BriefCard from "@/components/BriefCard";
@@ -30,11 +29,14 @@ const ChatPage = () => {
   const [items, setItems] = useState<ChatItem[]>([]);
   const [inputDisabled, setInputDisabled] = useState(false);
   const [firstReply, setFirstReply] = useState(true);
+  const [inputValue, setInputValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
   const initialized = useRef(false);
 
-  /* Lock body scroll */
+  const hasText = inputValue.trim().length > 0;
+
   useEffect(() => {
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
@@ -42,6 +44,11 @@ const ChatPage = () => {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
     };
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => inputRef.current?.focus(), 400);
+    return () => clearTimeout(t);
   }, []);
 
   const scrollToBottom = useCallback(() => {
@@ -85,6 +92,16 @@ const ChatPage = () => {
     );
   }, [addTypingThenMessage]);
 
+  const handleSend = useCallback(() => {
+    const text = inputValue.trim();
+    if (!text || inputDisabled) return;
+    setInputValue("");
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
+    handleUserInput(text);
+  }, [inputValue, inputDisabled]);
+
   const handleUserInput = useCallback(
     (text: string) => {
       setItems((prev) => [
@@ -117,108 +134,194 @@ const ChatPage = () => {
   }, [navigate, addTypingThenMessage, scrollToBottom]);
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ height: "100dvh" }}>
-      {/* Desktop centered card wrapper */}
-      <div className="flex flex-col h-full w-full lg:max-w-[720px] lg:mx-auto lg:border-x lg:border-[#F0F0F0]">
-
-        {/* HEADER */}
-        <header
-          className="flex items-center flex-shrink-0"
-          style={{
-            height: 64,
-            borderBottom: "1px solid #F0F0F0",
-            background: "white",
-            padding: "0 20px",
-            gap: 12,
-          }}
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100dvh",
+        overflow: "hidden",
+        background: "white",
+      }}
+    >
+      {/* HEADER */}
+      <div
+        style={{
+          height: 64,
+          flexShrink: 0,
+          borderBottom: "1px solid #F0F0F0",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "0 20px",
+        }}
+      >
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center justify-center transition-colors duration-150 hover:bg-[#F0F0F0]"
+          style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: "transparent", border: "none", cursor: "pointer" }}
         >
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center justify-center transition-colors duration-150 hover:bg-[#F0F0F0]"
-            style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0 }}
-          >
-            <ArrowLeft size={18} />
-          </button>
+          <ArrowLeft size={18} />
+        </button>
 
-          <div
-            className="flex-shrink-0 flex items-center justify-center rounded-full"
-            style={{ width: 36, height: 36, background: "#0D0D0B" }}
-          >
-            <span className="text-white font-body" style={{ fontSize: 16, lineHeight: 1 }}>✦</span>
-          </div>
-
-          <div className="min-w-0">
-            <p className="font-body leading-none" style={{ fontSize: 15, fontWeight: 600, color: "#0D0D0B", marginBottom: 3 }}>
-              neeklo AI
-            </p>
-            <div className="flex items-center" style={{ gap: 5 }}>
-              <span
-                className="rounded-full inline-block"
-                style={{
-                  width: 6, height: 6, background: "#00C853",
-                  boxShadow: "0 0 0 3px rgba(0,200,83,0.2)",
-                  animation: "pulse 2s infinite",
-                }}
-              />
-              <span className="font-body" style={{ fontSize: 12, color: "#00B341", lineHeight: 1 }}>
-                онлайн
-              </span>
-            </div>
-          </div>
-        </header>
-
-        {/* MESSAGES */}
         <div
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto min-h-0"
-          style={{ background: "#F9F9F9", padding: "20px 20px 8px" }}
+          className="flex-shrink-0 flex items-center justify-center rounded-full"
+          style={{ width: 36, height: 36, background: "#0D0D0B" }}
         >
-          <div className="flex flex-col" style={{ gap: 12 }}>
-            {items.map((item, i) => {
-              if (item.type === "message") {
-                return <ChatMessage key={i} role={item.role} content={item.content} />;
-              }
-              if (item.type === "chips") {
-                return <QuickChips key={i} options={item.options} onSelect={handleUserInput} />;
-              }
-              if (item.type === "typing") {
-                return (
-                  <div key={i} className="flex items-end gap-2.5 animate-message-in">
-                    <AIAvatar size={28} />
-                    <div
-                      style={{
-                        background: "white",
-                        border: "1px solid #F0F0F0",
-                        borderRadius: "4px 16px 16px 16px",
-                        padding: "12px 16px",
-                      }}
-                    >
-                      <TypingIndicator />
-                    </div>
-                  </div>
-                );
-              }
-              if (item.type === "brief") {
-                return (
-                  <BriefCard
-                    key={i}
-                    projectType="Лендинг"
-                    budget="$500–$2 000"
-                    timeline="2–3 недели"
-                    onApprove={handleApproveBrief}
-                  />
-                );
-              }
-              if (item.type === "proposal") {
-                return <ProposalCard key={i} onConnect={handleConnectManager} />;
-              }
-              return null;
-            })}
-          </div>
+          <span className="text-white font-body" style={{ fontSize: 16, lineHeight: 1 }}>✦</span>
         </div>
 
-        {/* INPUT */}
-        <ChatInput onSend={handleUserInput} disabled={inputDisabled} />
+        <div style={{ minWidth: 0 }}>
+          <p className="font-body" style={{ fontSize: 15, fontWeight: 600, color: "#0D0D0B", lineHeight: 1, marginBottom: 3 }}>
+            neeklo AI
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <span
+              className="rounded-full inline-block"
+              style={{
+                width: 6, height: 6, background: "#00C853",
+                boxShadow: "0 0 0 3px rgba(0,200,83,0.2)",
+                animation: "pulse 2s infinite",
+              }}
+            />
+            <span className="font-body" style={{ fontSize: 12, color: "#00B341", lineHeight: 1 }}>
+              онлайн
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* MESSAGES */}
+      <div
+        ref={scrollRef}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          background: "#F9F9F9",
+          padding: "20px 20px 8px",
+        }}
+      >
+        <div style={{ maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
+          {items.map((item, i) => {
+            if (item.type === "message") {
+              return <ChatMessage key={i} role={item.role} content={item.content} />;
+            }
+            if (item.type === "chips") {
+              return <QuickChips key={i} options={item.options} onSelect={handleUserInput} />;
+            }
+            if (item.type === "typing") {
+              return (
+                <div key={i} className="flex items-end gap-2.5 animate-message-in">
+                  <AIAvatar size={28} />
+                  <div
+                    style={{
+                      background: "white",
+                      border: "1px solid #F0F0F0",
+                      borderRadius: "4px 16px 16px 16px",
+                      padding: "12px 16px",
+                    }}
+                  >
+                    <TypingIndicator />
+                  </div>
+                </div>
+              );
+            }
+            if (item.type === "brief") {
+              return (
+                <BriefCard
+                  key={i}
+                  projectType="Лендинг"
+                  budget="$500–$2 000"
+                  timeline="2–3 недели"
+                  onApprove={handleApproveBrief}
+                />
+              );
+            }
+            if (item.type === "proposal") {
+              return <ProposalCard key={i} onConnect={handleConnectManager} />;
+            }
+            return null;
+          })}
+        </div>
+      </div>
+
+      {/* INPUT */}
+      <div
+        style={{
+          flexShrink: 0,
+          background: "white",
+          borderTop: "1px solid #F0F0F0",
+          padding: "12px 16px",
+          paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 10, maxWidth: 720, margin: "0 auto" }}>
+          <textarea
+            ref={inputRef}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Напишите сообщение..."
+            disabled={inputDisabled}
+            rows={1}
+            className="font-body"
+            style={{
+              flex: 1,
+              minHeight: 44,
+              maxHeight: 120,
+              padding: "11px 16px",
+              background: "#F5F4F0",
+              border: "1px solid transparent",
+              borderRadius: 14,
+              fontSize: 15,
+              resize: "none",
+              outline: "none",
+              lineHeight: "1.5",
+              color: "#0D0D0B",
+              transition: "background 0.15s, border-color 0.15s",
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.background = "white";
+              e.currentTarget.style.borderColor = "#D0D0D0";
+            }}
+            onBlur={(e) => {
+              if (!e.currentTarget.value) {
+                e.currentTarget.style.background = "#F5F4F0";
+                e.currentTarget.style.borderColor = "transparent";
+              }
+            }}
+            onInput={(e) => {
+              const t = e.currentTarget;
+              t.style.height = "auto";
+              t.style.height = Math.min(t.scrollHeight, 120) + "px";
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!hasText || inputDisabled}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: hasText ? "#0D0D0B" : "#F0F0F0",
+              color: hasText ? "white" : "#B0B0B0",
+              border: "none",
+              cursor: hasText ? "pointer" : "default",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              transition: "all 0.15s",
+            }}
+          >
+            <Send size={18} />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -33,6 +33,22 @@ const P = ({ children }: { children: React.ReactNode }) => (
   <PageTransition>{children}</PageTransition>
 );
 
+const HIDE_NAV_ROUTES = ["/chat", "/manager-chat"];
+
+const Layout = ({ children }: { children: React.ReactNode }) => {
+  const { pathname } = useLocation();
+  const hideNav = HIDE_NAV_ROUTES.includes(pathname);
+
+  if (hideNav) return <>{children}</>;
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <DesktopNav />
+      <div className="flex-1 flex flex-col">{children}</div>
+    </div>
+  );
+};
+
 const App = () => {
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem("neeklo_onboarded")
@@ -49,9 +65,7 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <ScrollToTop />
-          <div className="min-h-screen flex flex-col">
-            <DesktopNav />
-            <div className="flex-1 flex flex-col">
+          <Layout>
               <Suspense fallback={null}>
               <Routes>
                 <Route path="/" element={<P><Index /></P>} />
@@ -72,8 +86,7 @@ const App = () => {
                 <Route path="*" element={<P><NotFound /></P>} />
               </Routes>
               </Suspense>
-            </div>
-          </div>
+          </Layout>
           <CookieBanner />
         </BrowserRouter>
       </TooltipProvider>
