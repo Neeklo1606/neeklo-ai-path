@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { FolderOpen, Briefcase, Palette, Star, MessageSquare, ChevronDown } from "lucide-react";
@@ -199,12 +199,7 @@ const EmptyState = () => {
 };
 
 const ProjectsPage = () => {
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
-  }, []);
+  const [loading] = useState(false);
 
   return (
     <div className="page-container">

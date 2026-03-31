@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Video, Globe, Bot, Smartphone, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -82,12 +82,7 @@ const EmptyState = () => {
 
 const ServicesPage = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
-  }, []);
+  const [loading] = useState(false);
 
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-12">
