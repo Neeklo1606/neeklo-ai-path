@@ -308,7 +308,7 @@ const ChatPage = () => {
         }}
       >
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/")}
           className="flex items-center justify-center transition-colors duration-150 hover:bg-[#F0F0F0]"
           style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: "transparent", border: "none", cursor: "pointer" }}
         >
