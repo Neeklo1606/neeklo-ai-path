@@ -94,28 +94,33 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
       <div className="relative z-10 flex flex-col items-center px-5 sm:px-8" style={{ maxWidth: 640 }}>
         {/* Orb */}
         <motion.div className="relative mb-8" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease }}>
-          <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}>
+          <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }} style={{ willChange: "transform" }}>
             <div
-              className="relative rounded-full flex items-center justify-center"
-              style={{ width: 88, height: 88, background: "#0D0D0B", boxShadow: "0 8px 32px rgba(0,0,0,0.18)" }}
+              className="relative rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ width: 88, height: 88, background: "#0D0D0B", boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.12)" }}
             >
-              <div className="flex gap-3" style={{ marginTop: -2 }}>
+              {/* Highlight */}
+              <div className="absolute rounded-full" style={{ top: 10, left: 14, width: 28, height: 18, background: "rgba(255,255,255,0.07)", transform: "rotate(-20deg)" }} />
+              {/* Eyes */}
+              <motion.div className="flex items-center justify-center" style={{ gap: 10, x: eyeX, y: eyeY, marginTop: -4 }}>
                 {[0, 1].map((i) => (
                   <motion.div
                     key={i}
-                    className="rounded-full bg-white"
-                    style={{ width: 9, height: 9, x: eyeX, y: eyeY, scaleY: blink ? 0.1 : 1 }}
+                    className="rounded-full"
+                    style={{ width: 9, height: 9, background: "#FFFFFF", boxShadow: "0 0 6px rgba(255,255,255,0.6)" }}
+                    animate={{ scaleY: [1, 1, 0.1, 1, 1] }}
+                    transition={{ duration: 4, repeat: Infinity, times: [0, 0.45, 0.5, 0.55, 1] }}
                   />
                 ))}
-              </div>
+              </motion.div>
+              {/* Smile */}
+              <div className="absolute" style={{ bottom: 22, left: "50%", transform: "translateX(-50%)", width: 18, height: 8, borderBottom: "2px solid rgba(255,255,255,0.2)", borderRadius: "0 0 10px 10px" }} />
             </div>
-            <div
+            <motion.div
               className="absolute"
-              style={{
-                width: 12, height: 12, bottom: 2, right: 2,
-                background: "#00C853", borderRadius: "50%", border: "2.5px solid #F0EEE8",
-                animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite",
-              }}
+              style={{ width: 12, height: 12, bottom: 4, right: 4, background: "#00C853", borderRadius: "50%", border: "2px solid #F0EEE8", boxShadow: "0 0 6px rgba(0,200,83,0.5)" }}
+              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
             />
           </motion.div>
         </motion.div>
