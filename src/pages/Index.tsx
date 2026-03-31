@@ -326,24 +326,32 @@ const HowSection = () => (
     <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
       <motion.h2 className="font-heading mb-10" style={{ fontSize: 32, fontWeight: 800 }} {...fadeUp(0)}>Как это работает</motion.h2>
 
-      {/* Mobile */}
-      <div className="flex flex-col gap-6 md:hidden">
+      {/* Steps - horizontal layout matching reference */}
+      <div className="flex flex-col gap-8">
         {steps.map((s, i) => (
-          <motion.div key={s.num} className="flex flex-col items-center text-center" {...fadeUp(i * 0.1)}>
-            <div
-              className="flex items-center justify-center rounded-full font-heading"
-              style={{ width: 48, height: 48, border: "2px solid #0D0D0B", fontSize: 16, fontWeight: 700 }}
+          <motion.div key={s.num} className="flex items-start gap-5" {...fadeUp(i * 0.12)}>
+            <span
+              className="font-heading flex-shrink-0"
+              style={{ fontSize: 40, fontWeight: 800, color: "#E8E6E0", lineHeight: 1 }}
             >
               {s.num}
+            </span>
+            <div>
+              <p className="font-body" style={{ fontSize: 16, fontWeight: 700, color: "#0D0D0B" }}>{s.title}</p>
+              <p className="font-body mt-1" style={{ fontSize: 14, color: "#6A6860", lineHeight: 1.5 }}>{s.desc}</p>
             </div>
-            <p className="font-body mt-4" style={{ fontSize: 16, fontWeight: 700 }}>{s.title}</p>
-            <p className="font-body mt-2" style={{ fontSize: 14, color: "#6A6860" }}>{s.desc}</p>
           </motion.div>
         ))}
       </div>
 
-      {/* Desktop */}
-      <div className="hidden md:flex items-start justify-between relative">
+      {/* Free consultation note */}
+      <motion.div className="flex items-center gap-2 mt-8" {...fadeUp(0.4)}>
+        <span style={{ color: "#00C853", fontSize: 18 }}>✓</span>
+        <p className="font-body" style={{ fontSize: 14, color: "#6A6860" }}>Первая консультация — бесплатно</p>
+      </motion.div>
+
+      {/* Desktop dashed connector */}
+      <div className="hidden md:flex items-start justify-between relative mt-12">
         {steps.map((s, i) => (
           <motion.div key={s.num} className="flex-1 flex flex-col items-center text-center relative" {...fadeUp(i * 0.1)}>
             <div
@@ -356,7 +364,6 @@ const HowSection = () => (
             <p className="font-body mt-2 max-w-[240px]" style={{ fontSize: 14, color: "#6A6860" }}>{s.desc}</p>
           </motion.div>
         ))}
-        {/* Dashed connector */}
         <div className="absolute left-[calc(16.66%+24px)] right-[calc(16.66%+24px)] border-t-2 border-dashed border-[#D0CCC4]" style={{ top: 24 }} />
       </div>
     </div>
