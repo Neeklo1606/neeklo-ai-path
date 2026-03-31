@@ -316,7 +316,7 @@ const ProjectSheet = ({ project: p, activeTab, setActiveTab, onClose, navigate }
         </div>
 
         {activeTab === "overview" && (
-          <div className="sticky bottom-0 bg-white border-t border-[#F0F0F0] p-4" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+          <div className="sticky bottom-0 bg-white border-t border-[#F0F0F0] p-4" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom))" }}>
             {p.status === "review" ? (
               <button onClick={() => { toast.success("Работа принята! Менеджер получит уведомление."); onClose(); }} className="w-full bg-[#00B341] text-white rounded-2xl py-3.5 font-body text-[15px] font-bold cursor-pointer hover:-translate-y-[1px] active:scale-[0.97] transition-all duration-200">Принять работу ✓</button>
             ) : p.status === "done" ? (
