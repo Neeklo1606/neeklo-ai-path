@@ -1,14 +1,11 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import navHome from "@/assets/nav-home.png";
-import navChat from "@/assets/nav-chat.png";
-import navProjects from "@/assets/nav-projects.png";
-import navProfile from "@/assets/nav-profile.png";
+import { Home, MessageCircle, FolderOpen, User } from "lucide-react";
 
 const navItems = [
-  { icon: navHome, label: "Главная", path: "/" },
-  { icon: navChat, label: "Чат", path: "/chat" },
-  { icon: navProjects, label: "Проекты", path: "/projects" },
-  { icon: navProfile, label: "Профиль", path: "/profile" },
+  { icon: Home, label: "Главная", path: "/" },
+  { icon: MessageCircle, label: "Чат", path: "/chat" },
+  { icon: FolderOpen, label: "Проекты", path: "/projects" },
+  { icon: User, label: "Профиль", path: "/profile" },
 ];
 
 const BottomNav = () => {
@@ -29,22 +26,27 @@ const BottomNav = () => {
       }}
     >
       <div className="grid grid-cols-4 h-full">
-        {navItems.map(({ icon, label, path }) => {
-          const active = location.pathname === path;
+        {navItems.map(({ icon: Icon, label, path }) => {
+          const active = path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
           return (
             <button
               key={path}
               onClick={() => navigate(path)}
-              className="flex flex-col items-center justify-center gap-1 active:scale-[0.92] transition-transform duration-75"
-              style={{ color: active ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))" }}
+              className="flex flex-col items-center justify-center gap-1 active:scale-[0.92] transition-transform duration-75 relative"
             >
-              <img
-                src={icon}
-                alt={label}
-                className="w-[22px] h-[22px]"
+              {/* Active dot indicator */}
+              {active && (
+                <div
+                  className="absolute top-1.5 w-1 h-1 rounded-full transition-all duration-200"
+                  style={{ background: "#0D0D0B" }}
+                />
+              )}
+              <Icon
+                size={22}
+                strokeWidth={active ? 2 : 1.5}
                 style={{
-                  opacity: active ? 1 : 0.5,
-                  transition: "opacity 0.15s",
+                  color: active ? "#0D0D0B" : "#888",
+                  transition: "color 0.15s",
                 }}
               />
               <span
@@ -52,6 +54,8 @@ const BottomNav = () => {
                 style={{
                   fontSize: 10,
                   fontWeight: active ? 600 : 500,
+                  color: active ? "#0D0D0B" : "#888",
+                  transition: "color 0.15s",
                 }}
               >
                 {label}
