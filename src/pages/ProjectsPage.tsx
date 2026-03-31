@@ -97,7 +97,7 @@ const ProjectsPage = () => {
 
       {/* Summary */}
       {activeTab === "active" && (
-        <div className="px-5 md:px-10 pt-5 pb-2">
+        <div className="px-5 md:px-10 pt-5 pb-2 -mx-5 md:mx-0">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none" }}>
             {[
               { icon: <Play size={14} />, color: "#0052FF", bg: "#EEF3FF", value: String(inProgressCount), label: "В работе" },
