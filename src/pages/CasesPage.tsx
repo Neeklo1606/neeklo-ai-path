@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ArrowRight, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import BottomNav from "@/components/BottomNav";
 import Footer from "@/components/Footer";
 
 const filters = ["Все", "Сайты", "Ролики", "Mini App", "AI"] as const;
@@ -94,7 +93,6 @@ const CasesPage = () => {
       </div>
 
       <Footer />
-      <BottomNav />
     </div>
   );
 };

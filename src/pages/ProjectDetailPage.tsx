@@ -1,6 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Palette, Briefcase, MessageSquare, FileText } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
 
 const projectsData: Record<string, { icon: typeof Palette; title: string; status: string; price: string; timeline: string; description: string; manager: string }> = {
   "1": {
@@ -97,7 +96,6 @@ const ProjectDetailPage = () => {
           </button>
         </div>
       </div>
-      <BottomNav />
     </div>
   );
 };

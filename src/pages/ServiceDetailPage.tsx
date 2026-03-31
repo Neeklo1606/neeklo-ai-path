@@ -1,7 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, Video, Globe, Smartphone, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import BottomNav from "@/components/BottomNav";
 
 interface ServiceData {
   icon: typeof Video;
@@ -110,7 +109,6 @@ const ServiceDetailPage = () => {
       <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
         <p className="text-muted-foreground mb-4">Услуга не найдена</p>
         <Button onClick={() => navigate("/services")}>К услугам</Button>
-        <BottomNav />
       </div>
     );
   }
@@ -209,7 +207,6 @@ const ServiceDetailPage = () => {
           Заказать эту услугу
         </Button>
       </div>
-      <BottomNav />
     </div>
   );
 };

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import BottomNav from "@/components/BottomNav";
 
 const categories = ["Все", "Видео", "Разработка", "AI"] as const;
 type Category = typeof categories[number];
@@ -118,7 +117,6 @@ const ServicesPage = () => {
           ))}
         </div>
       </div>
-      <BottomNav />
     </div>
   );
 };
