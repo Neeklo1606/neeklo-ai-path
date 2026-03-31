@@ -4,6 +4,12 @@ import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useState } from "react";
 import Footer from "@/components/Footer";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import workAssistant from "@/assets/work-assistant.webp";
+import workEcommerce from "@/assets/work-ecommerce.webp";
+import workFashion from "@/assets/work-fashion.webp";
+import workRacing from "@/assets/work-racing.webp";
+import workStudio from "@/assets/work-studio.webp";
+import workVision from "@/assets/work-vision.webp";
 
 /* ─── animation helpers ─── */
 const ease = [0.16, 1, 0.3, 1] as const;
