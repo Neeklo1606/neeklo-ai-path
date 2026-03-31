@@ -314,9 +314,8 @@ const Hero = () => {
             {/* Card D — Review */}
             <motion.div
               className="absolute"
-              style={{ left: "55%", top: "68%", width: 190 }}
+              style={{ left: "auto", right: "5%", bottom: "15%", top: "auto", width: 190, animation: "floatCard 4.5s ease-in-out 1.5s infinite" }}
               {...fadeScale(0.95)}
-              {...floatY(10, 4.5, 1.5)}
             >
               <div
                 style={{
