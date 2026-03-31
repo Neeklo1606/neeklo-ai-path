@@ -66,27 +66,19 @@ const LandingPage = () => {
 
 /* ━━━ HERO ━━━ */
 const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => {
+  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width:768px)").matches;
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const springX = useSpring(mouseX, { stiffness: 60, damping: 20 });
   const springY = useSpring(mouseY, { stiffness: 60, damping: 20 });
-  const eyeX = useTransform(springX, [-400, 400], [-6, 6]);
-  const eyeY = useTransform(springY, [-400, 400], [-4, 4]);
+  const eyeX = useTransform(springX, [-300, 300], [-6, 6]);
+  const eyeY = useTransform(springY, [-300, 300], [-4, 4]);
 
-  const [blink, setBlink] = useState(false);
-  useEffect(() => {
-    const id = setInterval(() => {
-      setBlink(true);
-      setTimeout(() => setBlink(false), 120);
-    }, 4000);
-    return () => clearInterval(id);
-  }, []);
-
-  const handleMouse = useCallback((e: React.MouseEvent) => {
+  const handleMouse = isMobile ? undefined : (e: React.MouseEvent) => {
     const r = e.currentTarget.getBoundingClientRect();
-    mouseX.set(e.clientX - r.left - r.width / 2);
-    mouseY.set(e.clientY - r.top - r.height / 2);
-  }, [mouseX, mouseY]);
+    mouseX.set(e.clientX - (r.left + r.width / 2));
+    mouseY.set(e.clientY - (r.top + r.height / 2));
+  };
 
   return (
     <section
