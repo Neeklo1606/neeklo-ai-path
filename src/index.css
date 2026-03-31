@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Unbounded:wght@400;700;800&family=Onest:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -347,7 +347,7 @@
   animation: hero-scale-in 400ms ease-out both;
 }
 
-/* Hero secondary button */
+/* Hero secondary button (legacy) */
 .btn-hero-secondary {
   @apply w-full bg-transparent text-foreground font-semibold text-[14px] border border-border active:scale-[0.97] transition-all duration-200 flex items-center justify-center;
   height: 48px;
@@ -357,6 +357,43 @@
 
 .btn-hero-secondary:hover {
   @apply bg-foreground text-background;
+}
+
+/* Hero CTA buttons — spec */
+.hero-btn-primary {
+  @apply w-full font-body font-semibold text-[15px] text-primary-foreground;
+  background: #0D0D0B;
+  height: 48px;
+  padding: 14px 28px;
+  border-radius: 12px;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+.hero-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+.hero-btn-primary:active {
+  transform: scale(0.97);
+}
+
+.hero-btn-secondary {
+  @apply w-full font-body font-semibold text-[15px] flex items-center justify-center;
+  color: #0D0D0B;
+  background: white;
+  border: 1px solid #D0D0D0;
+  height: 48px;
+  padding: 14px 28px;
+  border-radius: 12px;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+.hero-btn-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+.hero-btn-secondary:active {
+  transform: scale(0.97);
 }
 
 /* Page transition */

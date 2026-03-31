@@ -1,12 +1,10 @@
-import { lazy, Suspense } from "react";
 import { Play, Globe, Smartphone, Sparkles, ArrowRight, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import Footer from "@/components/Footer";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
-import { useCountUp } from "@/hooks/useCountUp";
+import Hero from "@/components/Hero";
 
-const Plasma = lazy(() => import("@/components/Plasma"));
 import workFashion from "@/assets/work-fashion.webp";
 import workRacing from "@/assets/work-racing.webp";
 import workStudio from "@/assets/work-studio.webp";
@@ -36,29 +34,14 @@ const steps = [
   { num: "03", title: "Получи результат", desc: "менеджер берёт в работу" },
 ];
 
-/* ---- Animated stat counter ---- */
-const StatItem = ({ target, suffix, label, active }: { target: number; suffix: string; label: string; active: boolean }) => {
-  const value = useCountUp(target, active);
-  return (
-    <div className="text-center">
-      <p className="text-[28px] md:text-[48px] font-[800] leading-none text-foreground tracking-tight">
-        {value}{suffix}
-      </p>
-      <p className="text-[11px] md:text-[13px] text-muted-foreground mt-1.5 uppercase" style={{ letterSpacing: "2px" }}>{label}</p>
-    </div>
-  );
-};
-
 const LandingPage = () => {
   const navigate = useNavigate();
 
-  const stats = useScrollReveal(0.4);
   const worksSection = useScrollReveal(0.15);
   const productsSection = useScrollReveal(0.15);
   const stepsSection = useScrollReveal(0.15);
   const ctaSection = useScrollReveal(0.3);
 
-  /* Shared reveal style helper */
   const revealStyle = (visible: boolean, delay = 0, fromLeft = false): React.CSSProperties => ({
     opacity: visible ? 1 : 0,
     transform: visible
@@ -71,87 +54,7 @@ const LandingPage = () => {
 
   return (
     <div className="flex-1 bg-background text-foreground pb-24 md:pb-0">
-      {/* HERO */}
-      <section className="relative flex flex-col items-center justify-center px-4 overflow-hidden" style={{ paddingTop: 80, paddingBottom: 60 }}>
-        {/* Plasma background */}
-        <div className="absolute inset-0 z-0">
-          <Suspense fallback={null}>
-            <Plasma
-              color="#000000"
-              speed={0.6}
-              direction="forward"
-              scale={1.2}
-              opacity={0.15}
-              mouseInteractive={true}
-            />
-          </Suspense>
-          {/* Gradient overlay for readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
-        </div>
-
-        <div className="relative z-10 flex flex-col items-center text-center w-full max-w-[780px] mx-auto">
-          {/* Badge */}
-          <div className="animate-logo-appear mb-8">
-            <span className="inline-flex items-center gap-1.5 text-foreground text-[12px] font-medium px-3.5 py-1.5 rounded-full border border-border bg-background/80 backdrop-blur-sm">
-              ✦ AI-продакшн студия · Москва
-            </span>
-          </div>
-
-          {/* Headline */}
-          <div>
-            <h1 className="text-[42px] md:text-[72px] font-[800] leading-[1] tracking-[-2px] mb-5 md:mb-6">
-              <span className="inline-block hero-line" style={{ animationDelay: "0ms" }}>От идеи</span>
-              <br />
-              <span className="inline-block hero-line" style={{ animationDelay: "150ms" }}>до результата</span>
-              <br />
-              <span className="inline-block hero-line bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text" style={{ animationDelay: "300ms" }}>
-                за 48 часов
-              </span>
-            </h1>
-
-            <p
-              className="text-[15px] md:text-[17px] text-muted-foreground leading-relaxed mb-10 max-w-[300px] md:max-w-[440px] mx-auto hero-fade"
-              style={{ animationDelay: "500ms" }}
-            >
-              AI-ролики, сайты, Mini App и автоматизация —
-              заказывай онлайн, получай результат
-            </p>
-          </div>
-
-          {/* Buttons */}
-          <div
-            className="w-full max-w-[440px] flex flex-col md:flex-row gap-3 mb-14 hero-scale"
-            style={{ animationDelay: "700ms" }}
-          >
-            <button
-              onClick={() => navigate("/chat")}
-              className="btn-primary flex items-center justify-center gap-2 md:flex-1"
-            >
-              Заказать проект
-              <ArrowRight size={16} />
-            </button>
-            <button
-              onClick={() => {
-                document.getElementById("works")?.scrollIntoView({ behavior: "smooth" });
-              }}
-              className="btn-hero-secondary md:flex-1 backdrop-blur-sm"
-            >
-              Смотреть работы ↓
-            </button>
-          </div>
-
-          {/* STATS */}
-          <div
-            ref={stats.ref}
-            className="w-full max-w-[500px] border-t border-b border-border/50 py-6 grid grid-cols-3 gap-4 backdrop-blur-sm"
-            style={revealStyle(stats.visible)}
-          >
-            <StatItem target={150} suffix="+" label="проектов" active={stats.visible} />
-            <StatItem target={48} suffix="ч" label="срок сдачи" active={stats.visible} />
-            <StatItem target={95} suffix="%" label="довольны" active={stats.visible} />
-          </div>
-        </div>
-      </section>
+      <Hero />
 
       {/* WORKS GALLERY */}
       <section id="works" className="mt-8 mb-14 px-4 md:px-0" ref={worksSection.ref}>
@@ -185,7 +88,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* PRODUCTS — fade + slide up on scroll, stagger 100ms */}
+      {/* PRODUCTS */}
       <section className="mb-14 px-4 md:px-0" ref={productsSection.ref}>
         <div className="max-w-[1200px] mx-auto">
           <h2 className="text-[22px] md:text-[28px] font-bold mb-5 md:mb-8" style={revealStyle(productsSection.visible)}>Что делаем</h2>
@@ -212,7 +115,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* HOW IT WORKS — fade + slide from left, stagger 150ms */}
+      {/* HOW IT WORKS */}
       <section className="mb-14 px-4 md:px-0" ref={stepsSection.ref}>
         <div className="max-w-[1200px] mx-auto">
           <h2 className="text-[22px] md:text-[28px] font-bold mb-5 md:mb-8" style={revealStyle(stepsSection.visible)}>Как это работает</h2>
@@ -234,7 +137,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* CTA — fade in on scroll */}
+      {/* CTA */}
       <section className="mb-4 px-4 md:px-0 md:mb-16" ref={ctaSection.ref}>
         <div className="max-w-[600px] mx-auto" style={revealStyle(ctaSection.visible)}>
           <div className="game-card text-center">
