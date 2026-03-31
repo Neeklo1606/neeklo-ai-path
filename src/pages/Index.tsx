@@ -15,6 +15,7 @@ const steps = [
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  usePageTitle("neeklo — AI-продакшн студия");
 
   const stepsSection = useScrollReveal(0.15);
   const ctaSection = useScrollReveal(0.3);
