@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { useState } from "react";
+import { motion, useMotionValue, useSpring, useTransform, useInView } from "framer-motion";
+import { useState, useRef } from "react";
 import HolographicCard from "@/components/ui/holographic-card";
 import Footer from "@/components/Footer";
 import { usePageTitle } from "@/hooks/usePageTitle";
