@@ -232,6 +232,7 @@ const App = () => {
                 <Route path="/manager-chat" element={<P><ManagerChatPage /></P>} />
                 <Route path="/notifications" element={<P><NotificationsPage /></P>} />
                 <Route path="/legal/:slug" element={<P><LegalPage /></P>} />
+                <Route path="/admin" element={<P><AdminPage /></P>} />
                 <Route path="*" element={<P><NotFound /></P>} />
               </Routes>
               </Suspense>
