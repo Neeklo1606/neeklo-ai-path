@@ -42,6 +42,8 @@ const fmt = (n: number) => n.toLocaleString("ru-RU");
 
 /* ━━━ PAGE ━━━ */
 const ProjectsPage = () => {
+  const [barsAnimated, setBarsAnimated] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setBarsAnimated(true), 100); return () => clearTimeout(t); }, []);
   usePageTitle("Проекты – neeklo");
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"active" | "done">("active");
@@ -68,7 +70,7 @@ const ProjectsPage = () => {
   useEffect(() => { setActiveDetailTab("overview"); }, [selectedProject?.id]);
 
   return (
-    <div className="bg-[#F5F5F5] min-h-screen pb-[100px]">
+    <div className="bg-[#F5F5F5] min-h-screen pb-[100px] overflow-x-hidden">
       {/* Header */}
       <div className="bg-white px-5 md:px-10 pt-8 pb-6 border-b border-[#F0F0F0]">
         <div className="flex items-center justify-between">
@@ -96,17 +98,17 @@ const ProjectsPage = () => {
       {/* Summary */}
       {activeTab === "active" && (
         <div className="px-5 md:px-10 pt-5 pb-2">
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-3 gap-2">
             {[
-              { icon: <Play size={16} />, color: "#0052FF", bg: "#EEF3FF", value: inProgressCount, label: "В работе" },
-              { icon: <Eye size={16} />, color: "#FF9500", bg: "#FFF8EE", value: reviewCount, label: "На проверке" },
-              { icon: <span className="text-[16px]">₽</span>, color: "#00B341", bg: "#EEFBF3", value: fmt(totalPrice), label: "Сумма проектов" },
+              { icon: <Play size={14} />, color: "#0052FF", bg: "#EEF3FF", value: String(inProgressCount), label: "В работе" },
+              { icon: <Eye size={14} />, color: "#FF9500", bg: "#FFF8EE", value: String(reviewCount), label: "На проверке" },
+              { icon: <span className="text-[14px]">₽</span>, color: "#00B341", bg: "#EEFBF3", value: fmt(totalPrice), label: "Сумма" },
             ].map((c) => (
-              <div key={c.label} className="bg-white rounded-2xl p-3 flex items-center gap-3">
-                <div className="rounded-xl flex items-center justify-center flex-shrink-0" style={{ width: 36, height: 36, background: c.bg, color: c.color }}>{c.icon}</div>
+              <div key={c.label} className="bg-white rounded-2xl p-3 flex flex-col items-center text-center gap-1.5">
+                <div className="rounded-lg flex items-center justify-center flex-shrink-0" style={{ width: 32, height: 32, background: c.bg, color: c.color }}>{c.icon}</div>
                 <div>
-                  <div className="font-heading text-[18px] font-[800] text-[#0D0D0B]">{c.value}</div>
-                  <div className="font-body text-[11px] text-[#6A6860] mt-0.5">{c.label}</div>
+                  <div className="font-heading text-[16px] md:text-[18px] font-[800] text-[#0D0D0B] whitespace-nowrap">{c.value}</div>
+                  <div className="font-body text-[10px] text-[#6A6860] mt-0.5">{c.label}</div>
                 </div>
               </div>
             ))}
@@ -150,7 +152,7 @@ const ProjectsPage = () => {
                     {p.paid === p.price && p.paid > 0 && <span className="font-body text-[11px] text-[#00B341]">Оплачен ✓</span>}
                   </div>
                   <div className="mt-3">
-                    <div className="bg-[#F0F0F0] h-1 rounded-full w-full"><div className="h-full rounded-full transition-all duration-[800ms] ease-out" style={{ width: `${p.progress}%`, background: sc.border }} /></div>
+                    <div className="bg-[#F0F0F0] h-1 rounded-full w-full"><div className="h-full rounded-full" style={{ width: barsAnimated ? `${p.progress}%` : "0%", background: sc.border, transition: "width 0.8s ease" }} /></div>
                     <div className="flex justify-between mt-1.5">
                       <span className="font-body text-[11px] text-[#6A6860]">{p.progress}% выполнено</span>
                       <span className="font-body text-[12px] font-semibold text-[#0D0D0B]">Открыть →</span>
@@ -193,9 +195,9 @@ const ProjectSheet = ({ project: p, activeTab, setActiveTab, onClose, navigate }
 
   return (
     <>
-      <motion.div className="fixed inset-0 bg-black/40 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+      <motion.div className="fixed inset-0 bg-black/40 z-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
       <motion.div
-        className={`fixed z-50 bg-white flex flex-col overflow-hidden ${isMobile ? "inset-x-0 bottom-0 rounded-t-[24px]" : "inset-x-0 bottom-0 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[24px] md:max-w-[600px] md:w-full"}`}
+        className={`fixed z-[60] bg-white flex flex-col overflow-hidden ${isMobile ? "inset-x-0 bottom-0 rounded-t-[24px]" : "inset-x-0 bottom-0 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[24px] md:max-w-[600px] md:w-full"}`}
         style={{ height: "88dvh", maxHeight: "88dvh" }}
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
@@ -314,7 +316,7 @@ const ProjectSheet = ({ project: p, activeTab, setActiveTab, onClose, navigate }
         </div>
 
         {activeTab === "overview" && (
-          <div className="sticky bottom-0 bg-white border-t border-[#F0F0F0] p-4" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+          <div className="sticky bottom-0 bg-white border-t border-[#F0F0F0] p-4" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom))" }}>
             {p.status === "review" ? (
               <button onClick={() => { toast.success("Работа принята! Менеджер получит уведомление."); onClose(); }} className="w-full bg-[#00B341] text-white rounded-2xl py-3.5 font-body text-[15px] font-bold cursor-pointer hover:-translate-y-[1px] active:scale-[0.97] transition-all duration-200">Принять работу ✓</button>
             ) : p.status === "done" ? (
