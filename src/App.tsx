@@ -87,8 +87,7 @@ const App = () => {
                 <Route path="*" element={<P><NotFound /></P>} />
               </Routes>
               </Suspense>
-            </div>
-          </div>
+          </Layout>
           <CookieBanner />
         </BrowserRouter>
       </TooltipProvider>
