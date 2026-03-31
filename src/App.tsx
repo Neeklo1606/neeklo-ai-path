@@ -13,7 +13,7 @@ import CookieBanner from "@/components/CookieBanner";
 import logoImg from "@/assets/logo.png";
 import Index from "./pages/Index";
 import { Menu, X, Home, MessageSquare, Sparkles, Image, FolderOpen, User, Settings, Bell } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+
 
 const ChatPage = lazy(() => import("./pages/ChatPage"));
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
@@ -39,14 +39,17 @@ const P = ({ children }: { children: React.ReactNode }) => (
 
 const HIDE_NAV_ROUTES = ["/chat", "/manager-chat"];
 
-const mobileMenuItems = [
+const navItems = [
   { icon: Home, label: "Главная", path: "/" },
   { icon: MessageSquare, label: "Чат", path: "/chat" },
   { icon: Sparkles, label: "Услуги", path: "/services" },
   { icon: Image, label: "Работы", path: "/cases" },
   { icon: FolderOpen, label: "Проекты", path: "/projects" },
-  { icon: Bell, label: "Уведомления", path: "/notifications" },
+];
+
+const accountItems = [
   { icon: User, label: "Профиль", path: "/profile" },
+  { icon: Bell, label: "Уведомления", path: "/notifications" },
   { icon: Settings, label: "Настройки", path: "/settings" },
 ];
 
@@ -70,36 +73,108 @@ const MobileHeader = () => {
         <img src={logoImg} alt="neeklo" className="h-8 w-auto" />
       </button>
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <button className="flex items-center justify-center w-9 h-9 rounded-lg text-foreground hover:bg-muted transition-colors">
-            <Menu size={22} strokeWidth={1.8} />
-          </button>
-        </SheetTrigger>
-        <SheetContent side="right" className="w-[280px] p-0">
-          <div className="flex flex-col h-full pt-14 pb-8">
-            <nav className="flex flex-col gap-1 px-4">
-              {mobileMenuItems.map(({ icon: Icon, label, path }) => {
-                const active = pathname === path;
-                return (
-                  <button
-                    key={path}
-                    onClick={() => { setOpen(false); navigate(path); }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition-colors ${
-                      active
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <Icon size={20} strokeWidth={active ? 2.2 : 1.6} />
-                    {label}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Overlay */}
+      {open && (
+        <div
+          className="fixed inset-0 z-[60]"
+          style={{ background: "rgba(0,0,0,0.4)", transition: "opacity 0.2s" }}
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      <button
+        onClick={() => setOpen(true)}
+        className="flex items-center justify-center w-9 h-9 rounded-lg text-foreground hover:bg-muted transition-colors"
+      >
+        <Menu size={22} strokeWidth={1.8} />
+      </button>
+
+      {/* Slide-in menu */}
+      <div
+        className="fixed top-0 right-0 z-[70] bg-white"
+        style={{
+          width: "min(75vw, 280px)",
+          height: "auto",
+          maxHeight: "100dvh",
+          padding: "24px 20px",
+          transform: open ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 0.25s cubic-bezier(0.16,1,0.3,1)",
+          borderRadius: "0 0 0 16px",
+          boxShadow: open ? "-4px 0 24px rgba(0,0,0,0.08)" : "none",
+        }}
+      >
+        {/* Close */}
+        <button
+          onClick={() => setOpen(false)}
+          className="absolute top-5 right-5 w-9 h-9 flex items-center justify-center"
+        >
+          <X size={24} strokeWidth={1.6} className="text-[#0D0D0B]" />
+        </button>
+
+        {/* Group 1 — Navigation */}
+        <nav className="mt-8">
+          {navItems.map(({ icon: Icon, label, path }) => {
+            const active = pathname === path;
+            return (
+              <button
+                key={path}
+                onClick={() => { setOpen(false); navigate(path); }}
+                className="flex items-center gap-3 w-full text-left"
+                style={{
+                  padding: "13px 0",
+                  borderBottom: "1px solid #F5F5F5",
+                  fontFamily: "'Onest', sans-serif",
+                  fontSize: 17,
+                  fontWeight: active ? 700 : 600,
+                  color: active ? "#0D0D0B" : "#6A6860",
+                  transition: "color 0.15s",
+                }}
+              >
+                <Icon size={20} strokeWidth={active ? 2 : 1.6} />
+                {label}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: "#F0F0F0", margin: "16px 0" }} />
+
+        {/* Group 2 — Account */}
+        <p
+          style={{
+            fontFamily: "'Onest', sans-serif",
+            fontSize: 11,
+            fontWeight: 600,
+            color: "#B0B0B0",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            marginBottom: 8,
+          }}
+        >
+          Аккаунт
+        </p>
+        <nav>
+          {accountItems.map(({ icon: Icon, label, path }) => (
+            <button
+              key={path}
+              onClick={() => { setOpen(false); navigate(path); }}
+              className="flex items-center gap-3 w-full text-left"
+              style={{
+                padding: "11px 0",
+                fontFamily: "'Onest', sans-serif",
+                fontSize: 15,
+                fontWeight: 500,
+                color: "#6A6860",
+                transition: "color 0.15s",
+              }}
+            >
+              <Icon size={18} strokeWidth={1.6} />
+              {label}
+            </button>
+          ))}
+        </nav>
+      </div>
     </header>
   );
 };
