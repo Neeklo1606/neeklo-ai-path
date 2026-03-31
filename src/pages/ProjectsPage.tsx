@@ -152,7 +152,7 @@ const ProjectsPage = () => {
                     {p.paid === p.price && p.paid > 0 && <span className="font-body text-[11px] text-[#00B341]">Оплачен ✓</span>}
                   </div>
                   <div className="mt-3">
-                    <div className="bg-[#F0F0F0] h-1 rounded-full w-full"><div className="h-full rounded-full transition-all duration-[800ms] ease-out" style={{ width: `${p.progress}%`, background: sc.border }} /></div>
+                    <div className="bg-[#F0F0F0] h-1 rounded-full w-full"><div className="h-full rounded-full" style={{ width: barsAnimated ? `${p.progress}%` : "0%", background: sc.border, transition: "width 0.8s ease" }} /></div>
                     <div className="flex justify-between mt-1.5">
                       <span className="font-body text-[11px] text-[#6A6860]">{p.progress}% выполнено</span>
                       <span className="font-body text-[12px] font-semibold text-[#0D0D0B]">Открыть →</span>
