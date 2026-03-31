@@ -26,7 +26,7 @@ const DesktopNav = () => {
             onClick={() => navigate("/")}
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
-            <img src={logoImg} alt="neeklo studio" className="h-9 w-auto" />
+            <img src={logoImg} alt="neeklo studio" className="h-11 w-auto" />
           </button>
 
           <nav className="flex items-center gap-1">
