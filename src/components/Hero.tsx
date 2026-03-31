@@ -128,12 +128,12 @@ const Hero = () => {
 
         {/* Buttons */}
         <motion.div
-          className="w-full max-w-[440px] flex flex-col md:flex-row gap-3 mb-14"
+          className="w-full max-w-[440px] flex flex-col sm:flex-row gap-3 mb-14"
           {...fadeUp(0.4)}
         >
           <button
             onClick={() => navigate("/chat")}
-            className="hero-btn-primary flex items-center justify-center gap-2 md:flex-1"
+            className="hero-btn-primary flex items-center justify-center gap-2 sm:flex-1 w-full sm:w-auto rounded-full sm:rounded-xl"
           >
             Заказать проект
             <ArrowRight size={16} />
@@ -144,7 +144,7 @@ const Hero = () => {
                 .getElementById("works")
                 ?.scrollIntoView({ behavior: "smooth" })
             }
-            className="hero-btn-secondary md:flex-1"
+            className="hero-btn-secondary sm:flex-1 w-full sm:w-auto rounded-full sm:rounded-xl"
           >
             Смотреть работы ↓
           </button>
