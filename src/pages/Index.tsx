@@ -331,7 +331,7 @@ const HowSection = () => (
           <motion.div key={s.num} className="flex items-start gap-5" {...fadeUp(i * 0.12)}>
             <span
               className="font-heading flex-shrink-0"
-              style={{ fontSize: 40, fontWeight: 800, color: "#E8E6E0", lineHeight: 1 }}
+              style={{ fontSize: 40, fontWeight: 800, color: "#D0CCC4", lineHeight: 1 }}
             >
               {s.num}
             </span>
