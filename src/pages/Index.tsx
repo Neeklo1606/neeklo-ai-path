@@ -39,26 +39,66 @@ const LandingPage = () => {
       {/* HOW IT WORKS */}
       <section className="mb-14 px-4 md:px-0" ref={stepsSection.ref}>
         <div className="max-w-[1200px] mx-auto">
-          <h2 className="text-[22px] md:text-[28px] font-bold mb-5 md:mb-8" style={revealStyle(stepsSection.visible)}>Как это работает</h2>
-          <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-3 md:gap-4">
+          <h2
+            className="font-heading text-[28px] lg:text-[36px] font-extrabold mb-6 md:mb-8 text-[#0D0D0B]"
+            style={revealStyle(stepsSection.visible)}
+          >
+            Как это работает
+          </h2>
+
+          {/* Mobile: vertical list */}
+          <div className="flex flex-col gap-6 md:hidden">
             {steps.map((s, i) => (
-              <button
+              <div
                 key={s.num}
-                onClick={() => navigate(s.action)}
-                className="game-card w-full text-left flex items-start gap-4 group cursor-pointer hover:border-foreground/20 active:scale-[0.98] transition-all duration-150"
+                className="flex items-start gap-[14px]"
                 style={revealStyle(stepsSection.visible, i * 150, true)}
               >
-                <span className="text-[20px] md:text-[24px] font-extrabold text-muted-foreground/40 mt-0.5 group-hover:text-primary transition-colors">{s.num}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[15px] font-semibold flex items-center gap-2">
-                    {s.title}
-                    <s.icon size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
-                  </p>
-                  <p className="text-[13px] text-muted-foreground mt-0.5">{s.desc}</p>
+                <span className="font-heading text-[40px] font-extrabold text-[#E8E8E8] leading-none min-w-[48px]">
+                  {s.num}
+                </span>
+                <div>
+                  <p className="font-body text-[16px] font-bold text-[#0D0D0B]">{s.title}</p>
+                  <p className="font-body text-[14px] text-[#6A6860] mt-[3px]">{s.desc}</p>
                 </div>
-                <ArrowRight size={16} className="text-muted-foreground/30 group-hover:text-foreground group-hover:translate-x-1 transition-all mt-1 flex-shrink-0" />
-              </button>
+              </div>
             ))}
+            <div className="text-center mt-[20px]" style={revealStyle(stepsSection.visible, 500)}>
+              <p className="font-body text-[13px] text-[#6A6860]">
+                <span className="text-[#00B341] mr-1">✓</span>
+                Первая консультация — бесплатно
+              </p>
+            </div>
+          </div>
+
+          {/* Desktop: 3 columns with dashed connector */}
+          <div className="hidden md:block">
+            <div className="relative grid grid-cols-3 gap-8">
+              {/* Dashed line connecting numbers */}
+              <div
+                className="absolute left-[calc(16.66%+24px)] right-[calc(16.66%+24px)] border-t border-dashed border-[#E0E0E0]"
+                style={{ top: 20 }}
+              />
+              {steps.map((s, i) => (
+                <div
+                  key={s.num}
+                  className="relative flex flex-col items-center text-center"
+                  style={revealStyle(stepsSection.visible, i * 150)}
+                >
+                  <span className="font-heading text-[40px] font-extrabold text-[#E8E8E8] leading-none relative z-10 bg-background px-3">
+                    {s.num}
+                  </span>
+                  <p className="font-body text-[16px] font-bold text-[#0D0D0B] mt-4">{s.title}</p>
+                  <p className="font-body text-[14px] text-[#6A6860] mt-[3px]">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+            <div className="text-center mt-8" style={revealStyle(stepsSection.visible, 500)}>
+              <p className="font-body text-[13px] text-[#6A6860]">
+                <span className="text-[#00B341] mr-1">✓</span>
+                Первая консультация — бесплатно
+              </p>
+            </div>
           </div>
         </div>
       </section>
