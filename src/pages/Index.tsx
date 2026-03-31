@@ -415,7 +415,7 @@ const CTASection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) 
           style={{ fontSize: 16, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, maxWidth: 420 }}
           {...anim(0.2)}
         >
-          Опиши задачу в чат — AI соберёт бриф и подберёт решение за 5 минут
+          Опиши задачу в чат – AI соберёт бриф и подберёт решение за 5 минут
         </motion.p>
 
         {/* Buttons */}
