@@ -405,3 +405,8 @@
 .animate-page-in {
   animation: page-in 250ms ease-out both;
 }
+
+@keyframes floatCard {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}

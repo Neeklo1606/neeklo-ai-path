@@ -20,11 +20,6 @@ const fadeScale = (delay: number) => ({
   transition: { duration: 0.5, ease, delay },
 });
 
-const floatY = (range: number, duration: number, delay: number) => ({
-  animate: { y: [0, -range, 0] },
-  transition: { duration, repeat: Infinity, ease: "easeInOut" as const, delay },
-});
-
 /* ---- Avatars ---- */
 const avatarColors = ["#E8D5C4", "#C4D5E8", "#D5E8C4", "#E8C4D5"];
 
@@ -130,7 +125,7 @@ const Hero = () => {
                 <span
                   className="absolute font-body select-none"
                   style={{
-                    top: -8, right: -44, fontSize: 11, fontWeight: 700,
+                    top: -10, right: -48, fontSize: 10, fontWeight: 700,
                     background: "#0D0D0B", color: "#fff", padding: "3px 7px",
                     borderRadius: 6, transform: "rotate(-6deg)",
                     lineHeight: 1.2,
@@ -247,9 +242,8 @@ const Hero = () => {
             {/* Card A — Проект запущен */}
             <motion.div
               className="absolute"
-              style={{ left: "0%", top: "5%", width: 200 }}
+              style={{ left: "0%", top: "5%", width: 200, animation: "floatCard 3s ease-in-out infinite" }}
               {...fadeScale(0.5)}
-              {...floatY(8, 3, 0)}
             >
               <div
                 className="flex items-start gap-3"
@@ -278,9 +272,8 @@ const Hero = () => {
             {/* Card B — 150+ */}
             <motion.div
               className="absolute"
-              style={{ left: "60%", top: "0%", width: 130 }}
+              style={{ left: "auto", right: "0%", top: "0%", width: 130, animation: "floatCard 4s ease-in-out 0.5s infinite" }}
               {...fadeScale(0.65)}
-              {...floatY(12, 4, 0.5)}
             >
               <div
                 style={{
@@ -299,9 +292,8 @@ const Hero = () => {
             {/* Card C — AI генерирует */}
             <motion.div
               className="absolute"
-              style={{ left: "15%", top: "42%", width: 220 }}
+              style={{ left: "10%", top: "42%", width: 220, animation: "floatCard 3.5s ease-in-out 1s infinite" }}
               {...fadeScale(0.8)}
-              {...floatY(6, 3.5, 1)}
             >
               <div
                 style={{
@@ -322,9 +314,8 @@ const Hero = () => {
             {/* Card D — Review */}
             <motion.div
               className="absolute"
-              style={{ left: "55%", top: "68%", width: 190 }}
+              style={{ left: "auto", right: "5%", bottom: "15%", top: "auto", width: 190, animation: "floatCard 4.5s ease-in-out 1.5s infinite" }}
               {...fadeScale(0.95)}
-              {...floatY(10, 4.5, 1.5)}
             >
               <div
                 style={{
