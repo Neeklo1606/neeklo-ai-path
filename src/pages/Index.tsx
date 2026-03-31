@@ -179,19 +179,6 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
           </button>
         </motion.div>
 
-        {/* Social proof */}
-        <motion.div
-          className="flex items-center gap-3 mt-8 pt-6"
-          style={{ borderTop: "1px solid rgba(0,0,0,0.08)" }}
-          {...fadeUp(0.5)}
-        >
-          <div className="flex -space-x-2">
-            {avatarColors.map((c, i) => (
-              <div key={i} className="rounded-full border-2 border-[#F0EEE8]" style={{ width: 28, height: 28, background: c }} />
-            ))}
-          </div>
-          <span className="font-body" style={{ fontSize: 13, color: "#6A6860" }}>47 клиентов · ★★★★★ 4.9</span>
-        </motion.div>
       </div>
 
       {/* Scroll arrow */}
