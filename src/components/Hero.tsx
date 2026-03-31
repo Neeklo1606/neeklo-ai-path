@@ -105,7 +105,7 @@ const Hero = () => {
         <motion.h1
           className="font-heading font-[800] leading-[1] text-foreground mb-5 md:mb-6"
           style={{
-            fontSize: "clamp(44px, 8vw, 96px)",
+            fontSize: "clamp(40px, 10vw, 96px)",
             letterSpacing: "-0.03em",
           }}
           {...fadeUp(0.1)}
