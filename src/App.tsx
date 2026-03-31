@@ -39,11 +39,25 @@ const P = ({ children }: { children: React.ReactNode }) => (
 
 const HIDE_NAV_ROUTES = ["/chat", "/manager-chat"];
 
+const mobileMenuItems = [
+  { icon: Home, label: "Главная", path: "/" },
+  { icon: MessageSquare, label: "Чат", path: "/chat" },
+  { icon: Sparkles, label: "Услуги", path: "/services" },
+  { icon: Image, label: "Работы", path: "/cases" },
+  { icon: FolderOpen, label: "Проекты", path: "/projects" },
+  { icon: Bell, label: "Уведомления", path: "/notifications" },
+  { icon: User, label: "Профиль", path: "/profile" },
+  { icon: Settings, label: "Настройки", path: "/settings" },
+];
+
 const MobileHeader = () => {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [open, setOpen] = useState(false);
+
   return (
     <header
-      className="sm:hidden sticky top-0 z-50 flex items-center justify-center"
+      className="sm:hidden sticky top-0 z-50 flex items-center justify-between px-4"
       style={{
         height: 52,
         background: "rgba(255,255,255,0.92)",
@@ -55,6 +69,37 @@ const MobileHeader = () => {
       <button onClick={() => navigate("/")} className="flex items-center">
         <img src={logoImg} alt="neeklo" className="h-8 w-auto" />
       </button>
+
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <button className="flex items-center justify-center w-9 h-9 rounded-lg text-foreground hover:bg-muted transition-colors">
+            <Menu size={22} strokeWidth={1.8} />
+          </button>
+        </SheetTrigger>
+        <SheetContent side="right" className="w-[280px] p-0">
+          <div className="flex flex-col h-full pt-14 pb-8">
+            <nav className="flex flex-col gap-1 px-4">
+              {mobileMenuItems.map(({ icon: Icon, label, path }) => {
+                const active = pathname === path;
+                return (
+                  <button
+                    key={path}
+                    onClick={() => { setOpen(false); navigate(path); }}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition-colors ${
+                      active
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <Icon size={20} strokeWidth={active ? 2.2 : 1.6} />
+                    {label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </SheetContent>
+      </Sheet>
     </header>
   );
 };
