@@ -70,7 +70,7 @@ const ProjectsPage = () => {
   useEffect(() => { setActiveDetailTab("overview"); }, [selectedProject?.id]);
 
   return (
-    <div className="bg-[#F5F5F5] min-h-screen pb-[100px]">
+    <div className="bg-[#F5F5F5] min-h-screen pb-[100px] overflow-x-hidden">
       {/* Header */}
       <div className="bg-white px-5 md:px-10 pt-8 pb-6 border-b border-[#F0F0F0]">
         <div className="flex items-center justify-between">
