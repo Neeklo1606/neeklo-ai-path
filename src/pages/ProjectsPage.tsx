@@ -42,6 +42,8 @@ const fmt = (n: number) => n.toLocaleString("ru-RU");
 
 /* ━━━ PAGE ━━━ */
 const ProjectsPage = () => {
+  const [barsAnimated, setBarsAnimated] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setBarsAnimated(true), 100); return () => clearTimeout(t); }, []);
   usePageTitle("Проекты – neeklo");
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"active" | "done">("active");
