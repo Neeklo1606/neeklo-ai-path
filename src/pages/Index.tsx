@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, MessageSquare, FileText, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
@@ -7,9 +7,9 @@ import SolutionCards from "@/components/SolutionCards";
 import CasesSection from "@/components/CasesSection";
 
 const steps = [
-  { num: "01", title: "Опиши задачу", desc: "напиши в чат что нужно" },
-  { num: "02", title: "AI собирает бриф", desc: "формирует ТЗ и цену" },
-  { num: "03", title: "Получи результат", desc: "менеджер берёт в работу" },
+  { num: "01", title: "Опиши задачу", desc: "напиши в чат что нужно", icon: MessageSquare, action: "/chat" },
+  { num: "02", title: "AI собирает бриф", desc: "формирует ТЗ и цену", icon: FileText, action: "/chat" },
+  { num: "03", title: "Получи результат", desc: "обсуди с менеджером", icon: Users, action: "/manager-chat" },
 ];
 
 const LandingPage = () => {
@@ -40,19 +40,24 @@ const LandingPage = () => {
       <section className="mb-14 px-4 md:px-0" ref={stepsSection.ref}>
         <div className="max-w-[1200px] mx-auto">
           <h2 className="text-[22px] md:text-[28px] font-bold mb-5 md:mb-8" style={revealStyle(stepsSection.visible)}>Как это работает</h2>
-          <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-3 md:gap-4">
+          <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-3 md:gap-4">
             {steps.map((s, i) => (
-              <div
+              <button
                 key={s.num}
-                className="game-card flex items-start gap-4"
+                onClick={() => navigate(s.action)}
+                className="game-card w-full text-left flex items-start gap-4 group cursor-pointer hover:border-foreground/20 active:scale-[0.98] transition-all duration-150"
                 style={revealStyle(stepsSection.visible, i * 150, true)}
               >
-                <span className="text-[20px] md:text-[24px] font-extrabold text-muted-foreground/40 mt-0.5">{s.num}</span>
-                <div>
-                  <p className="text-[15px] font-semibold">{s.title}</p>
+                <span className="text-[20px] md:text-[24px] font-extrabold text-muted-foreground/40 mt-0.5 group-hover:text-primary transition-colors">{s.num}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-semibold flex items-center gap-2">
+                    {s.title}
+                    <s.icon size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </p>
                   <p className="text-[13px] text-muted-foreground mt-0.5">{s.desc}</p>
                 </div>
-              </div>
+                <ArrowRight size={16} className="text-muted-foreground/30 group-hover:text-foreground group-hover:translate-x-1 transition-all mt-1 flex-shrink-0" />
+              </button>
             ))}
           </div>
         </div>
