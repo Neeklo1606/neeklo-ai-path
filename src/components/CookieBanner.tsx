@@ -38,12 +38,8 @@ const CookieBanner = () => {
 
   return (
     <div
-      className="fixed z-[500] left-4 right-4 sm:left-6 sm:right-auto sm:w-[480px]"
+      className="fixed z-[500] left-4 right-4 sm:left-6 sm:right-auto sm:w-[480px] bottom-[calc(64px+12px)] sm:bottom-6"
       style={{
-        bottom: "calc(64px + 12px)",
-        ...(typeof window !== "undefined" && window.innerWidth >= 640
-          ? { bottom: 24 }
-          : {}),
         background: "white",
         border: "1px solid #E5E5E5",
         borderRadius: 16,
