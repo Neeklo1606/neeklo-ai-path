@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FolderOpen, Briefcase, Palette, Star, MessageSquare, ChevronDown } from "lucide-react";
+import { FolderOpen, Briefcase, Palette, Star, MessageSquare, ChevronDown, ArrowRight } from "lucide-react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 type StepStatus = "done" | "active" | "pending";
 
