@@ -1,230 +1,195 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FolderOpen, Briefcase, Palette, Star, MessageSquare, ChevronDown, ArrowRight } from "lucide-react";
 import { usePageTitle } from "@/hooks/usePageTitle";
-
-type StepStatus = "done" | "active" | "pending";
-
-interface TimelineStep {
-  label: string;
-  status: StepStatus;
-}
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus } from "lucide-react";
 
 interface Project {
   id: string;
-  icon: typeof FolderOpen;
   title: string;
+  service: string;
   status: string;
-  price: string;
-  timeline: string;
+  price: number;
+  paid: number;
+  deadline: string;
+  progress: number;
   manager: string;
-  steps: TimelineStep[];
+  color: string;
 }
 
-const projects: Project[] = [
-  {
-    id: "1",
-    icon: Palette,
-    title: "Лендинг для стартапа",
-    status: "В работе",
-    price: "$850",
-    timeline: "14 дней",
-    manager: "Алексей К.",
-    steps: [
-      { label: "Заявка принята", status: "done" },
-      { label: "Бриф согласован", status: "done" },
-      { label: "В работе", status: "active" },
-      { label: "На проверке", status: "pending" },
-      { label: "Готово", status: "pending" },
-    ],
-  },
-  {
-    id: "2",
-    icon: Briefcase,
-    title: "Интернет-магазин",
-    status: "Ожидает утверждения",
-    price: "$2 400",
-    timeline: "30 дней",
-    manager: "Мария С.",
-    steps: [
-      { label: "Заявка принята", status: "done" },
-      { label: "Бриф согласован", status: "done" },
-      { label: "В работе", status: "active" },
-      { label: "На проверке", status: "pending" },
-      { label: "Готово", status: "pending" },
-    ],
-  },
+const mockProjects: Project[] = [
+  { id: "1", title: "Лендинг для DA-Motors", service: "Сайт", status: "in_progress", price: 95000, paid: 47500, deadline: "15 апр 2026", progress: 75, manager: "Никита К.", color: "#0052FF" },
+  { id: "2", title: "Telegram Mini App", service: "Mini App", status: "review", price: 200000, paid: 200000, deadline: "5 апр 2026", progress: 95, manager: "Никита К.", color: "#FF9500" },
+  { id: "3", title: "AI-агент продаж", service: "AI-агент", status: "briefing", price: 150000, paid: 0, deadline: "30 апр 2026", progress: 15, manager: "Никита К.", color: "#888888" },
+  { id: "4", title: "Имиджевые ролики", service: "AI-видео", status: "done", price: 80000, paid: 80000, deadline: "1 мар 2026", progress: 100, manager: "Никита К.", color: "#00B341" },
 ];
 
-const SkeletonCard = () => (
-  <div className="game-card">
-    <div className="flex items-center gap-3 mb-3">
-      <div className="w-9 h-9 rounded-xl bg-muted animate-pulse" />
-      <div className="flex-1">
-        <div className="h-4 w-3/4 bg-muted rounded-lg animate-pulse mb-1.5" />
-        <div className="h-3 w-1/2 bg-muted rounded-lg animate-pulse" />
-      </div>
-    </div>
-    <div className="flex gap-2">
-      <div className="h-6 w-16 bg-muted rounded-lg animate-pulse" />
-      <div className="h-6 w-16 bg-muted rounded-lg animate-pulse" />
-    </div>
-  </div>
-);
+const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
+  new: { label: "Новый", color: "#888", bg: "#F5F5F5" },
+  briefing: { label: "Сбор брифа", color: "#6A6860", bg: "#F0EEE8" },
+  in_progress: { label: "В работе", color: "#0052FF", bg: "#EEF3FF" },
+  review: { label: "На проверке", color: "#FF9500", bg: "#FFF8EE" },
+  done: { label: "Завершён", color: "#00B341", bg: "#EEFBF3" },
+  cancelled: { label: "Отменён", color: "#FF3B30", bg: "#FFF0EE" },
+};
 
-const ProjectCard = ({ project, index }: { project: Project; index: number }) => {
-  const [expanded, setExpanded] = useState(false);
-  const navigate = useNavigate();
-  const Icon = project.icon;
+const serviceEmojis: Record<string, string> = {
+  "Сайт": "🌐", "Mini App": "📱", "AI-агент": "✦", "AI-видео": "🎬",
+};
+
+const timelineSteps = ["Бриф", "Предложение", "Разработка", "Проверка", "Сдача"];
+
+function getTimelineIndex(status: string) {
+  const map: Record<string, number> = { new: 0, briefing: 0, in_progress: 2, review: 3, done: 4, cancelled: -1 };
+  return map[status] ?? 0;
+}
+
+const ease = [0.16, 1, 0.3, 1] as const;
+
+const ProjectDetail = ({ project, onClose, navigate }: { project: Project; onClose: () => void; navigate: ReturnType<typeof useNavigate> }) => {
+  const st = statusConfig[project.status] || statusConfig.new;
+  const currentStep = getTimelineIndex(project.status);
 
   return (
-    <div
-      className="w-full game-card text-left animate-message-in"
-      style={{ animationDelay: `${index * 60}ms` }}
-    >
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full text-left active:scale-[0.99] transition-transform"
+    <>
+      <motion.div className="fixed inset-0 z-50 bg-black/40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+      <motion.div
+        className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl overflow-y-auto"
+        style={{ height: "88vh" }}
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ duration: 0.3, ease }}
       >
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center flex-shrink-0">
-            <Icon size={16} className="text-foreground" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-[14px] font-semibold text-foreground leading-tight truncate">{project.title}</h3>
-            <p className="text-[12px] text-muted-foreground mt-0.5">{project.status}</p>
-          </div>
-          <ChevronDown
-            size={18}
-            className={`text-muted-foreground transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-          />
+        <div className="flex justify-center pt-3 pb-4">
+          <div className="w-8 h-1 rounded-full bg-[#E0E0E0]" />
         </div>
-        <div className="flex items-center gap-2">
-          <span className="tag-primary">{project.price}</span>
-          <span className="tag-accent">{project.timeline}</span>
-          <span className="ml-auto flex items-center gap-1">
-            <Star size={10} className="text-foreground fill-foreground" />
-            <span className="text-[11px] text-muted-foreground">4.9</span>
-          </span>
-        </div>
-      </button>
+        <div className="px-5 pb-24">
+          <span className="font-body inline-block rounded-full" style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", background: st.bg, color: st.color }}>{st.label}</span>
+          <h2 className="font-heading mt-1" style={{ fontSize: 20, fontWeight: 800 }}>{project.title}</h2>
 
-      <div
-        className={`overflow-hidden transition-all duration-300 ${
-          expanded ? "max-h-[500px] opacity-100 mt-4" : "max-h-0 opacity-0 mt-0"
-        }`}
-      >
-        <div className="border-t border-border pt-4">
-          <div className="space-y-0 mb-5">
-            {project.steps.map((s, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${
-                      s.status === "done"
-                        ? "bg-foreground border-foreground"
-                        : s.status === "active"
-                          ? "bg-primary border-primary"
-                          : "bg-transparent border-muted-foreground/30"
-                    }`}
-                  />
-                  {i < project.steps.length - 1 && (
-                    <div className={`w-0.5 h-6 ${
-                      s.status === "done" ? "bg-foreground/30" : "bg-muted-foreground/15"
-                    }`} />
-                  )}
-                </div>
-                <span
-                  className={`text-[13px] -mt-0.5 ${
-                    s.status === "done"
-                      ? "font-semibold text-foreground"
-                      : s.status === "active"
-                        ? "font-semibold text-primary"
-                        : "text-muted-foreground"
-                  }`}
-                >
-                  {s.label}
-                </span>
+          <div className="grid grid-cols-2 gap-2 mt-4">
+            {[
+              { label: "Бюджет", value: `${project.price.toLocaleString("ru")} ₽` },
+              { label: "Оплачено", value: `${project.paid.toLocaleString("ru")} ₽` },
+              { label: "Дедлайн", value: project.deadline },
+              { label: "Прогресс", value: `${project.progress}%` },
+            ].map((c) => (
+              <div key={c.label} className="bg-[#F9F9F9] rounded-xl p-3">
+                <p className="font-body" style={{ fontSize: 11, color: "#6A6860" }}>{c.label}</p>
+                <p className="font-body" style={{ fontSize: 15, fontWeight: 700 }}>{c.value}</p>
               </div>
             ))}
           </div>
 
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-              <span className="text-[12px] font-bold text-muted-foreground">
-                {project.manager.charAt(0)}
-              </span>
-            </div>
-            <div>
-              <p className="text-[11px] text-muted-foreground">Менеджер</p>
-              <p className="text-[13px] font-semibold">{project.manager}</p>
+          <div className="mt-4 w-full h-2 rounded-full bg-[#F0F0F0] overflow-hidden">
+            <div className="h-full rounded-full" style={{ width: `${project.progress}%`, background: st.color }} />
+          </div>
+
+          <div className="mt-6">
+            <p className="font-body mb-3" style={{ fontSize: 15, fontWeight: 700 }}>Этапы</p>
+            {timelineSteps.map((step, i) => {
+              const isDone = i <= currentStep;
+              const isCurrent = i === currentStep;
+              return (
+                <div key={step}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0 rounded-full flex items-center justify-center" style={{ width: 20, height: 20, background: isDone ? "#0D0D0B" : "white", border: isDone ? "none" : "2px solid #E0E0E0", boxShadow: isCurrent ? "0 0 0 4px rgba(0,200,83,0.2)" : "none" }}>
+                      {isDone && <span className="text-white" style={{ fontSize: 10 }}>✓</span>}
+                    </div>
+                    <span className="font-body" style={{ fontSize: 14, fontWeight: isDone ? 600 : 400, color: isDone ? "#0D0D0B" : "#6A6860" }}>{step}</span>
+                  </div>
+                  {i < timelineSteps.length - 1 && <div className="ml-[9px] w-0.5 h-6 bg-[#E0E0E0]" />}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-6">
+            <p className="font-body mb-2" style={{ fontSize: 11, color: "#6A6860" }}>Менеджер</p>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#E0E0E0] flex items-center justify-center flex-shrink-0">
+                <span className="font-body" style={{ fontSize: 11, fontWeight: 700, color: "#6A6860" }}>НК</span>
+              </div>
+              <span className="font-body flex-1" style={{ fontSize: 14, fontWeight: 600 }}>{project.manager}</span>
+              <button onClick={() => navigate("/chat")} className="font-body rounded-lg hover:bg-[#F5F5F5] transition-colors cursor-pointer" style={{ border: "1px solid #E0E0E0", padding: "6px 12px", fontSize: 13 }}>Написать</button>
             </div>
           </div>
 
-          <button
-            onClick={() => navigate("/manager-chat")}
-            className="w-full flex items-center justify-center gap-2 border border-border bg-card h-[48px] text-[13px] font-semibold text-foreground hover:bg-muted transition-colors"
-            style={{ borderRadius: 12 }}
-          >
-            <MessageSquare size={14} />
-            Написать менеджеру
+          <button onClick={() => navigate("/chat")} className="w-full font-body text-white rounded-xl mt-6 cursor-pointer hover:bg-[#1a1a1a] active:scale-[0.97] transition-all" style={{ background: "#0D0D0B", padding: "14px 0", fontSize: 15, fontWeight: 600 }}>
+            Написать менеджеру →
           </button>
         </div>
-      </div>
-    </div>
-  );
-};
-
-const EmptyState = () => {
-  const navigate = useNavigate();
-  return (
-    <div className="flex flex-col items-center justify-center pt-20 px-8">
-      <div className="w-16 h-16 rounded-2xl bg-[#F5F5F5] flex items-center justify-center mb-5">
-        <FolderOpen size={28} className="text-[#B0B0B0]" />
-      </div>
-      <p className="font-body text-[16px] font-semibold text-[#0D0D0B] text-center mb-1.5">
-        Здесь появятся ваши проекты
-      </p>
-      <p className="font-body text-[13px] text-[#6A6860] text-center mb-6">
-        Создайте первый проект через чат с AI
-      </p>
-      <button
-        onClick={() => navigate("/chat")}
-        className="inline-flex items-center gap-2 font-body text-[14px] font-semibold text-white cursor-pointer"
-        style={{ background: "#0D0D0B", borderRadius: 12, padding: "13px 24px", transition: "all 0.2s" }}
-        onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.background = "#1a1a1a"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.background = "#0D0D0B"; }}
-      >
-        Заказать первый проект
-        <ArrowRight size={16} />
-      </button>
-    </div>
+      </motion.div>
+    </>
   );
 };
 
 const ProjectsPage = () => {
-  const [loading] = useState(false);
+  const navigate = useNavigate();
   usePageTitle("Проекты — neeklo");
+  const [tab, setTab] = useState<"active" | "done">("active");
+  const [selected, setSelected] = useState<Project | null>(null);
+
+  const filtered = mockProjects.filter((p) =>
+    tab === "active" ? ["new", "briefing", "in_progress", "review"].includes(p.status) : ["done", "cancelled"].includes(p.status)
+  );
 
   return (
-    <div className="page-container">
-      <div className="page-content">
-        <h1 className="page-title">Проекты</h1>
+    <div className="min-h-screen bg-background" style={{ paddingBottom: 100 }}>
+      <div className="max-w-[720px] mx-auto px-5 sm:px-8">
+        <div className="flex items-center justify-between" style={{ paddingTop: 32 }}>
+          <h1 className="font-heading" style={{ fontSize: 22, fontWeight: 800 }}>Мои проекты</h1>
+          <button onClick={() => navigate("/chat")} className="flex items-center justify-center hover:bg-[#F5F5F5] active:scale-95 transition-all cursor-pointer" style={{ width: 36, height: 36, borderRadius: 12, border: "1px solid #E0E0E0" }}>
+            <Plus size={18} />
+          </button>
+        </div>
 
-        {loading ? (
-          <div className="space-y-3">
-            {[1, 2].map((i) => <SkeletonCard key={i} />)}
-          </div>
-        ) : projects.length > 0 ? (
-          <div className="space-y-3">
-            {projects.map((project, i) => (
-              <ProjectCard key={project.id} project={project} index={i} />
-            ))}
+        <div className="flex gap-2 mt-4 mb-5">
+          {(["active", "done"] as const).map((t) => (
+            <button key={t} onClick={() => setTab(t)} className="font-body rounded-full cursor-pointer transition-colors" style={{ fontSize: 13, fontWeight: 600, padding: "7px 16px", background: tab === t ? "#0D0D0B" : "transparent", color: tab === t ? "#fff" : "#6A6860", border: tab === t ? "1px solid #0D0D0B" : "1px solid #E0E0E0" }}>
+              {t === "active" ? "Активные" : "Завершённые"}
+            </button>
+          ))}
+        </div>
+
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center mt-16">
+            <span style={{ fontSize: 48 }}>📋</span>
+            <p className="font-body mt-3" style={{ fontSize: 16, fontWeight: 600 }}>Проектов пока нет</p>
+            <button onClick={() => navigate("/chat")} className="font-body text-white rounded-xl mt-4 cursor-pointer hover:bg-[#1a1a1a] active:scale-[0.97] transition-all" style={{ background: "#0D0D0B", padding: "12px 24px", fontSize: 14, fontWeight: 600 }}>
+              Заказать первый проект
+            </button>
           </div>
         ) : (
-          <EmptyState />
+          <div className="flex flex-col gap-3">
+            {filtered.map((p, i) => {
+              const st = statusConfig[p.status] || statusConfig.new;
+              return (
+                <motion.div key={p.id} onClick={() => setSelected(p)} className="bg-white rounded-2xl p-4 shadow-sm cursor-pointer hover:shadow-md active:scale-[0.98] transition-all" style={{ borderLeft: `4px solid ${st.color}` }} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease, delay: i * 0.06 }}>
+                  <div className="flex items-center gap-2">
+                    <span style={{ fontSize: 20 }}>{serviceEmojis[p.service] || "📁"}</span>
+                    <span className="font-body flex-1 truncate" style={{ fontSize: 15, fontWeight: 600 }}>{p.title}</span>
+                    <span className="font-body rounded-full flex-shrink-0" style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", background: st.bg, color: st.color }}>{st.label}</span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="font-body" style={{ fontSize: 14, fontWeight: 700, color: "#0052FF" }}>₽ {p.price.toLocaleString("ru")}</span>
+                    <span className="font-body" style={{ fontSize: 13, color: "#6A6860" }}>до {p.deadline}</span>
+                  </div>
+                  <div className="mt-3 w-full h-1 rounded-full bg-[#F0F0F0] overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${p.progress}%`, background: st.color }} />
+                  </div>
+                  <p className="font-body mt-1" style={{ fontSize: 11, color: "#6A6860" }}>{p.progress}% выполнено</p>
+                  <p className="font-body mt-2" style={{ fontSize: 13, fontWeight: 600, color: "#0D0D0B" }}>Открыть →</p>
+                </motion.div>
+              );
+            })}
+          </div>
         )}
       </div>
+      <AnimatePresence>
+        {selected && <ProjectDetail project={selected} onClose={() => setSelected(null)} navigate={navigate} />}
+      </AnimatePresence>
     </div>
   );
 };
