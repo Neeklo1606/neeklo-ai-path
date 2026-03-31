@@ -259,17 +259,10 @@ const WorksPage = () => {
 
       {/* Grid */}
       <div className="px-5 md:px-10 pt-6">
-        <div className="hidden md:block" style={{ columns: 3, columnGap: 16 }}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
           {filtered.map((w, i) => (
-            <div key={w.id} className="mb-4 break-inside-avoid" style={{ height: w.featured ? 320 : 220 }}>
+            <div key={w.id} className={w.featured ? "col-span-2 md:col-span-2" : ""} style={{ height: w.featured ? 280 : 220 }}>
               <WorkCard work={w} index={i} onClick={() => setSelectedWork(w)} />
-            </div>
-          ))}
-        </div>
-        <div className="md:hidden flex flex-col gap-3">
-          {filtered.map((w, i) => (
-            <div key={w.id} style={{ height: 220 }}>
-              <WorkCard work={{ ...w, featured: false }} index={i} onClick={() => setSelectedWork(w)} />
             </div>
           ))}
         </div>
