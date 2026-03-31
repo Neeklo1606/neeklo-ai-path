@@ -2,6 +2,7 @@ import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import Hero from "@/components/Hero";
 import SolutionCards from "@/components/SolutionCards";
 import CasesSection from "@/components/CasesSection";
