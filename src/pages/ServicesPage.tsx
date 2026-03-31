@@ -23,7 +23,7 @@ interface Service {
 }
 
 const servicesData: Service[] = [
-  { slug: "ai-video", cat: "AI-видео", icon: "🎬", name: "AI-ролики", priceFrom: 25000, priceTo: 150000, days: 5, badge: "ХИТ", badgeColor: "#0D0D0B", desc: "Создание рекламных роликов с помощью нейросетей. Runway, Kling, Sora — подбираем инструмент под задачу.", includes: ["Сценарий и раскадровка", "Генерация видео AI", "Озвучка и монтаж", "До 2 правок"] },
+  { slug: "ai-video", cat: "AI-видео", icon: "🎬", name: "AI-ролики", priceFrom: 25000, priceTo: 150000, days: 5, badge: "ХИТ", badgeColor: "#0D0D0B", desc: "Создание рекламных роликов с помощью нейросетей. Runway, Kling, Sora – подбираем инструмент под задачу.", includes: ["Сценарий и раскадровка", "Генерация видео AI", "Озвучка и монтаж", "До 2 правок"] },
   { slug: "website", cat: "Сайты", icon: "🌐", name: "Сайт под ключ", priceFrom: 95000, priceTo: 400000, days: 14, desc: "Лендинг или корпоративный сайт с AI-контентом, анимациями и SEO.", includes: ["Дизайн в Figma", "Верстка на React/Lovable", "SEO-оптимизация", "Подключение аналитики"] },
   { slug: "landing", cat: "Сайты", icon: "📄", name: "Лендинг", priceFrom: 35000, priceTo: 120000, days: 7, desc: "Продающий одностраничник за 7 дней. Конверсионная структура, современный дизайн.", includes: ["Прототип за 2 дня", "Адаптив mobile/desktop", "Форма заявки + CRM", "Быстрая загрузка"] },
   { slug: "mini-app", cat: "Mini App", icon: "📱", name: "Telegram Mini App", priceFrom: 65000, priceTo: 300000, days: 21, desc: "Полноценное приложение внутри Telegram. Каталог, запись, оплата, CRM.", includes: ["UI/UX дизайн", "Frontend + Backend", "Оплата Stars / ЮKassa", "Поддержка 1 месяц"] },
@@ -156,7 +156,7 @@ const ServicesPage = () => {
   const isMobile = useIsMobile();
   const [active, setActive] = useState("Все");
   const [selected, setSelected] = useState<Service | null>(null);
-  usePageTitle("Услуги — neeklo");
+  usePageTitle("Услуги – neeklo");
 
   const filtered = active === "Все" ? servicesData : servicesData.filter((s) => s.cat === active);
 

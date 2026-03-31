@@ -127,7 +127,7 @@ const ProjectDetail = ({ project, onClose, navigate }: { project: Project; onClo
 
 const ProjectsPage = () => {
   const navigate = useNavigate();
-  usePageTitle("Проекты — neeklo");
+  usePageTitle("Проекты – neeklo");
   const [tab, setTab] = useState<"active" | "done">("active");
   const [selected, setSelected] = useState<Project | null>(null);
 

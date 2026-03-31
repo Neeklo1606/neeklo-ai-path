@@ -18,7 +18,7 @@ const menuItems = [
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  usePageTitle("Профиль — neeklo");
+  usePageTitle("Профиль – neeklo");
   const [isLoggedIn, setIsLoggedIn] = useState(true);
 
   if (!isLoggedIn) {

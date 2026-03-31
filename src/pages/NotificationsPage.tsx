@@ -38,7 +38,7 @@ const notifications: Notification[] = [
     icon: Briefcase,
     iconClass: "text-muted-foreground",
     title: "Проект перешёл на этап «В работе»",
-    desc: "Лендинг для стартапа — дизайн начат",
+    desc: "Лендинг для стартапа – дизайн начат",
     time: "вчера",
     to: "/projects",
     read: true,

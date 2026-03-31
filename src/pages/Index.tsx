@@ -49,7 +49,7 @@ const portfolioItems = [
 const filters = ["Все", "AI-видео", "Сайт", "Mini App", "AI"];
 
 const steps = [
-  { num: "01", title: "Опиши задачу", desc: "Напиши в чат — AI задаст уточняющие вопросы" },
+  { num: "01", title: "Опиши задачу", desc: "Напиши в чат – AI задаст уточняющие вопросы" },
   { num: "02", title: "AI собирает бриф", desc: "Формирует ТЗ, срок и предварительную стоимость" },
   { num: "03", title: "Менеджер берёт в работу", desc: "Обсуждаете детали, подписываете, стартуем" },
 ];
@@ -61,7 +61,7 @@ const Divider = () => <div className="w-full" style={{ height: 1, background: "#
 /* ━━━ MAIN PAGE ━━━ */
 const LandingPage = () => {
   const navigate = useNavigate();
-  usePageTitle("neeklo — AI-продакшн студия");
+  usePageTitle("neeklo – AI-продакшн студия");
 
   return (
     <div className="flex-1 bg-background text-foreground pb-[100px] sm:pb-0 overflow-x-hidden">
@@ -331,7 +331,7 @@ const HowSection = () => (
           <motion.div key={s.num} className="flex items-start gap-5" {...fadeUp(i * 0.12)}>
             <span
               className="font-heading flex-shrink-0"
-              style={{ fontSize: 40, fontWeight: 800, color: "#E8E6E0", lineHeight: 1 }}
+              style={{ fontSize: 40, fontWeight: 800, color: "#D0CCC4", lineHeight: 1 }}
             >
               {s.num}
             </span>
@@ -346,7 +346,7 @@ const HowSection = () => (
       {/* Free consultation note */}
       <motion.div className="flex items-center gap-2 mt-8" {...fadeUp(0.4)}>
         <span style={{ color: "#00C853", fontSize: 18 }}>✓</span>
-        <p className="font-body" style={{ fontSize: 14, color: "#6A6860" }}>Первая консультация — бесплатно</p>
+        <p className="font-body" style={{ fontSize: 14, color: "#6A6860" }}>Первая консультация – бесплатно</p>
       </motion.div>
 
       {/* Desktop dashed connector */}
@@ -396,7 +396,7 @@ const CTASection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) 
         <motion.div className="inline-flex items-center gap-2 mb-4" {...anim(0)}>
           <span className="rounded-full flex-shrink-0 animate-pulse" style={{ width: 7, height: 7, background: "#00C853" }} />
           <span className="font-body uppercase" style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em" }}>
-            Первая консультация — бесплатно
+            Первая консультация – бесплатно
           </span>
         </motion.div>
 
@@ -415,7 +415,7 @@ const CTASection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) 
           style={{ fontSize: 16, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, maxWidth: 420 }}
           {...anim(0.2)}
         >
-          Опиши задачу в чат — AI соберёт бриф и подберёт решение за 5 минут
+          Опиши задачу в чат – AI соберёт бриф и подберёт решение за 5 минут
         </motion.p>
 
         {/* Buttons */}
