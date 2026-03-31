@@ -27,6 +27,7 @@ const ServicesPage = lazy(() => import("./pages/ServicesPage"));
 const ServiceDetailPage = lazy(() => import("./pages/ServiceDetailPage"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
 const CasesPage = lazy(() => import("./pages/CasesPage"));
+const WorksPage = lazy(() => import("./pages/WorksPage"));
 const OrderPage = lazy(() => import("./pages/OrderPage"));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
