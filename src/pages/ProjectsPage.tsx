@@ -107,7 +107,7 @@ const ProjectsPage = () => {
               <div key={c.label} className="bg-white rounded-2xl p-3 flex items-center gap-2 flex-1 min-w-[110px]">
                 <div className="rounded-lg flex items-center justify-center flex-shrink-0" style={{ width: 32, height: 32, background: c.bg, color: c.color }}>{c.icon}</div>
                 <div>
-                  <div className="font-heading text-[16px] font-[800] text-[#0D0D0B] whitespace-nowrap">{c.value}</div>
+                  <div className="font-heading text-[14px] sm:text-[16px] font-[800] text-[#0D0D0B] whitespace-nowrap">{c.value}</div>
                   <div className="font-body text-[10px] text-[#6A6860] mt-0.5 whitespace-nowrap">{c.label}</div>
                 </div>
               </div>
