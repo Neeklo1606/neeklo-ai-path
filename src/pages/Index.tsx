@@ -1,27 +1,11 @@
-import { ArrowRight, Star } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import Footer from "@/components/Footer";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import Hero from "@/components/Hero";
 import SolutionCards from "@/components/SolutionCards";
-
-import workFashion from "@/assets/work-fashion.webp";
-import workRacing from "@/assets/work-racing.webp";
-import workStudio from "@/assets/work-studio.webp";
-import workVision from "@/assets/work-vision.webp";
-import workAssistant from "@/assets/work-assistant.webp";
-import workEcommerce from "@/assets/work-ecommerce.webp";
-
-
-const works = [
-  { img: workFashion, title: "Имиджевый ролик", tag: "AI-видео" },
-  { img: workStudio, title: "Лендинг студии", tag: "Сайт" },
-  { img: workRacing, title: "Промо для бренда", tag: "AI-видео" },
-  { img: workVision, title: "Vision AI App", tag: "Mini App" },
-  { img: workEcommerce, title: "Интернет-магазин", tag: "Сайт" },
-  { img: workAssistant, title: "AI-ассистент", tag: "AI-агент" },
-];
+import CasesSection from "@/components/CasesSection";
 
 const steps = [
   { num: "01", title: "Опиши задачу", desc: "напиши в чат что нужно" },
