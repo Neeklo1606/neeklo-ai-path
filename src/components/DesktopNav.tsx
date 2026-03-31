@@ -26,10 +26,7 @@ const DesktopNav = () => {
             onClick={() => navigate("/")}
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Sparkles size={14} className="text-primary-foreground" />
-            </div>
-            <span className="text-[18px] font-bold text-foreground tracking-tight">neeklo</span>
+            <img src={logoImg} alt="neeklo studio" className="h-7 w-auto" />
           </button>
 
           <nav className="flex items-center gap-1">

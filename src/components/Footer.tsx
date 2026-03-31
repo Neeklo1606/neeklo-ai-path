@@ -22,13 +22,7 @@ const Footer = () => (
       {/* Left: brand */}
       <div className="min-w-0">
         <div className="flex items-center gap-2 mb-2">
-          <div
-            className="flex items-center justify-center rounded-full"
-            style={{ width: 28, height: 28, background: "#0D0D0B" }}
-          >
-            <span className="text-white text-[13px] leading-none">✦</span>
-          </div>
-          <span className="font-body text-[16px] font-[700] text-[#0D0D0B]">neeklo</span>
+          <img src={logoImg} alt="neeklo studio" className="h-6 w-auto" />
         </div>
         <p className="font-body text-[13px] leading-[1.5]" style={{ color: "#888" }}>
           ИП Клочко Н.Н. · ИНН 263520430560
