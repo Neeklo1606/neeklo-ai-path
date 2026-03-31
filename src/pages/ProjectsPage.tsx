@@ -199,12 +199,7 @@ const EmptyState = () => {
 };
 
 const ProjectsPage = () => {
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
-  }, []);
+  const [loading] = useState(false);
 
   return (
     <div className="page-container">
