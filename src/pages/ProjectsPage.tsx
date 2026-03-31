@@ -204,6 +204,7 @@ const EmptyState = () => {
 
 const ProjectsPage = () => {
   const [loading] = useState(false);
+  usePageTitle("Проекты — neeklo");
 
   return (
     <div className="page-container">
