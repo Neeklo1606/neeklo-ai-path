@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowRight, Send, Globe, Check } from "lucide-react";
+import { ArrowRight, Send, Globe, Check, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const serviceLinks = [
   { label: "AI-ролики", path: "/chat" },
@@ -53,16 +54,36 @@ const Footer = () => {
   const [contact, setContact] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!name.trim() || !contact.trim()) {
+    const trimName = name.trim();
+    const trimContact = contact.trim();
+    if (!trimName || !trimContact) {
       setError("Заполните обязательные поля");
       return;
     }
-    setSubmitted(true);
+    if (trimName.length > 100 || trimContact.length > 255 || message.length > 1000) {
+      setError("Слишком длинный текст");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { error: dbError } = await supabase.from("contact_requests").insert({
+        name: trimName,
+        contact: trimContact,
+        message: message.trim() || null,
+      });
+      if (dbError) throw dbError;
+      setSubmitted(true);
+    } catch {
+      setError("Ошибка отправки, попробуйте позже");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleReset = () => {
@@ -187,7 +208,8 @@ const Footer = () => {
                   )}
                   <button
                     type="submit"
-                    className="flex items-center justify-center gap-2 font-body cursor-pointer hover:bg-[#F0EEE8] hover:-translate-y-[1px] active:scale-[0.97] transition-all duration-200"
+                    disabled={submitting}
+                    className="flex items-center justify-center gap-2 font-body cursor-pointer hover:bg-[#F0EEE8] hover:-translate-y-[1px] active:scale-[0.97] transition-all duration-200 disabled:opacity-60 disabled:pointer-events-none"
                     style={{
                       width: "100%",
                       padding: "12px 20px",
@@ -199,8 +221,7 @@ const Footer = () => {
                       border: "none",
                     }}
                   >
-                    Отправить заявку
-                    <ArrowRight size={16} />
+                    {submitting ? <Loader2 size={16} className="animate-spin" /> : <>Отправить заявку <ArrowRight size={16} /></>}
                   </button>
                 </form>
               )}
