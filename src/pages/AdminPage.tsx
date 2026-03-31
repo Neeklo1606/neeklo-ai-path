@@ -84,6 +84,10 @@ const AdminPage = () => {
   const isMobile = useIsMobile();
   usePageTitle("Admin — neeklo");
 
+  const [adminUnlocked, setAdminUnlocked] = useState(() => sessionStorage.getItem("neeklo_admin") === "true");
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState(false);
+
   const [activeTab, setActiveTab] = useState<"dashboard"|"leads"|"projects"|"content">("dashboard");
   const [leads, setLeads] = useState(initLeads);
   const [projects, setProjects] = useState(initProjects);
@@ -96,6 +100,40 @@ const AdminPage = () => {
     { key:"projects" as const, icon:FolderOpen, label:"Проекты" },
     { key:"content" as const, icon:Settings, label:"Контент" },
   ];
+
+  if (!adminUnlocked) {
+    return (
+      <div className="flex items-center justify-center" style={{ height: "100dvh", background: "#F5F5F5" }}>
+        <div className="bg-white rounded-3xl p-8 w-full max-w-xs mx-4 shadow-sm text-center">
+          <h2 className="font-heading" style={{ fontSize: 20, fontWeight: 800 }}>Введите код доступа</h2>
+          <input
+            type="password"
+            maxLength={4}
+            value={pin}
+            onChange={e => { setPin(e.target.value.replace(/\D/g, "")); setPinError(false); }}
+            onKeyDown={e => {
+              if (e.key === "Enter") {
+                if (pin === "2626") { sessionStorage.setItem("neeklo_admin", "true"); setAdminUnlocked(true); }
+                else setPinError(true);
+              }
+            }}
+            placeholder="••••"
+            className="w-full font-body bg-[#F5F5F5] rounded-xl px-4 py-3 outline-none text-center mt-4 tracking-[0.3em]"
+            style={{ fontSize: 20, fontWeight: 700, border: pinError ? "1px solid #FF3B30" : "1px solid transparent" }}
+            autoFocus
+          />
+          {pinError && <p className="font-body mt-2" style={{ fontSize: 13, color: "#FF3B30" }}>Неверный код</p>}
+          <button
+            onClick={() => { if (pin === "2626") { sessionStorage.setItem("neeklo_admin", "true"); setAdminUnlocked(true); } else setPinError(true); }}
+            className="w-full font-body text-white rounded-xl mt-4 cursor-pointer hover:bg-[#1a1a1a] active:scale-[0.97] transition-all"
+            style={{ background: "#0D0D0B", padding: "13px 0", fontSize: 15, fontWeight: 600 }}
+          >
+            Войти
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F5F5F5]">
