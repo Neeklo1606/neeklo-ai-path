@@ -242,9 +242,8 @@ const Hero = () => {
             {/* Card A — Проект запущен */}
             <motion.div
               className="absolute"
-              style={{ left: "0%", top: "5%", width: 200 }}
+              style={{ left: "0%", top: "5%", width: 200, animation: "floatCard 3s ease-in-out infinite" }}
               {...fadeScale(0.5)}
-              {...floatY(8, 3, 0)}
             >
               <div
                 className="flex items-start gap-3"
