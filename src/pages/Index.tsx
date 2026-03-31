@@ -4,6 +4,12 @@ import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useState } from "react";
 import Footer from "@/components/Footer";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import workAssistant from "@/assets/work-assistant.webp";
+import workEcommerce from "@/assets/work-ecommerce.webp";
+import workFashion from "@/assets/work-fashion.webp";
+import workRacing from "@/assets/work-racing.webp";
+import workStudio from "@/assets/work-studio.webp";
+import workVision from "@/assets/work-vision.webp";
 
 /* ─── animation helpers ─── */
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -25,15 +31,15 @@ const services = [
 ];
 
 const portfolioItems = [
-  { id: 1, cat: "AI-видео", title: "Имиджевый ролик", result: "+40% узнаваемость", bg: "linear-gradient(135deg,#1a1a2e,#16213e)", emoji: "🎬", featured: true },
-  { id: 2, cat: "Сайты", title: "Лендинг студии", result: "+60% заявок", bg: "linear-gradient(135deg,#0f3460,#533483)", emoji: "🌐" },
-  { id: 3, cat: "AI-видео", title: "Промо для бренда", result: "2M просмотров", bg: "linear-gradient(135deg,#1a0a0a,#3d1515)", emoji: "🏎️" },
-  { id: 4, cat: "Mini App", title: "Vision AI App", result: "50K пользователей", bg: "linear-gradient(135deg,#0d0d0d,#1a1a2a)", emoji: "📱" },
-  { id: 5, cat: "Сайты", title: "Интернет-магазин", result: "+120% конверсия", bg: "linear-gradient(135deg,#0a1628,#1e3a5f)", emoji: "🛍️" },
-  { id: 6, cat: "AI-агенты", title: "AI-продавец", result: "80% автоматизация", bg: "linear-gradient(135deg,#0a0a0a,#2d2d2d)", emoji: "🤖" },
+  { id: 1, cat: "AI-видео", title: "Имиджевый ролик", result: "+40% узнаваемость", bg: "linear-gradient(135deg,#1a1a2e,#16213e)", img: workFashion, featured: true },
+  { id: 2, cat: "Сайт", title: "Лендинг студии", result: "+60% заявок", bg: "linear-gradient(135deg,#0f3460,#533483)", img: workStudio },
+  { id: 3, cat: "AI-видео", title: "Промо для бренда", result: "2M просмотров", bg: "linear-gradient(135deg,#1a0a0a,#3d1515)", img: workRacing },
+  { id: 4, cat: "Mini App", title: "Vision AI App", result: "50K пользователей", bg: "linear-gradient(135deg,#0d0d0d,#1a1a2a)", img: workVision },
+  { id: 5, cat: "Сайты", title: "Интернет-магазин", result: "+120% конверсия", bg: "linear-gradient(135deg,#0a1628,#1e3a5f)", img: workEcommerce },
+  { id: 6, cat: "AI", title: "AI-ассистент", result: "80% автоматизация", bg: "linear-gradient(135deg,#0a0a0a,#2d2d2d)", img: workAssistant },
 ];
 
-const filters = ["Все", "AI-видео", "Сайты", "Mini App", "AI-агенты"];
+const filters = ["Все", "AI-видео", "Сайт", "Mini App", "AI"];
 
 const steps = [
   { num: "01", title: "Опиши задачу", desc: "Напиши в чат — AI задаст уточняющие вопросы и соберёт бриф" },
@@ -242,9 +248,8 @@ const WorksSection = () => {
   return (
     <section id="works" className="bg-white" style={{ padding: "72px 0" }}>
       <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
-        <div className="flex items-center justify-between mb-2">
+        <div className="mb-2">
           <motion.h2 className="font-heading" style={{ fontSize: 32, fontWeight: 800 }} {...fadeUp(0)}>Наши работы</motion.h2>
-          <motion.span className="font-body" style={{ fontSize: 14, fontWeight: 600, color: "#FFB800" }} {...fadeUp(0.05)}>★ 4.9 / 5</motion.span>
         </div>
 
         {/* Filter pills */}
@@ -277,7 +282,12 @@ const WorksSection = () => {
               style={{ height: item.featured ? 280 : 200, background: item.bg }}
               {...fadeUp(i * 0.07)}
             >
-              <div className="absolute inset-0 flex items-center justify-center text-5xl">{item.emoji}</div>
+              <img
+                src={item.img}
+                alt={item.title}
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
+              />
               <div
                 className="absolute inset-x-0 bottom-0 p-4"
                 style={{ background: "linear-gradient(to top, rgba(0,0,0,0.72), transparent)" }}
