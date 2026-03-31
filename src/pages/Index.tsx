@@ -206,36 +206,34 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
 
 /* ━━━ SERVICES ━━━ */
 const ServicesSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
-  <section className="bg-white" style={{ padding: "72px 0" }}>
-    <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
-      <motion.h2 className="font-heading" style={{ fontSize: 32, fontWeight: 800 }} {...fadeUp(0)}>Что делаем</motion.h2>
-      <motion.p className="font-body" style={{ fontSize: 15, color: "#6A6860", marginTop: 8, marginBottom: 32 }} {...fadeUp(0.05)}>
-        Выберите подходящее решение
-      </motion.p>
+  <section className="bg-white" style={{ padding: "48px 20px" }}>
+    <div className="max-w-[1280px] mx-auto md:px-10">
+      <motion.h2 className="font-heading" style={{ fontSize: "clamp(24px,3vw,28px)", fontWeight: 800, color: "#0D0D0B" }} {...fadeUp(0)}>Что делаем</motion.h2>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 mt-6" style={{ gap: "10px" }}>
         {services.map((s, i) => (
           <motion.div
             key={s.name}
-            className="relative bg-white border border-[#F0F0F0] rounded-2xl p-4 cursor-pointer hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] transition-all duration-200"
+            className="relative bg-white cursor-pointer hover:-translate-y-[3px] hover:shadow-lg active:scale-[0.98] transition-all duration-200"
+            style={{ border: "1px solid #F0F0F0", borderRadius: 16, padding: 16 }}
             {...fadeUp(i * 0.07)}
           >
             {s.badge && (
               <span
-                className="absolute top-3 right-3 font-body text-white rounded-full"
-                style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", background: s.badgeColor }}
+                className="absolute font-body text-white"
+                style={{ top: 12, right: 12, fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 9999, background: s.badgeColor }}
               >
                 {s.badge}
               </span>
             )}
-            <div className="w-10 h-10 rounded-xl bg-[#F5F5F5] flex items-center justify-center text-lg">{s.icon}</div>
-            <p className="font-heading mt-3" style={{ fontSize: 14, fontWeight: 700 }}>{s.name}</p>
-            <p className="font-body mt-1" style={{ fontSize: 13, fontWeight: 700, color: "#0052FF" }}>{s.price}</p>
-            <p className="font-body mt-1 hidden md:block" style={{ fontSize: 13, color: "#6A6860" }}>{s.desc}</p>
+            <div className="flex items-center justify-center rounded-xl" style={{ width: 40, height: 40, background: "#F5F5F5", fontSize: 20 }}>{s.icon}</div>
+            <p className="font-heading" style={{ fontSize: 14, fontWeight: 700, color: "#0D0D0B", marginTop: 12 }}>{s.name}</p>
+            <p className="font-body" style={{ fontSize: 13, fontWeight: 700, color: "#0052FF", marginTop: 3 }}>{s.price}</p>
+            <p className="font-body hidden md:block" style={{ fontSize: 13, color: "#6A6860", marginTop: 4 }}>{s.desc}</p>
             <button
               onClick={() => navigate("/chat")}
-              className="w-full font-body text-white rounded-lg mt-3 cursor-pointer hover:bg-[#1a1a1a] active:scale-[0.97] transition-all"
-              style={{ background: "#0D0D0B", padding: "10px 0", fontSize: 13, fontWeight: 600 }}
+              className="w-full font-body text-white rounded-lg cursor-pointer hover:bg-[#1a1a1a] active:scale-[0.97] transition-all"
+              style={{ background: "#0D0D0B", padding: 10, fontSize: 13, fontWeight: 600, marginTop: 12 }}
             >
               Заказать
             </button>
