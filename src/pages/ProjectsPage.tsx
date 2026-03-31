@@ -195,9 +195,9 @@ const ProjectSheet = ({ project: p, activeTab, setActiveTab, onClose, navigate }
 
   return (
     <>
-      <motion.div className="fixed inset-0 bg-black/40 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+      <motion.div className="fixed inset-0 bg-black/40 z-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
       <motion.div
-        className={`fixed z-50 bg-white flex flex-col overflow-hidden ${isMobile ? "inset-x-0 bottom-0 rounded-t-[24px]" : "inset-x-0 bottom-0 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[24px] md:max-w-[600px] md:w-full"}`}
+        className={`fixed z-[60] bg-white flex flex-col overflow-hidden ${isMobile ? "inset-x-0 bottom-0 rounded-t-[24px]" : "inset-x-0 bottom-0 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[24px] md:max-w-[600px] md:w-full"}`}
         style={{ height: "88dvh", maxHeight: "88dvh" }}
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
