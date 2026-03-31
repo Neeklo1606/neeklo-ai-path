@@ -346,7 +346,7 @@ const HowSection = () => (
       {/* Free consultation note */}
       <motion.div className="flex items-center gap-2 mt-8" {...fadeUp(0.4)}>
         <span style={{ color: "#00C853", fontSize: 18 }}>✓</span>
-        <p className="font-body" style={{ fontSize: 14, color: "#6A6860" }}>Первая консультация — бесплатно</p>
+        <p className="font-body" style={{ fontSize: 14, color: "#6A6860" }}>Первая консультация – бесплатно</p>
       </motion.div>
 
       {/* Desktop dashed connector */}
