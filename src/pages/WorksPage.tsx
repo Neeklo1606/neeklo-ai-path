@@ -201,7 +201,7 @@ const WorksPage = () => {
   const isMobile = useIsMobile();
   const [active, setActive] = useState("Все");
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  usePageTitle("Работы — neeklo");
+  usePageTitle("Работы – neeklo");
 
   const filtered = useMemo(
     () => (active === "Все" ? works : works.filter((w) => w.cat === active)),

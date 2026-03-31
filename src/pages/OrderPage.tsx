@@ -9,7 +9,7 @@ const serviceMap: Record<string, { name: string; icon: React.ElementType }> = {
   "ai-agent": { name: "AI-агент", icon: Sparkles },
 };
 
-const budgetOptions = ["до 50 000 ₽", "50 000 — 150 000 ₽", "150 000 ₽+"];
+const budgetOptions = ["до 50 000 ₽", "50 000 – 150 000 ₽", "150 000 ₽+"];
 
 const OrderPage = () => {
   const { serviceId } = useParams();

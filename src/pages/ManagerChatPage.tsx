@@ -11,7 +11,7 @@ interface Message {
 }
 
 const initialMessages: Message[] = [
-  { role: "manager", content: "Привет! Получил твой бриф, уже смотрю 🔥\nКрутая задача — берём в работу.", time: "10:30" },
+  { role: "manager", content: "Привет! Получил твой бриф, уже смотрю 🔥\nКрутая задача – берём в работу.", time: "10:30" },
   { role: "manager", content: "Пара вопросов по деталям:\nесть референсы по стилю?", time: "10:31" },
   { role: "user", content: "Да, сейчас скину", time: "10:33", status: "read" },
   { role: "manager", content: "Отлично. И по срокам —\nстарт на этой неделе?", time: "10:34" },

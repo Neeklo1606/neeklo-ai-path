@@ -82,7 +82,7 @@ const Toggle = ({ value, onChange }: { value:boolean; onChange:(v:boolean)=>void
 const AdminPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  usePageTitle("Admin — neeklo");
+  usePageTitle("Admin – neeklo");
 
   const [adminUnlocked, setAdminUnlocked] = useState(() => sessionStorage.getItem("neeklo_admin") === "true");
   const [pin, setPin] = useState("");

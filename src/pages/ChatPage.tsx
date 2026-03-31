@@ -24,8 +24,8 @@ type ScriptStep = string | ProductCard | null;
 
 const scripts: Record<string, ScriptStep[]> = {
   Лендинг: [
-    "Для какого бизнеса нужен лендинг? Опиши вкратце — чем занимаетесь?",
-    "Понял! Какая главная цель — заявки, продажи или портфолио?",
+    "Для какого бизнеса нужен лендинг? Опиши вкратце – чем занимаетесь?",
+    "Понял! Какая главная цель – заявки, продажи или портфолио?",
     { type: "product", title: "Лендинг под ключ", price: "от 35 000 ₽", days: "7 дней", desc: "Продающий одностраничник с формой заявки и аналитикой" },
   ],
   "Мобильное приложение": [
@@ -44,7 +44,7 @@ const scripts: Record<string, ScriptStep[]> = {
     { type: "product", title: "AI-агент продаж", price: "от 150 000 ₽", days: "14 дней", desc: "AI-ассистент который работает 24/7 и ведёт лидов в CRM" },
   ],
   Другое: [
-    "Расскажи подробнее — что именно нужно сделать? Буду рад помочь.",
+    "Расскажи подробнее – что именно нужно сделать? Буду рад помочь.",
     null,
     null,
   ],
@@ -118,11 +118,11 @@ const ProductCardBubble = ({
 
 /* ─── Page ─── */
 const ChatPage = () => {
-  usePageTitle("Чат с AI — neeklo");
+  usePageTitle("Чат с AI – neeklo");
   const navigate = useNavigate();
 
   const [messages, setMessages] = useState<Message[]>([
-    { id: 1, role: "ai", text: "Привет! Расскажи, что хочешь создать — я соберу всё остальное", timestamp: new Date() },
+    { id: 1, role: "ai", text: "Привет! Расскажи, что хочешь создать – я соберу всё остальное", timestamp: new Date() },
   ]);
   const [showChips, setShowChips] = useState(true);
   const [inputValue, setInputValue] = useState("");
