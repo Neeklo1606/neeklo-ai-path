@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { ArrowRight, Send, Globe, Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import logoWhite from "@/assets/logo-white.png";
 
 const serviceLinks = [
   { label: "AI-ролики", path: "/chat" },
