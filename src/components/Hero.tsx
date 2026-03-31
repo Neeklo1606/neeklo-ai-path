@@ -64,8 +64,7 @@ const Hero = () => {
       >
         <div className="grid grid-cols-1 lg:grid-cols-[52%_48%] w-full gap-8 py-14 lg:py-0">
           {/* ===== LEFT ===== */}
-          <div className="flex flex-col justify-center text-center lg:text-left items-center lg:items-start px-0 sm:px-0"
-            style={{ padding: "56px 20px 40px" }}
+          <div className="flex flex-col justify-center text-center lg:text-left items-center lg:items-start py-10 lg:py-14"
           >
             {/* Category */}
             <motion.p
