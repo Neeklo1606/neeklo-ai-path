@@ -8,6 +8,7 @@ import DesktopNav from "@/components/DesktopNav";
 import ScrollToTop from "@/components/ScrollToTop";
 import PageTransition from "@/components/PageTransition";
 import Onboarding from "@/components/Onboarding";
+import CookieBanner from "@/components/CookieBanner";
 import Index from "./pages/Index";
 
 const ChatPage = lazy(() => import("./pages/ChatPage"));
