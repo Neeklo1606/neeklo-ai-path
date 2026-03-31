@@ -74,6 +74,7 @@ const App = () => {
               </Suspense>
             </div>
           </div>
+          <CookieBanner />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
