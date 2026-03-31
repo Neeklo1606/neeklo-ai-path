@@ -72,6 +72,7 @@ const LandingPage = () => {
       <WorksSection />
       <Divider />
       <HowSection />
+      <AvitoReviewsSection />
       <CTASection navigate={navigate} />
       <Footer />
     </div>
