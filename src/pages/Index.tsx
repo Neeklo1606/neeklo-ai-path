@@ -1,4 +1,4 @@
-import { ArrowRight, MessageSquare, FileText, Users } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
@@ -7,9 +7,9 @@ import SolutionCards from "@/components/SolutionCards";
 import CasesSection from "@/components/CasesSection";
 
 const steps = [
-  { num: "01", title: "Опиши задачу", desc: "напиши в чат что нужно", icon: MessageSquare, action: "/chat" },
-  { num: "02", title: "AI собирает бриф", desc: "формирует ТЗ и цену", icon: FileText, action: "/chat" },
-  { num: "03", title: "Получи результат", desc: "обсуди с менеджером", icon: Users, action: "/manager-chat" },
+  { num: "01", title: "Опиши задачу", desc: "Напиши в чат — AI задаст уточняющие вопросы" },
+  { num: "02", title: "AI собирает бриф", desc: "Формирует ТЗ, срок и предварительную стоимость" },
+  { num: "03", title: "Менеджер берёт в работу", desc: "Обсуждаете детали, подписываете, стартуем" },
 ];
 
 const LandingPage = () => {
