@@ -58,7 +58,7 @@ const CasesSection = () => {
               key={i}
               onClick={() => navigate("/cases")}
               className={`relative overflow-hidden cursor-pointer text-left ${
-                c.wide ? "md:col-span-2" : ""
+                c.wide ? "sm:col-span-2" : ""
               }`}
               style={{
                 borderRadius: 16,
