@@ -125,7 +125,7 @@ const Hero = () => {
                 <span
                   className="absolute font-body select-none"
                   style={{
-                    top: -8, right: -44, fontSize: 11, fontWeight: 700,
+                    top: -10, right: -48, fontSize: 10, fontWeight: 700,
                     background: "#0D0D0B", color: "#fff", padding: "3px 7px",
                     borderRadius: 6, transform: "rotate(-6deg)",
                     lineHeight: 1.2,
