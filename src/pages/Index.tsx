@@ -10,6 +10,12 @@ import workFashion from "@/assets/work-fashion.webp";
 import workRacing from "@/assets/work-racing.webp";
 import workStudio from "@/assets/work-studio.webp";
 import workVision from "@/assets/work-vision.webp";
+import iconVideo from "@/assets/icon-video.png";
+import iconWeb from "@/assets/icon-web.png";
+import iconApp from "@/assets/icon-app.png";
+import iconAi from "@/assets/icon-ai.png";
+import iconDesign from "@/assets/icon-design.png";
+import iconAnalytics from "@/assets/icon-analytics.png";
 
 /* ─── animation helpers ─── */
 const ease = [0.16, 1, 0.3, 1] as const;
