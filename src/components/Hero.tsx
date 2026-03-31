@@ -264,40 +264,7 @@ const Hero = () => {
             <ChevronDown size={14} className="inline ml-1" />
           </button>
         </motion.div>
-
-        {/* Social proof */}
-        <motion.div
-          className="flex flex-col items-center gap-3 mt-10"
-          {...fade(0.4)}
-        >
-          <div className="flex -space-x-2">
-            {avatarColors.map((c, i) => (
-              <div
-                key={i}
-                className="w-8 h-8 rounded-full border-2 border-[#F0EEE8]"
-                style={{ background: c, zIndex: 5 - i }}
-              />
-            ))}
-          </div>
-          <div className="flex flex-col items-center gap-0.5">
-            <span className="font-body text-[13px] font-medium text-[#6A6860]">
-              47 клиентов доверяют
-            </span>
-            <span className="font-body text-[12px] text-[#B0B0A8]">
-              ★★★★★ 4.9 / 5
-            </span>
-          </div>
-        </motion.div>
       </div>
-
-      {/* Scroll indicator */}
-      <motion.div
-        className="absolute bottom-6 left-1/2 -translate-x-1/2"
-        animate={{ y: [0, 6, 0] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-      >
-        <ChevronDown size={20} className="text-[#B0B0A8]" />
-      </motion.div>
     </section>
   );
 };
