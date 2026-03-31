@@ -248,9 +248,8 @@ const WorksSection = () => {
   return (
     <section id="works" className="bg-white" style={{ padding: "72px 0" }}>
       <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
-        <div className="flex items-center justify-between mb-2">
+        <div className="mb-2">
           <motion.h2 className="font-heading" style={{ fontSize: 32, fontWeight: 800 }} {...fadeUp(0)}>Наши работы</motion.h2>
-          <motion.span className="font-body" style={{ fontSize: 14, fontWeight: 600, color: "#FFB800" }} {...fadeUp(0.05)}>★ 4.9 / 5</motion.span>
         </div>
 
         {/* Filter pills */}
