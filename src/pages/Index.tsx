@@ -30,7 +30,7 @@ const LandingPage = () => {
   });
 
   return (
-    <div className="flex-1 bg-background text-foreground pb-24 md:pb-0">
+    <div className="flex-1 bg-background text-foreground pb-20 sm:pb-0">
       <Hero />
 
       <CasesSection />

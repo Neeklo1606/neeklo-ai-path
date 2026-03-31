@@ -73,8 +73,8 @@ const CasesSection = () => {
               <div
                 className={`relative w-full ${
                   i < 2
-                    ? "h-[200px] md:h-[280px]"
-                    : "h-[200px] md:h-[220px]"
+                    ? "h-[180px] sm:h-[280px]"
+                    : "h-[180px] sm:h-[220px]"
                 }`}
                 style={{
                   borderRadius: 16,

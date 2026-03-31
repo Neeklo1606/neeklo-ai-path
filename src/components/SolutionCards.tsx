@@ -41,7 +41,7 @@ const SolutionCards = () => {
               initial={{ opacity: 0, y: 24 }}
               animate={section.visible ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, ease, delay: i * 0.08 }}
-              whileHover={{ y: -4, boxShadow: "0 8px 32px rgba(0,0,0,0.10)" }}
+              whileHover={{ y: -4, boxShadow: "0 8px 32px rgba(0,0,0,0.10)", transition: { duration: 0.2 } }}
               whileTap={{ scale: 0.98 }}
             >
               {/* Top row: icon + badge */}

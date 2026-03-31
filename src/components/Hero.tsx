@@ -169,12 +169,11 @@ const Hero = () => {
 
           {/* Mobile: 3 cols with horizontal dividers between rows */}
           <div className="md:hidden">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-5">
               <StatItem target={150} suffix="+" label="проектов" active={stats.visible} />
               <StatItem target={48} suffix="ч" label="срок сдачи" active={stats.visible} />
               <StatItem target={95} suffix="%" label="довольны" active={stats.visible} />
             </div>
-            <div className="border-t border-border/50 mt-4" />
           </div>
         </motion.div>
       </div>
