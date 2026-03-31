@@ -56,6 +56,42 @@ const Hero = () => {
           className="relative mb-8"
           {...fade(0)}
         >
+          {/* Sparkles around orb */}
+          {[
+            { x: -44, y: -20, size: 4, delay: 0 },
+            { x: 48, y: -14, size: 3, delay: 0.8 },
+            { x: -30, y: 40, size: 3, delay: 1.6 },
+            { x: 40, y: 36, size: 4, delay: 0.4 },
+            { x: 0, y: -48, size: 3.5, delay: 1.2 },
+            { x: -50, y: 10, size: 2.5, delay: 2.0 },
+          ].map((s, i) => (
+            <motion.div
+              key={i}
+              className="absolute"
+              style={{
+                left: "50%",
+                top: "50%",
+                marginLeft: s.x,
+                marginTop: s.y,
+                width: s.size,
+                height: s.size,
+                background: "#0D0D0B",
+                borderRadius: "1px",
+                transform: "rotate(45deg)",
+              }}
+              animate={{
+                opacity: [0, 1, 0],
+                scale: [0.5, 1.2, 0.5],
+              }}
+              transition={{
+                duration: 2.4,
+                repeat: Infinity,
+                delay: s.delay,
+                ease: "easeInOut",
+              }}
+            />
+          ))}
+
           <motion.div
             animate={{ y: [0, -8, 0] }}
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
