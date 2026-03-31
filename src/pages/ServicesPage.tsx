@@ -56,6 +56,7 @@ const ease = [0.16, 1, 0.3, 1] as const;
 const ServicesPage = () => {
   const navigate = useNavigate();
   const [active, setActive] = useState<Category>("Все");
+  usePageTitle("Услуги — neeklo");
 
   const filtered = active === "Все" ? services : services.filter((s) => s.category === active);
 

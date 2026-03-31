@@ -101,6 +101,7 @@ function generateBriefPDF(data: BriefData) {
 }
 
 const ChatPage = () => {
+  usePageTitle("Чат с AI — neeklo");
   const saved = useRef(loadChat());
   const [items, setItems] = useState<ChatItem[]>(saved.current?.items || []);
   const [inputDisabled, setInputDisabled] = useState(false);
