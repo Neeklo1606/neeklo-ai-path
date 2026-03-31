@@ -13,12 +13,6 @@ import workVision from "@/assets/work-vision.webp";
 import workAssistant from "@/assets/work-assistant.webp";
 import workEcommerce from "@/assets/work-ecommerce.webp";
 
-const products = [
-  { icon: Play, title: "AI-ролики", price: "от 25 000 ₽", desc: "Рекламные ролики с нейросетями", badge: "ХИТ", slug: "ai-roliki" },
-  { icon: Globe, title: "Сайт под ключ", price: "от 95 000 ₽", desc: "Лендинг или корп. сайт с AI", slug: "sajt-pod-klyuch" },
-  { icon: Smartphone, title: "Telegram Mini App", price: "от 65 000 ₽", desc: "Приложение прямо в Telegram", slug: "telegram-mini-app" },
-  { icon: Sparkles, title: "AI-агент", price: "от 150 000 ₽", desc: "Автоматизация продаж и процессов", badge: "ТОП", slug: "ai-agent" },
-];
 
 const works = [
   { img: workFashion, title: "Имиджевый ролик", tag: "AI-видео" },
