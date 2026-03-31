@@ -27,6 +27,7 @@ const ServicesPage = lazy(() => import("./pages/ServicesPage"));
 const ServiceDetailPage = lazy(() => import("./pages/ServiceDetailPage"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
 const CasesPage = lazy(() => import("./pages/CasesPage"));
+const WorksPage = lazy(() => import("./pages/WorksPage"));
 const OrderPage = lazy(() => import("./pages/OrderPage"));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -219,6 +220,7 @@ const App = () => {
                 <Route path="/register" element={<P><RegisterPage /></P>} />
                 <Route path="/chat" element={<P><ChatPage /></P>} />
                 <Route path="/services" element={<P><ServicesPage /></P>} />
+                <Route path="/works" element={<P><WorksPage /></P>} />
                 <Route path="/cases" element={<P><CasesPage /></P>} />
                 <Route path="/projects" element={<P><ProjectsPage /></P>} />
                 <Route path="/projects/:id" element={<P><ProjectDetailPage /></P>} />
