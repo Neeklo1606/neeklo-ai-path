@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ArrowRight } from "lucide-react";
 import { motion, useMotionValue, useSpring, useTransform, useInView } from "framer-motion";
 import { useState, useRef } from "react";
 import HolographicCard from "@/components/ui/holographic-card";
