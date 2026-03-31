@@ -52,13 +52,13 @@ const CasesSection = () => {
         </motion.div>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
           {cases.map((c, i) => (
             <motion.button
               key={i}
               onClick={() => navigate("/cases")}
               className={`relative overflow-hidden cursor-pointer text-left ${
-                c.wide ? "md:col-span-2" : ""
+                c.wide ? "sm:col-span-2" : ""
               }`}
               style={{
                 borderRadius: 16,
@@ -73,8 +73,8 @@ const CasesSection = () => {
               <div
                 className={`relative w-full ${
                   i < 2
-                    ? "h-[200px] md:h-[280px]"
-                    : "h-[200px] md:h-[220px]"
+                    ? "h-[180px] sm:h-[280px]"
+                    : "h-[180px] sm:h-[220px]"
                 }`}
                 style={{
                   borderRadius: 16,

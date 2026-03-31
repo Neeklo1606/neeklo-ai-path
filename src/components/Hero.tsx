@@ -105,7 +105,7 @@ const Hero = () => {
         <motion.h1
           className="font-heading font-[800] leading-[1] text-foreground mb-5 md:mb-6"
           style={{
-            fontSize: "clamp(44px, 8vw, 96px)",
+            fontSize: "clamp(40px, 10vw, 96px)",
             letterSpacing: "-0.03em",
           }}
           {...fadeUp(0.1)}
@@ -128,12 +128,12 @@ const Hero = () => {
 
         {/* Buttons */}
         <motion.div
-          className="w-full max-w-[440px] flex flex-col md:flex-row gap-3 mb-14"
+          className="w-full max-w-[440px] flex flex-col sm:flex-row gap-3 mb-14"
           {...fadeUp(0.4)}
         >
           <button
             onClick={() => navigate("/chat")}
-            className="hero-btn-primary flex items-center justify-center gap-2 md:flex-1"
+            className="hero-btn-primary flex items-center justify-center gap-2 sm:flex-1 w-full sm:w-auto rounded-full sm:rounded-xl"
           >
             Заказать проект
             <ArrowRight size={16} />
@@ -144,7 +144,7 @@ const Hero = () => {
                 .getElementById("works")
                 ?.scrollIntoView({ behavior: "smooth" })
             }
-            className="hero-btn-secondary md:flex-1"
+            className="hero-btn-secondary sm:flex-1 w-full sm:w-auto rounded-full sm:rounded-xl"
           >
             Смотреть работы ↓
           </button>
@@ -169,12 +169,11 @@ const Hero = () => {
 
           {/* Mobile: 3 cols with horizontal dividers between rows */}
           <div className="md:hidden">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-5">
               <StatItem target={150} suffix="+" label="проектов" active={stats.visible} />
               <StatItem target={48} suffix="ч" label="срок сдачи" active={stats.visible} />
               <StatItem target={95} suffix="%" label="довольны" active={stats.visible} />
             </div>
-            <div className="border-t border-border/50 mt-4" />
           </div>
         </motion.div>
       </div>

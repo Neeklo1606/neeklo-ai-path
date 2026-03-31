@@ -1,9 +1,9 @@
-import { Home, MessageSquare, FolderOpen, User } from "lucide-react";
+import { Home, MessageCircle, FolderOpen, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const navItems = [
   { icon: Home, label: "Главная", path: "/" },
-  { icon: MessageSquare, label: "Чат", path: "/chat" },
+  { icon: MessageCircle, label: "Чат", path: "/chat" },
   { icon: FolderOpen, label: "Проекты", path: "/projects" },
   { icon: User, label: "Профиль", path: "/profile" },
 ];
@@ -13,24 +13,34 @@ const BottomNav = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed-bottom-nav bg-background/95 backdrop-blur-xl border-t border-border md:hidden">
-      <div className="flex justify-around" style={{ padding: "10px 0 calc(10px + env(safe-area-inset-bottom))" }}>
+    <nav
+      className="fixed bottom-0 left-0 right-0 sm:hidden"
+      style={{
+        height: 64,
+        background: "rgba(255,255,255,0.96)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderTop: "1px solid #F0F0F0",
+        zIndex: 100,
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
+    >
+      <div className="grid grid-cols-4 h-full">
         {navItems.map(({ icon: Icon, label, path }) => {
           const active = location.pathname === path;
           return (
             <button
               key={path}
               onClick={() => navigate(path)}
-              className="flex flex-col items-center gap-1.5 min-w-[64px] min-h-[44px] justify-center rounded-lg transition-colors duration-150"
-              style={{ color: active ? "hsl(var(--foreground))" : "hsl(215 16% 35%)" }}
+              className="flex flex-col items-center justify-center gap-1 active:scale-[0.92] transition-transform duration-75"
+              style={{ color: active ? "#0D0D0B" : "#888" }}
             >
               <Icon size={22} strokeWidth={active ? 2.2 : 1.6} />
               <span
-                className="leading-none"
+                className="font-body leading-none"
                 style={{
-                  fontSize: "10px",
+                  fontSize: 10,
                   fontWeight: active ? 600 : 500,
-                  opacity: active ? 1 : 0.7,
                 }}
               >
                 {label}
