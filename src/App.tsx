@@ -65,10 +65,9 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <ScrollToTop />
-          <div className="min-h-screen flex flex-col">
-            <DesktopNav />
-            <div className="flex-1 flex flex-col">
+          <Layout>
               <Suspense fallback={null}>
+              <Routes>
               <Routes>
                 <Route path="/" element={<P><Index /></P>} />
                 <Route path="/login" element={<P><LoginPage /></P>} />
