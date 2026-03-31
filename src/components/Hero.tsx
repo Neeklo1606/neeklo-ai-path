@@ -14,6 +14,7 @@ const avatarColors = ["#D4C5B2", "#B8C9D4", "#C4D4B8", "#D4B8C9", "#C9C4D4"];
 
 const Hero = () => {
   const navigate = useNavigate();
+  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width:768px)").matches;
 
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -24,12 +25,10 @@ const Hero = () => {
   const eyeOffsetX = useTransform(springX, [-300, 300], [-6, 6]);
   const eyeOffsetY = useTransform(springY, [-300, 300], [-4, 4]);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = isMobile ? undefined : (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    mouseX.set(e.clientX - cx);
-    mouseY.set(e.clientY - cy);
+    mouseX.set(e.clientX - (rect.left + rect.width / 2));
+    mouseY.set(e.clientY - (rect.top + rect.height / 2));
   };
 
   return (
