@@ -1,65 +1,90 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const handleLogin = () => {
-    if (!email.trim()) return;
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      navigate("/chat");
-    }, 800);
+    toast("Функция в разработке");
+    navigate("/profile");
   };
 
+  const inputStyle =
+    "w-full font-body bg-[#F5F5F5] border border-transparent rounded-xl px-4 py-3 outline-none transition-colors duration-150 focus:border-[#0D0D0B] focus:bg-white";
+
   return (
-    <div className="flex-1 bg-background flex flex-col items-center justify-center px-8">
-      <div className="w-full max-w-[380px]">
-        <div className="flex flex-col items-center mb-10 animate-logo-appear">
-          <h1 className="text-[24px] font-bold text-foreground tracking-tight">Войти в neeklo</h1>
-        </div>
+    <div className="flex-1 flex items-start justify-center px-4 pb-[100px]" style={{ background: "#F0EEE8", minHeight: "100dvh", paddingTop: 64 }}>
+      <div className="w-full max-w-sm">
+        <div className="bg-white rounded-3xl p-8 shadow-sm">
+          {/* Logo */}
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <div className="w-8 h-8 rounded-full bg-[#0D0D0B] flex items-center justify-center flex-shrink-0">
+              <span className="text-white" style={{ fontSize: 14 }}>✦</span>
+            </div>
+            <span className="font-heading" style={{ fontSize: 17, fontWeight: 700 }}>neeklo</span>
+          </div>
 
-        <div className="space-y-3 mb-4 animate-slide-up" style={{ animationDelay: "100ms" }}>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            className="w-full bg-background rounded-xl text-[14px] text-foreground placeholder:text-muted-foreground outline-none border border-border focus:border-foreground/20 transition-colors duration-200"
-            style={{ padding: "13px 16px" }}
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Пароль"
-            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-            className="w-full bg-background rounded-xl text-[14px] text-foreground placeholder:text-muted-foreground outline-none border border-border focus:border-foreground/20 transition-colors duration-200"
-            style={{ padding: "13px 16px" }}
-          />
-        </div>
+          {/* Title */}
+          <h1 className="font-heading text-center" style={{ fontSize: 24, fontWeight: 800 }}>Войти</h1>
+          <p className="font-body text-center mt-1 mb-6" style={{ fontSize: 14, color: "#6A6860" }}>
+            Введите данные для входа
+          </p>
 
-        <button
-          onClick={handleLogin}
-          disabled={loading}
-          className="btn-primary flex items-center justify-center gap-2 animate-slide-up"
-          style={{ animationDelay: "180ms" }}
-        >
-          {loading ? "Входим..." : "Войти"}
-          {!loading && <ArrowRight size={16} />}
-        </button>
+          {/* Fields */}
+          <div className="flex flex-col gap-3">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              className={inputStyle}
+              style={{ fontSize: 15 }}
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Пароль"
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+              className={inputStyle}
+              style={{ fontSize: 15 }}
+            />
+          </div>
 
-        <div className="mt-6 text-center animate-slide-up" style={{ animationDelay: "240ms" }}>
-          <p className="text-[13px] text-muted-foreground">
+          {/* Login button */}
+          <button
+            onClick={handleLogin}
+            className="w-full mt-2 font-body text-white rounded-xl cursor-pointer hover:bg-[#1a1a1a] active:scale-[0.97] transition-all"
+            style={{ background: "#0D0D0B", padding: "14px 0", fontSize: 15, fontWeight: 600 }}
+          >
+            Войти
+          </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 mt-4 mb-4">
+            <div className="flex-1 h-px bg-[#E0E0E0]" />
+            <span className="font-body" style={{ fontSize: 13, color: "#B0B0B0" }}>или</span>
+            <div className="flex-1 h-px bg-[#E0E0E0]" />
+          </div>
+
+          {/* Telegram button */}
+          <button
+            onClick={handleLogin}
+            className="w-full font-body text-white rounded-xl cursor-pointer hover:opacity-90 active:scale-[0.97] transition-all"
+            style={{ background: "#2AABEE", padding: "14px 0", fontSize: 15, fontWeight: 600 }}
+          >
+            Войти через Telegram
+          </button>
+
+          {/* Register link */}
+          <p className="text-center mt-4 font-body" style={{ fontSize: 14, color: "#6A6860" }}>
             Нет аккаунта?{" "}
-            <button onClick={() => navigate("/register")} className="text-foreground font-medium underline">
+            <span className="font-medium underline cursor-pointer" style={{ color: "#0D0D0B" }}>
               Зарегистрироваться
-            </button>
+            </span>
           </p>
         </div>
       </div>

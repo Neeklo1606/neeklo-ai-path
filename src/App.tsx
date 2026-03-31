@@ -184,8 +184,14 @@ const MobileHeader = () => {
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { pathname } = useLocation();
   const hideNav = HIDE_NAV_ROUTES.includes(pathname) || pathname.startsWith("/admin");
+  const hideBottomNav = pathname.startsWith("/admin");
 
-  if (hideNav) return <>{children}</>;
+  if (hideNav) return (
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 flex flex-col">{children}</div>
+      {!hideBottomNav && <BottomNav />}
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex flex-col">
