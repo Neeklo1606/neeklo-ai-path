@@ -292,9 +292,8 @@ const Hero = () => {
             {/* Card C — AI генерирует */}
             <motion.div
               className="absolute"
-              style={{ left: "15%", top: "42%", width: 220 }}
+              style={{ left: "10%", top: "42%", width: 220, animation: "floatCard 3.5s ease-in-out 1s infinite" }}
               {...fadeScale(0.8)}
-              {...floatY(6, 3.5, 1)}
             >
               <div
                 style={{
