@@ -2,11 +2,20 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 
+import iconVideo from "@/assets/icon-video.png";
+import iconWeb from "@/assets/icon-web.png";
+import iconApp from "@/assets/icon-app.png";
+import iconAI from "@/assets/icon-ai.png";
+import iconDesign from "@/assets/icon-design.png";
+import iconAnalytics from "@/assets/icon-analytics.png";
+
 const solutions = [
-  { emoji: "🎬", name: "AI-ролики", slug: "ai-roliki", price: "от 25 000 ₽", desc: "Рекламные ролики с нейросетями", badge: "ХИТ" },
-  { emoji: "🌐", name: "Сайт под ключ", slug: "sajt-pod-klyuch", price: "от 95 000 ₽", desc: "Лендинг или корп. сайт с AI", badge: null },
-  { emoji: "📱", name: "Mini App", slug: "telegram-mini-app", price: "от 65 000 ₽", desc: "Приложение прямо в Telegram", badge: null },
-  { emoji: "✦", name: "AI-агент", slug: "ai-agent", price: "от 150 000 ₽", desc: "Автоматизация продаж и процессов", badge: "ТОП" },
+  { icon: iconVideo, name: "AI-ролики", slug: "ai-roliki", price: "от 25 000 ₽", badge: "ХИТ" },
+  { icon: iconWeb, name: "Сайты", slug: "sajt-pod-klyuch", price: "от 95 000 ₽", badge: null },
+  { icon: iconApp, name: "Mini App", slug: "telegram-mini-app", price: "от 65 000 ₽", badge: null },
+  { icon: iconAI, name: "AI-агенты", slug: "ai-agent", price: "от 150 000 ₽", badge: "ТОП" },
+  { icon: iconDesign, name: "Дизайн", slug: "sajt-pod-klyuch", price: "от 30 000 ₽", badge: null },
+  { icon: iconAnalytics, name: "Аналитика", slug: "ai-agent", price: "от 40 000 ₽", badge: null },
 ];
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -19,72 +28,53 @@ const SolutionCards = () => {
     <section className="mb-14 px-4 md:px-0" ref={section.ref}>
       <div className="max-w-[1200px] mx-auto">
         <motion.h2
-          className="font-heading text-[28px] lg:text-[36px] font-extrabold mb-6 md:mb-8 text-foreground"
+          className="font-heading text-[28px] lg:text-[36px] font-extrabold mb-6 md:mb-8 text-[#0D0D0B]"
           initial={{ opacity: 0, y: 16 }}
           animate={section.visible ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5, ease }}
         >
-          Что делаем
+          Продукты
         </motion.h2>
 
-        <div className="grid grid-cols-2 gap-[10px] lg:grid-cols-4 lg:gap-4">
+        <div className="grid grid-cols-3 gap-3 lg:grid-cols-6 lg:gap-4">
           {solutions.map((s, i) => (
-            <motion.div
-              key={s.slug}
-              className="relative flex flex-col bg-white border border-[#F0F0F0] rounded-2xl p-4 lg:p-5 cursor-pointer group"
-              initial={{ opacity: 0, y: 24 }}
-              animate={section.visible ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.45, ease, delay: i * 0.07 }}
-              whileHover={{ y: -3, boxShadow: "0 8px 24px rgba(0,0,0,0.08)", transition: { duration: 0.2 } }}
-              whileTap={{ scale: 0.97 }}
+            <motion.button
+              key={s.slug + i}
               onClick={() => navigate(`/services/${s.slug}`)}
+              className="relative flex flex-col items-center text-center rounded-2xl bg-white border border-[#F0F0F0] p-4 lg:p-5 cursor-pointer group"
+              initial={{ opacity: 0, y: 20 }}
+              animate={section.visible ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.4, ease, delay: i * 0.07 }}
+              whileHover={{ y: -4, boxShadow: "0 8px 24px rgba(0,0,0,0.08)", transition: { duration: 0.2 } }}
+              whileTap={{ scale: 0.96 }}
             >
-              {/* Icon + Badge row */}
-              <div className="flex items-start justify-between">
-                <div
-                  className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0"
-                  style={{ background: "#F5F5F5" }}
-                >
-                  <span className="text-[20px] leading-none">{s.emoji}</span>
-                </div>
-                {s.badge && (
-                  <span className="bg-[#0D0D0B] text-white text-[10px] font-bold px-2 py-[3px] rounded-full leading-none">
-                    {s.badge}
-                  </span>
-                )}
+              {/* Badge */}
+              {s.badge && (
+                <span className="absolute top-2.5 right-2.5 bg-[#0D0D0B] text-white text-[9px] font-bold px-[7px] py-[2px] rounded-full leading-none">
+                  {s.badge}
+                </span>
+              )}
+
+              {/* Icon */}
+              <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl flex items-center justify-center mb-3 bg-[#F5F5F0] group-hover:bg-[#EDEDE8] transition-colors">
+                <img
+                  src={s.icon}
+                  alt={s.name}
+                  className="w-7 h-7 lg:w-8 lg:h-8 object-contain"
+                  style={{ imageRendering: "pixelated" }}
+                />
               </div>
 
               {/* Name */}
-              <p className="font-heading text-[14px] lg:text-[15px] font-bold text-[#0D0D0B] mt-[10px] leading-tight">
+              <p className="font-heading text-[13px] lg:text-[14px] font-bold text-[#0D0D0B] leading-tight group-hover:text-[#0052FF] transition-colors">
                 {s.name}
               </p>
 
               {/* Price */}
-              <p className="font-body text-[13px] font-bold text-[#0052FF] mt-[3px]">
+              <p className="font-body text-[11px] lg:text-[12px] font-semibold text-[#6A6860] mt-1">
                 {s.price}
               </p>
-
-              {/* Description — desktop only */}
-              <p className="hidden lg:block font-body text-[13px] text-muted-foreground mt-1 leading-snug">
-                {s.desc}
-              </p>
-
-              {/* Buttons */}
-              <div className="mt-auto pt-[10px] flex flex-col lg:flex-row gap-2">
-                <button
-                  className="hidden lg:block font-body text-[13px] font-semibold border border-[#E0E0E0] text-[#0D0D0B] rounded-lg px-3 py-[9px] hover:bg-[#F5F5F5] transition-colors"
-                  onClick={(e) => { e.stopPropagation(); navigate(`/services/${s.slug}`); }}
-                >
-                  Подробнее
-                </button>
-                <button
-                  className="w-full lg:flex-1 font-body text-[13px] font-semibold bg-[#0D0D0B] text-white rounded-lg px-3 py-[9px] hover:bg-[#1a1a18] transition-colors"
-                  onClick={(e) => { e.stopPropagation(); navigate("/chat"); }}
-                >
-                  Заказать
-                </button>
-              </div>
-            </motion.div>
+            </motion.button>
           ))}
         </div>
       </div>
