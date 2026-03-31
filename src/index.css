@@ -427,3 +427,34 @@
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-5px); }
 }
+
+/* ========================================
+   HOLOGRAPHIC CARD
+   ======================================== */
+.holographic-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  transition: transform 0.15s ease-out;
+  will-change: transform;
+}
+
+.holographic-card__shine {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at var(--bg-x, 50%) var(--bg-y, 50%),
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.06) 40%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+.holographic-card:hover .holographic-card__shine {
+  opacity: 1;
+}
