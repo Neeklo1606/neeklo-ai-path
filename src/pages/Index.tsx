@@ -1,9 +1,10 @@
-import { Play, Globe, Smartphone, Sparkles, ArrowRight, Star } from "lucide-react";
+import { ArrowRight, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import Footer from "@/components/Footer";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import Hero from "@/components/Hero";
+import SolutionCards from "@/components/SolutionCards";
 
 import workFashion from "@/assets/work-fashion.webp";
 import workRacing from "@/assets/work-racing.webp";
@@ -12,12 +13,6 @@ import workVision from "@/assets/work-vision.webp";
 import workAssistant from "@/assets/work-assistant.webp";
 import workEcommerce from "@/assets/work-ecommerce.webp";
 
-const products = [
-  { icon: Play, title: "AI-ролики", price: "от 25 000 ₽", desc: "Рекламные ролики с нейросетями", badge: "ХИТ", slug: "ai-roliki" },
-  { icon: Globe, title: "Сайт под ключ", price: "от 95 000 ₽", desc: "Лендинг или корп. сайт с AI", slug: "sajt-pod-klyuch" },
-  { icon: Smartphone, title: "Telegram Mini App", price: "от 65 000 ₽", desc: "Приложение прямо в Telegram", slug: "telegram-mini-app" },
-  { icon: Sparkles, title: "AI-агент", price: "от 150 000 ₽", desc: "Автоматизация продаж и процессов", badge: "ТОП", slug: "ai-agent" },
-];
 
 const works = [
   { img: workFashion, title: "Имиджевый ролик", tag: "AI-видео" },
@@ -38,7 +33,7 @@ const LandingPage = () => {
   const navigate = useNavigate();
 
   const worksSection = useScrollReveal(0.15);
-  const productsSection = useScrollReveal(0.15);
+  
   const stepsSection = useScrollReveal(0.15);
   const ctaSection = useScrollReveal(0.3);
 
@@ -88,32 +83,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* PRODUCTS */}
-      <section className="mb-14 px-4 md:px-0" ref={productsSection.ref}>
-        <div className="max-w-[1200px] mx-auto">
-          <h2 className="text-[22px] md:text-[28px] font-bold mb-5 md:mb-8" style={revealStyle(productsSection.visible)}>Что делаем</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            {products.map((p, i) => (
-              <button
-                key={p.title}
-                onClick={() => navigate(`/services/${p.slug}`)}
-                className="game-card relative text-left active:scale-[0.97] transition-transform duration-100 hover:border-foreground/20"
-                style={revealStyle(productsSection.visible, i * 100)}
-              >
-                {p.badge && (
-                  <span className="absolute top-4 right-4 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary text-primary-foreground">{p.badge}</span>
-                )}
-                <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-card border border-border flex items-center justify-center mb-3">
-                  <p.icon size={16} className="text-foreground" />
-                </div>
-                <p className="text-[15px] font-bold mb-1">{p.title}</p>
-                <p className="text-[13px] text-muted-foreground font-medium mb-1">{p.price}</p>
-                <p className="text-[12px] text-muted-foreground leading-snug">{p.desc}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+      <SolutionCards />
 
       {/* HOW IT WORKS */}
       <section className="mb-14 px-4 md:px-0" ref={stepsSection.ref}>
