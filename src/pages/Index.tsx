@@ -39,7 +39,7 @@ const portfolioItems = [
   { id: 6, cat: "AI", title: "AI-ассистент", result: "80% автоматизация", bg: "linear-gradient(135deg,#0a0a0a,#2d2d2d)", img: workAssistant },
 ];
 
-const filters = ["Все", "AI-видео", "Сайты", "Mini App", "AI-агенты"];
+const filters = ["Все", "AI-видео", "Сайт", "Mini App", "AI"];
 
 const steps = [
   { num: "01", title: "Опиши задачу", desc: "Напиши в чат — AI задаст уточняющие вопросы и соберёт бриф" },
