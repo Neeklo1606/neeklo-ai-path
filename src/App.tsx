@@ -68,7 +68,6 @@ const App = () => {
           <Layout>
               <Suspense fallback={null}>
               <Routes>
-              <Routes>
                 <Route path="/" element={<P><Index /></P>} />
                 <Route path="/login" element={<P><LoginPage /></P>} />
                 <Route path="/register" element={<P><RegisterPage /></P>} />
