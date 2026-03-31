@@ -55,129 +55,85 @@ const Hero = () => {
           className="relative mb-8"
           {...fade(0)}
         >
-          {/* Sparkles around orb */}
-          {[
-            { x: -44, y: -20, size: 4, delay: 0 },
-            { x: 48, y: -14, size: 3, delay: 0.8 },
-            { x: -30, y: 40, size: 3, delay: 1.6 },
-            { x: 40, y: 36, size: 4, delay: 0.4 },
-            { x: 0, y: -48, size: 3.5, delay: 1.2 },
-            { x: -50, y: 10, size: 2.5, delay: 2.0 },
-          ].map((s, i) => (
-            <motion.div
-              key={i}
-              className="absolute"
-              style={{
-                left: "50%",
-                top: "50%",
-                marginLeft: s.x,
-                marginTop: s.y,
-                width: s.size,
-                height: s.size,
-                background: "#0D0D0B",
-                borderRadius: "1px",
-                transform: "rotate(45deg)",
-              }}
-              animate={{
-                opacity: [0, 1, 0],
-                scale: [0.5, 1.2, 0.5],
-              }}
-              transition={{
-                duration: 2.4,
-                repeat: Infinity,
-                delay: s.delay,
-                ease: "easeInOut",
-              }}
-            />
-          ))}
-
           <motion.div
             animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+            style={{ willChange: "transform" }}
           >
-            {/* Outer glow ring */}
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{
-                width: 96,
-                height: 96,
-                background: "radial-gradient(circle, rgba(0,82,255,0.08) 0%, transparent 70%)",
-                transform: "scale(1.6)",
-              }}
-            />
-
             {/* Main orb */}
             <div
-              className="relative rounded-full flex items-center justify-center"
+              className="relative rounded-full flex items-center justify-center flex-shrink-0"
               style={{
-                width: 96,
-                height: 96,
-                background: "linear-gradient(145deg, #FFFFFF 0%, #F0EEE8 100%)",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)",
+                width: 88,
+                height: 88,
+                background: "#0D0D0B",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.12)",
               }}
             >
-              {/* Face highlight */}
+              {/* Highlight */}
               <div
                 className="absolute rounded-full"
                 style={{
-                  width: 60,
-                  height: 30,
-                  top: 18,
-                  left: 18,
-                  background: "linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 100%)",
-                  borderRadius: "50%",
+                  top: 10,
+                  left: 14,
+                  width: 28,
+                  height: 18,
+                  background: "rgba(255,255,255,0.07)",
+                  transform: "rotate(-20deg)",
                 }}
               />
 
               {/* Eyes */}
-              <div className="relative flex gap-4" style={{ marginTop: -4 }}>
-                <motion.div
-                  className="rounded-full bg-[#0D0D0B]"
-                  style={{
-                    width: 10,
-                    height: 10,
-                    x: eyeOffsetX,
-                    y: eyeOffsetY,
-                  }}
-                />
-                <motion.div
-                  className="rounded-full bg-[#0D0D0B]"
-                  style={{
-                    width: 10,
-                    height: 10,
-                    x: eyeOffsetX,
-                    y: eyeOffsetY,
-                  }}
-                />
-              </div>
+              <motion.div
+                className="flex items-center justify-center"
+                style={{ gap: 10, x: eyeOffsetX, y: eyeOffsetY, marginTop: -4 }}
+              >
+                {[0, 1].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="rounded-full"
+                    style={{
+                      width: 9,
+                      height: 9,
+                      background: "#FFFFFF",
+                      boxShadow: "0 0 6px rgba(255,255,255,0.6)",
+                    }}
+                    animate={{ scaleY: [1, 1, 0.1, 1, 1] }}
+                    transition={{ duration: 4, repeat: Infinity, times: [0, 0.45, 0.5, 0.55, 1] }}
+                  />
+                ))}
+              </motion.div>
 
               {/* Smile */}
               <div
                 className="absolute"
                 style={{
-                  width: 16,
-                  height: 8,
-                  bottom: 30,
+                  bottom: 22,
                   left: "50%",
                   transform: "translateX(-50%)",
-                  borderBottom: "2.5px solid #0D0D0B",
-                  borderRadius: "0 0 50% 50%",
+                  width: 18,
+                  height: 8,
+                  borderBottom: "2px solid rgba(255,255,255,0.2)",
+                  borderRadius: "0 0 10px 10px",
                 }}
               />
             </div>
 
             {/* Status dot */}
-            <div
+            <motion.div
               className="absolute"
               style={{
-                width: 14,
-                height: 14,
+                width: 12,
+                height: 12,
                 bottom: 4,
                 right: 4,
-                background: "#00B341",
+                background: "#00C853",
                 borderRadius: "50%",
-                border: "3px solid #F0EEE8",
+                border: "2px solid #F0EEE8",
+                boxShadow: "0 0 6px rgba(0,200,83,0.5)",
               }}
+              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
             />
           </motion.div>
         </motion.div>
