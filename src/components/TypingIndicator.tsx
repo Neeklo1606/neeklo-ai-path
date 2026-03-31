@@ -1,8 +1,17 @@
 const TypingIndicator = () => (
-  <div className="flex items-center gap-[5px] py-1 px-0.5">
-    <div className="w-[7px] h-[7px] rounded-full animate-dot-1" style={{ background: "#999" }} />
-    <div className="w-[7px] h-[7px] rounded-full animate-dot-2" style={{ background: "#999" }} />
-    <div className="w-[7px] h-[7px] rounded-full animate-dot-3" style={{ background: "#999" }} />
+  <div className="flex items-center py-1 px-0.5" style={{ gap: 4 }}>
+    {[0, 1, 2].map((i) => (
+      <div
+        key={i}
+        className="rounded-full"
+        style={{
+          width: 6,
+          height: 6,
+          background: "#D0D0D0",
+          animation: `typingBounce 0.8s infinite ${i * 0.15}s`,
+        }}
+      />
+    ))}
   </div>
 );
 
