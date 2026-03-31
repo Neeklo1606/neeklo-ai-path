@@ -5,14 +5,12 @@ import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useCountUp } from "@/hooks/useCountUp";
 
-const Plasma = lazy(() => import("@/components/Plasma"));
-
-/* ---- Framer stagger helpers ---- */
+/* ---- Framer helpers ---- */
 const ease = [0.16, 1, 0.3, 1] as const;
 const fadeUp = (delay: number) => ({
-  initial: { opacity: 0, y: 20 },
+  initial: { opacity: 0, y: 16 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.55, ease, delay },
+  transition: { duration: 0.5, ease, delay },
 });
 
 /* ---- Stat counter ---- */
@@ -30,13 +28,21 @@ const StatItem = ({
   const value = useCountUp(target, active, 1200);
   return (
     <div className="text-center">
-      <p className="font-heading text-[32px] md:text-[40px] font-[800] leading-none text-foreground tracking-tight">
+      <p
+        className="font-heading leading-none tracking-tight"
+        style={{ fontSize: 32, fontWeight: 800, color: "#0D0D0B" }}
+      >
         {value}
         {suffix}
       </p>
       <p
-        className="font-body text-[11px] text-[#888] mt-1.5 uppercase"
-        style={{ letterSpacing: "0.06em" }}
+        className="font-body uppercase"
+        style={{
+          fontSize: 11,
+          color: "#6A6860",
+          letterSpacing: "0.06em",
+          marginTop: 2,
+        }}
       >
         {label}
       </p>
@@ -50,51 +56,46 @@ const Hero = () => {
 
   return (
     <section
-      className="relative flex flex-col items-center justify-center px-4 overflow-hidden"
-      style={{ paddingTop: 80, paddingBottom: 60 }}
+      className="relative flex flex-col items-center justify-center overflow-hidden"
+      style={{
+        background: "#F5F4F0",
+        paddingTop: 80,
+        paddingBottom: 60,
+      }}
     >
-      {/* Plasma background */}
-      <div className="absolute inset-0 z-0">
-        <Suspense fallback={null}>
-          <Plasma
-            color="#000000"
-            speed={0.6}
-            direction="forward"
-            scale={1.2}
-            opacity={0.15}
-            mouseInteractive={true}
-          />
-        </Suspense>
-        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
-      </div>
-
-      {/* Soft radial gradient blob */}
+      {/* Subtle radial blob */}
       <div
-        className="absolute z-[1] pointer-events-none"
+        className="absolute pointer-events-none"
         style={{
-          width: 600,
-          height: 600,
+          width: 500,
+          height: 300,
           left: "50%",
-          top: "35%",
-          transform: "translate(-50%, -50%)",
+          top: "20%",
+          transform: "translateX(-50%)",
           borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(160,155,145,0.12) 0%, transparent 70%)",
+          background: "rgba(0,0,0,0.03)",
+          filter: "blur(80px)",
+          zIndex: 0,
         }}
       />
 
-      <div className="relative z-10 flex flex-col items-center text-center w-full max-w-[780px] mx-auto">
-        {/* Eyebrow badge */}
-        <motion.div className="mb-8" {...fadeUp(0)}>
+      <div
+        className="relative flex flex-col items-center text-center w-full mx-auto px-4 sm:px-0"
+        style={{ maxWidth: 760, zIndex: 1 }}
+      >
+        {/* Eyebrow */}
+        <motion.div style={{ marginBottom: 24 }} {...fadeUp(0)}>
           <span
-            className="inline-flex items-center gap-1.5 font-body uppercase rounded-full"
+            className="inline-flex items-center font-body uppercase"
             style={{
               fontSize: 12,
+              fontWeight: 500,
               letterSpacing: "0.08em",
               padding: "6px 14px",
+              borderRadius: 9999,
               border: "1px solid rgba(0,0,0,0.1)",
               background: "rgba(0,0,0,0.04)",
-              color: "hsl(var(--foreground))",
+              color: "#6A6860",
             }}
           >
             ✦ AI-продакшн студия · Москва
@@ -103,37 +104,65 @@ const Hero = () => {
 
         {/* H1 */}
         <motion.h1
-          className="font-heading font-[800] leading-[1] text-foreground mb-5 md:mb-6"
+          className="font-heading"
           style={{
-            fontSize: "clamp(40px, 10vw, 96px)",
+            fontWeight: 800,
+            fontSize: "clamp(36px, 5.5vw, 68px)",
+            lineHeight: 1.05,
             letterSpacing: "-0.03em",
+            color: "#0D0D0B",
+            marginBottom: 16,
           }}
-          {...fadeUp(0.1)}
+          {...fadeUp(0.08)}
         >
-          <span className="block">От идеи</span>
-          <span className="block">до результата</span>
-          <span className="block bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-            за 48 часов
-          </span>
+          От идеи до результата за&nbsp;48&nbsp;часов
         </motion.h1>
 
         {/* Subtitle */}
         <motion.p
-          className="font-body text-[15px] md:text-[17px] text-muted-foreground leading-relaxed mb-10 max-w-[300px] md:max-w-[440px] mx-auto"
-          {...fadeUp(0.25)}
+          className="font-body"
+          style={{
+            fontSize: 17,
+            color: "#6A6860",
+            lineHeight: 1.5,
+            maxWidth: 480,
+            margin: "0 auto",
+            marginBottom: 32,
+          }}
+          {...fadeUp(0.18)}
         >
           AI-ролики, сайты, Mini App и автоматизация — заказывай онлайн,
           получай результат
         </motion.p>
 
-        {/* Buttons */}
+        {/* CTA Buttons */}
         <motion.div
-          className="w-full max-w-[440px] flex flex-col sm:flex-row gap-3 mb-14"
-          {...fadeUp(0.4)}
+          className="flex flex-col sm:flex-row items-center justify-center gap-2.5 w-full sm:w-auto"
+          style={{ marginBottom: 48 }}
+          {...fadeUp(0.28)}
         >
           <button
             onClick={() => navigate("/chat")}
-            className="hero-btn-primary flex items-center justify-center gap-2 sm:flex-1 w-full sm:w-auto rounded-full sm:rounded-xl"
+            className="flex items-center justify-center gap-2 font-body w-full sm:w-auto rounded-full sm:rounded-xl cursor-pointer"
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              padding: "13px 26px",
+              background: "#0D0D0B",
+              color: "#fff",
+              border: "none",
+              transition: "transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s cubic-bezier(0.16,1,0.3,1)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.15)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+            onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.97)")}
+            onMouseUp={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
           >
             Заказать проект
             <ArrowRight size={16} />
@@ -144,36 +173,61 @@ const Hero = () => {
                 .getElementById("works")
                 ?.scrollIntoView({ behavior: "smooth" })
             }
-            className="hero-btn-secondary sm:flex-1 w-full sm:w-auto rounded-full sm:rounded-xl"
+            className="font-body w-full sm:w-auto rounded-full sm:rounded-xl cursor-pointer"
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              padding: "13px 26px",
+              background: "#fff",
+              color: "#0D0D0B",
+              border: "1px solid #D0D0D0",
+              transition: "transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s cubic-bezier(0.16,1,0.3,1)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.08)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+            onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.97)")}
+            onMouseUp={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
           >
             Смотреть работы ↓
           </button>
         </motion.div>
 
+        {/* Divider */}
+        <div
+          className="w-full"
+          style={{
+            height: 1,
+            background: "rgba(0,0,0,0.06)",
+            marginBottom: 28,
+          }}
+        />
+
         {/* Stats */}
         <motion.div
           ref={stats.ref}
-          className="w-full max-w-[540px] py-6"
-          {...fadeUp(0.55)}
+          className="flex items-center justify-center"
+          style={{ gap: 48 }}
+          {...fadeUp(0.4)}
         >
-          {/* Desktop: 3 cols with vertical dividers */}
-          <div className="hidden md:grid grid-cols-3 gap-0">
+          {/* Desktop with dividers */}
+          <div className="hidden sm:flex items-center" style={{ gap: 48 }}>
             <StatItem target={150} suffix="+" label="проектов" active={stats.visible} />
-            <div className="border-l border-border">
-              <StatItem target={48} suffix="ч" label="срок сдачи" active={stats.visible} />
-            </div>
-            <div className="border-l border-border">
-              <StatItem target={95} suffix="%" label="довольны" active={stats.visible} />
-            </div>
+            <div style={{ width: 1, height: 32, background: "rgba(0,0,0,0.08)" }} />
+            <StatItem target={48} suffix="ч" label="срок сдачи" active={stats.visible} />
+            <div style={{ width: 1, height: 32, background: "rgba(0,0,0,0.08)" }} />
+            <StatItem target={95} suffix="%" label="довольны" active={stats.visible} />
           </div>
-
-          {/* Mobile: 3 cols with horizontal dividers between rows */}
-          <div className="md:hidden">
-            <div className="grid grid-cols-3 gap-5">
-              <StatItem target={150} suffix="+" label="проектов" active={stats.visible} />
-              <StatItem target={48} suffix="ч" label="срок сдачи" active={stats.visible} />
-              <StatItem target={95} suffix="%" label="довольны" active={stats.visible} />
-            </div>
+          {/* Mobile without dividers */}
+          <div className="flex sm:hidden items-center justify-center" style={{ gap: 20 }}>
+            <StatItem target={150} suffix="+" label="проектов" active={stats.visible} />
+            <StatItem target={48} suffix="ч" label="срок сдачи" active={stats.visible} />
+            <StatItem target={95} suffix="%" label="довольны" active={stats.visible} />
           </div>
         </motion.div>
       </div>
