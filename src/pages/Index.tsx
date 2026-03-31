@@ -16,10 +16,12 @@ const fadeUp = (delay: number) => ({
 
 /* ─── static data ─── */
 const services = [
-  { icon: "🎬", name: "AI-ролики", price: "от 25 000 ₽", desc: "Рекламные ролики с нейросетями", badge: "ХИТ", badgeColor: "#0D0D0B" },
-  { icon: "🌐", name: "Сайт под ключ", price: "от 95 000 ₽", desc: "Лендинг или корп. сайт с AI" },
-  { icon: "📱", name: "Telegram Mini App", price: "от 65 000 ₽", desc: "Приложение прямо в Telegram" },
-  { icon: "✦", name: "AI-агент", price: "от 150 000 ₽", desc: "Автоматизация продаж и процессов", badge: "ТОП", badgeColor: "#0052FF" },
+  { icon: "🎬", name: "AI-ролики", price: "от 25 000 ₽", badge: "ХИТ", badgeColor: "#0D0D0B" },
+  { icon: "🌐", name: "Сайты", price: "от 95 000 ₽" },
+  { icon: "📱", name: "Mini App", price: "от 65 000 ₽" },
+  { icon: "✦", name: "AI-агенты", price: "от 150 000 ₽", badge: "ТОП", badgeColor: "#0D0D0B" },
+  { icon: "🎨", name: "Дизайн", price: "от 30 000 ₽" },
+  { icon: "📊", name: "Аналитика", price: "от 40 000 ₽" },
 ];
 
 const portfolioItems = [
