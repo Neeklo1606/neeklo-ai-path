@@ -30,6 +30,7 @@ const CasesPage = lazy(() => import("./pages/CasesPage"));
 const WorksPage = lazy(() => import("./pages/WorksPage"));
 const OrderPage = lazy(() => import("./pages/OrderPage"));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -182,7 +183,7 @@ const MobileHeader = () => {
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { pathname } = useLocation();
-  const hideNav = HIDE_NAV_ROUTES.includes(pathname);
+  const hideNav = HIDE_NAV_ROUTES.includes(pathname) || pathname.startsWith("/admin");
 
   if (hideNav) return <>{children}</>;
 
@@ -231,6 +232,7 @@ const App = () => {
                 <Route path="/manager-chat" element={<P><ManagerChatPage /></P>} />
                 <Route path="/notifications" element={<P><NotificationsPage /></P>} />
                 <Route path="/legal/:slug" element={<P><LegalPage /></P>} />
+                <Route path="/admin" element={<P><AdminPage /></P>} />
                 <Route path="*" element={<P><NotFound /></P>} />
               </Routes>
               </Suspense>
