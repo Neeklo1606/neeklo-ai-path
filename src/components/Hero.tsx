@@ -132,9 +132,9 @@ const Hero = () => {
                 onClick={() => navigate("/chat")}
                 className="flex items-center justify-center gap-2 font-body w-full sm:w-auto cursor-pointer"
                 style={{
-                  fontSize: 15, fontWeight: 600, padding: "13px 24px",
+                  fontSize: 15, fontWeight: 600, padding: "14px 28px",
                   background: "#0D0D0B", color: "#fff", border: "none",
-                  borderRadius: 10,
+                  borderRadius: 14,
                   transition: "all 0.2s cubic-bezier(0.16,1,0.3,1)",
                 }}
                 onMouseEnter={(e) => {
