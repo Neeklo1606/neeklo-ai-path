@@ -224,9 +224,9 @@ const ServicesSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate
             <div className="relative">
               <div
                 className="flex items-center justify-center rounded-2xl"
-                style={{ width: 56, height: 56, background: "#EDECE8", fontSize: 24 }}
+                style={{ width: 56, height: 56, background: "#EDECE8" }}
               >
-                {s.icon}
+                <img src={s.icon} alt={s.name} className="w-7 h-7 object-contain" style={{ imageRendering: "pixelated" }} />
               </div>
               {s.badge && (
                 <span
