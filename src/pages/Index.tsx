@@ -370,22 +370,94 @@ const HowSection = () => (
 );
 
 /* ━━━ CTA ━━━ */
-const CTASection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
-  <section className="bg-white" style={{ padding: "64px 0" }}>
-    <div className="max-w-2xl mx-auto px-5 sm:px-8">
-      <motion.div className="rounded-3xl text-center" style={{ background: "#F0EEE8", padding: "48px 32px" }} {...fadeUp(0)}>
-        <h2 className="font-heading" style={{ fontSize: 28, fontWeight: 800 }}>Готов начать?</h2>
-        <p className="font-body mt-2" style={{ fontSize: 15, color: "#6A6860", marginBottom: 24 }}>Первая консультация — бесплатно</p>
-        <button
-          onClick={() => navigate("/chat")}
-          className="font-body text-white rounded-xl cursor-pointer w-full sm:w-auto hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200"
-          style={{ background: "#0D0D0B", padding: "14px 32px", fontSize: 15, fontWeight: 600 }}
+const CTASection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const anim = (delay: number, y = 0) => ({
+    initial: { opacity: 0, y },
+    animate: inView ? { opacity: 1, y: 0 } : { opacity: 0, y },
+    transition: { duration: y ? 0.5 : 0.4, delay, ease: [0.16, 1, 0.3, 1] as const },
+  });
+
+  return (
+    <section ref={ref} style={{ background: "#0D0D0B", padding: "80px 0", position: "relative", overflow: "hidden" }}>
+      {/* Dot grid */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
+          zIndex: 0,
+        }}
+      />
+
+      <div className="relative z-[1] mx-auto flex flex-col items-center text-center px-5 sm:px-10" style={{ maxWidth: 760 }}>
+        {/* Label */}
+        <motion.div className="inline-flex items-center gap-2 mb-4" {...anim(0)}>
+          <span className="rounded-full flex-shrink-0 animate-pulse" style={{ width: 7, height: 7, background: "#00C853" }} />
+          <span className="font-body uppercase" style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em" }}>
+            Первая консультация — бесплатно
+          </span>
+        </motion.div>
+
+        {/* Headline */}
+        <motion.h2
+          className="font-heading"
+          style={{ fontWeight: 800, fontSize: "clamp(32px, 5vw, 56px)", lineHeight: 1.05, letterSpacing: "-0.03em", color: "#fff" }}
+          {...anim(0.1, 20)}
         >
-          Написать в чат →
-        </button>
-      </motion.div>
-    </div>
-  </section>
-);
+          Начнём работу сегодня?
+        </motion.h2>
+
+        {/* Subtitle */}
+        <motion.p
+          className="font-body mt-5 mx-auto"
+          style={{ fontSize: 16, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, maxWidth: 420 }}
+          {...anim(0.2)}
+        >
+          Опиши задачу в чат — AI соберёт бриф и подберёт решение за 5 минут
+        </motion.p>
+
+        {/* Buttons */}
+        <motion.div className="flex flex-col sm:flex-row gap-3 mt-9 w-full sm:w-auto" {...anim(0.3, 12)}>
+          <button
+            onClick={() => navigate("/chat")}
+            className="flex items-center justify-center gap-2 font-body cursor-pointer transition-all duration-200 hover:-translate-y-[2px] hover:shadow-[0_8px_24px_rgba(255,255,255,0.15)] active:scale-[0.97]"
+            style={{ background: "#fff", color: "#0D0D0B", padding: "14px 32px", borderRadius: 12, fontSize: 15, fontWeight: 700, border: "none" }}
+          >
+            Написать в чат
+            <ArrowRight size={16} />
+          </button>
+          <button
+            onClick={() => navigate("/works")}
+            className="font-body cursor-pointer transition-all duration-200 hover:text-white hover:border-[rgba(255,255,255,0.4)]"
+            style={{ background: "transparent", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.15)", padding: "14px 24px", borderRadius: 12, fontSize: 15, fontWeight: 500 }}
+          >
+            Смотреть работы
+          </button>
+        </motion.div>
+
+        {/* Trust row */}
+        <motion.div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6 mt-8" {...anim(0.4)}>
+          <div className="flex items-center gap-1.5">
+            <span className="font-heading" style={{ fontSize: 20, fontWeight: 800, color: "#fff" }}>47+</span>
+            <span className="font-body" style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>клиентов</span>
+          </div>
+          <div className="hidden sm:block" style={{ width: 1, height: 24, background: "rgba(255,255,255,0.1)" }} />
+          <div className="flex items-center gap-1.5">
+            <span style={{ color: "#F5A623", fontSize: 13 }}>★</span>
+            <span className="font-body" style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>4.9/5</span>
+            <span className="font-body" style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>рейтинг</span>
+          </div>
+          <div className="hidden sm:block" style={{ width: 1, height: 24, background: "rgba(255,255,255,0.1)" }} />
+          <div className="flex items-center gap-1.5">
+            <span className="font-heading" style={{ fontSize: 20, fontWeight: 800, color: "#fff" }}>48ч</span>
+            <span className="font-body" style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>средний срок</span>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
 
 export default LandingPage;
