@@ -182,7 +182,7 @@ const MobileHeader = () => {
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { pathname } = useLocation();
-  const hideNav = HIDE_NAV_ROUTES.includes(pathname);
+  const hideNav = HIDE_NAV_ROUTES.includes(pathname) || pathname.startsWith("/admin");
 
   if (hideNav) return <>{children}</>;
 
