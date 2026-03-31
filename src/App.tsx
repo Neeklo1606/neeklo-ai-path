@@ -30,6 +30,7 @@ const CasesPage = lazy(() => import("./pages/CasesPage"));
 const WorksPage = lazy(() => import("./pages/WorksPage"));
 const OrderPage = lazy(() => import("./pages/OrderPage"));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
