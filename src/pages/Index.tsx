@@ -107,34 +107,38 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
     >
       <div className="relative z-10 flex flex-col items-center px-5 sm:px-8" style={{ maxWidth: 640 }}>
         {/* Orb */}
-        <motion.div className="relative mb-8" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease }}>
-          <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }} style={{ willChange: "transform" }}>
+        <motion.div className="relative mb-8 inline-block" style={{ width: 88, height: 88, flexShrink: 0 }} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease }}>
+          <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }} style={{ willChange: "transform", position: "relative" }}>
             <div
-              className="relative rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ width: 96, height: 96, background: "linear-gradient(145deg, #FFFFFF 0%, #F0EEE8 100%)", boxShadow: "0 4px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)" }}
+              className="rounded-full flex items-center justify-center"
+              style={{
+                width: 88, height: 88, background: "#0D0D0B", position: "relative", overflow: "visible",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.08)",
+              }}
             >
-              {/* Highlight */}
-              <div className="absolute rounded-full" style={{ width: 60, height: 30, top: 18, left: 18, background: "linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 100%)", borderRadius: "50%" }} />
+              {/* Shine */}
+              <div className="absolute pointer-events-none" style={{ top: 10, left: 14, width: 26, height: 16, borderRadius: "50%", background: "rgba(255,255,255,0.08)", transform: "rotate(-20deg)" }} />
               {/* Eyes */}
-              <motion.div className="flex items-center justify-center" style={{ gap: 14, x: eyeX, y: eyeY, marginTop: -4 }}>
+              <motion.div className="flex items-center" style={{ gap: 10, x: eyeX, y: eyeY }}>
                 {[0, 1].map((i) => (
                   <motion.div
                     key={i}
                     className="rounded-full"
-                    style={{ width: 10, height: 10, background: "#0D0D0B" }}
+                    style={{ width: 9, height: 9, background: "#fff", boxShadow: "0 0 6px rgba(255,255,255,0.5)" }}
                     animate={{ scaleY: [1, 1, 0.1, 1, 1] }}
-                    transition={{ duration: 4, repeat: Infinity, times: [0, 0.45, 0.5, 0.55, 1] }}
+                    transition={{ duration: 4, repeat: Infinity, times: [0, 0.44, 0.5, 0.56, 1], delay: i * 0.06 }}
                   />
                 ))}
               </motion.div>
               {/* Smile */}
-              <div className="absolute" style={{ bottom: 28, left: "50%", transform: "translateX(-50%)", width: 16, height: 8, borderBottom: "2.5px solid #0D0D0B", borderRadius: "0 0 50% 50%" }} />
+              <div className="absolute pointer-events-none" style={{ bottom: 21, left: "50%", transform: "translateX(-50%)", width: 16, height: 7, borderBottom: "2px solid rgba(255,255,255,0.22)", borderRadius: "0 0 8px 8px" }} />
             </div>
+            {/* Status dot */}
             <motion.div
               className="absolute"
-              style={{ width: 12, height: 12, bottom: 4, right: 4, background: "#00C853", borderRadius: "50%", border: "2px solid #F0EEE8", boxShadow: "0 0 6px rgba(0,200,83,0.5)" }}
-              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
+              style={{ bottom: 2, right: 2, width: 14, height: 14, borderRadius: "50%", background: "#00C853", border: "2.5px solid #F0EEE8", boxShadow: "0 0 8px rgba(0,200,83,0.6)", zIndex: 2 }}
+              animate={{ scale: [1, 1.25, 1], opacity: [1, 0.75, 1] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
             />
           </motion.div>
         </motion.div>
