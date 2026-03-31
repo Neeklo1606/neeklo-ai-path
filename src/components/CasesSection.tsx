@@ -45,10 +45,6 @@ const CasesSection = () => {
           <h2 className="font-heading text-[28px] md:text-[36px] font-[800] text-foreground">
             Наши работы
           </h2>
-          <div className="flex items-center gap-1.5">
-            <span style={{ color: "#FFB800" }} className="text-[14px]">★</span>
-            <span className="font-body text-[14px] font-[600] text-muted-foreground">4.9 / 5</span>
-          </div>
         </motion.div>
 
         {/* Grid */}
