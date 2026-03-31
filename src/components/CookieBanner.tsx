@@ -53,7 +53,7 @@ const CookieBanner = () => {
     >
       <p className="font-body text-[13px] leading-[1.5] mb-3" style={{ color: "#3A3A3A" }}>
         Мы используем cookie для улучшения сайта. Используя сайт, вы соглашаетесь с нашей{" "}
-        <Link to="/legal/cookie-policy" className="underline" style={{ color: "#0052FF" }}>
+        <Link to="/legal/cookies" className="underline" style={{ color: "#0052FF" }}>
           Политикой Cookie
         </Link>{" "}
         и обработкой персональных данных (152-ФЗ).

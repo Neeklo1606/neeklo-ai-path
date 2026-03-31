@@ -2,6 +2,7 @@ import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import Hero from "@/components/Hero";
 import SolutionCards from "@/components/SolutionCards";
 import CasesSection from "@/components/CasesSection";
@@ -14,6 +15,7 @@ const steps = [
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  usePageTitle("neeklo — AI-продакшн студия");
 
   const stepsSection = useScrollReveal(0.15);
   const ctaSection = useScrollReveal(0.3);
@@ -104,12 +106,23 @@ const LandingPage = () => {
       </section>
 
       {/* CTA */}
-      <section className="mb-4 px-4 md:px-0 md:mb-16" ref={ctaSection.ref}>
+      <section className="py-12 md:py-20 px-5 md:px-10" style={{ background: "#F0EEE8" }} ref={ctaSection.ref}>
         <div className="max-w-[600px] mx-auto" style={revealStyle(ctaSection.visible)}>
-          <div className="game-card text-center">
-            <p className="text-[20px] md:text-[24px] font-bold mb-2">Готов начать?</p>
-            <p className="text-[14px] text-muted-foreground mb-5">Первая консультация бесплатно</p>
-            <button onClick={() => navigate("/chat")} className="btn-accent max-w-[300px] mx-auto">
+          <div className="text-center">
+            <p className="font-heading text-[20px] md:text-[24px] font-extrabold text-[#0D0D0B] mb-2">Готов начать?</p>
+            <p className="font-body text-[14px] text-[#6A6860] mb-5">Первая консультация бесплатно</p>
+            <button
+              onClick={() => navigate("/chat")}
+              className="inline-flex items-center justify-center gap-2 font-body text-[14px] font-semibold text-white mx-auto cursor-pointer"
+              style={{
+                background: "#0D0D0B",
+                borderRadius: 12,
+                padding: "13px 24px",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.background = "#1a1a1a"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.background = "#0D0D0B"; }}
+            >
               Написать в чат
               <ArrowRight size={16} />
             </button>

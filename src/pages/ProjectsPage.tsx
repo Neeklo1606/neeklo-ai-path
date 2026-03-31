@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FolderOpen, Briefcase, Palette, Star, MessageSquare, ChevronDown } from "lucide-react";
+import { FolderOpen, Briefcase, Palette, Star, MessageSquare, ChevronDown, ArrowRight } from "lucide-react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 type StepStatus = "done" | "active" | "pending";
 
@@ -177,21 +178,25 @@ const ProjectCard = ({ project, index }: { project: Project; index: number }) =>
 const EmptyState = () => {
   const navigate = useNavigate();
   return (
-    <div className="flex flex-col items-center justify-center pt-28 px-8">
-      <div className="w-11 h-11 rounded-xl bg-card border border-border flex items-center justify-center mb-4">
-        <FolderOpen size={18} className="text-muted-foreground" />
+    <div className="flex flex-col items-center justify-center pt-20 px-8">
+      <div className="w-16 h-16 rounded-2xl bg-[#F5F5F5] flex items-center justify-center mb-5">
+        <FolderOpen size={28} className="text-[#B0B0B0]" />
       </div>
-      <p className="text-[15px] font-medium text-foreground text-center mb-1.5">
-        Здесь появятся все твои проекты
+      <p className="font-body text-[16px] font-semibold text-[#0D0D0B] text-center mb-1.5">
+        Здесь появятся ваши проекты
       </p>
-      <p className="text-[13px] text-muted-foreground text-center mb-6">
-        Создай первый проект через чат
+      <p className="font-body text-[13px] text-[#6A6860] text-center mb-6">
+        Создайте первый проект через чат с AI
       </p>
       <button
         onClick={() => navigate("/chat")}
-        className="text-[13px] font-medium text-foreground underline underline-offset-2 active:scale-95 transition-transform"
+        className="inline-flex items-center gap-2 font-body text-[14px] font-semibold text-white cursor-pointer"
+        style={{ background: "#0D0D0B", borderRadius: 12, padding: "13px 24px", transition: "all 0.2s" }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.background = "#1a1a1a"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.background = "#0D0D0B"; }}
       >
-        Перейти в чат →
+        Заказать первый проект
+        <ArrowRight size={16} />
       </button>
     </div>
   );
@@ -199,6 +204,7 @@ const EmptyState = () => {
 
 const ProjectsPage = () => {
   const [loading] = useState(false);
+  usePageTitle("Проекты — neeklo");
 
   return (
     <div className="page-container">

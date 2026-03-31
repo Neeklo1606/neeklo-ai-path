@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowRight, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import Footer from "@/components/Footer";
 
 const filters = ["Все", "Сайты", "Ролики", "Mini App", "AI"] as const;
@@ -18,6 +19,7 @@ const cases = [
 const CasesPage = () => {
   const [active, setActive] = useState<Filter>("Все");
   const navigate = useNavigate();
+  usePageTitle("Наши работы — neeklo");
 
   const filtered = active === "Все" ? cases : cases.filter((c) => c.tag === active);
 

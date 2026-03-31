@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Download } from "lucide-react";
 import ChatMessage, { AIAvatar } from "@/components/ChatMessage";
@@ -100,6 +101,7 @@ function generateBriefPDF(data: BriefData) {
 }
 
 const ChatPage = () => {
+  usePageTitle("Чат с AI — neeklo");
   const saved = useRef(loadChat());
   const [items, setItems] = useState<ChatItem[]>(saved.current?.items || []);
   const [inputDisabled, setInputDisabled] = useState(false);

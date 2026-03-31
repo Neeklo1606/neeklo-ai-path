@@ -201,7 +201,7 @@
     @apply bg-background;
     min-height: 100%;
     flex: 1;
-    padding-bottom: 6rem;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
   }
 
   @media (min-width: 768px) {
