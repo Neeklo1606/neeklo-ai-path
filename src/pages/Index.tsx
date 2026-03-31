@@ -83,16 +83,17 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
   const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width:768px)").matches;
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  const springX = useSpring(mouseX, { stiffness: 60, damping: 20 });
-  const springY = useSpring(mouseY, { stiffness: 60, damping: 20 });
-  const eyeX = useTransform(springX, [-300, 300], [-6, 6]);
-  const eyeY = useTransform(springY, [-300, 300], [-4, 4]);
+  const springX = useSpring(mouseX, { stiffness: 50, damping: 18 });
+  const springY = useSpring(mouseY, { stiffness: 50, damping: 18 });
+  const eyeX = useTransform(springX, [-400, 400], [-7, 7]);
+  const eyeY = useTransform(springY, [-400, 400], [-5, 5]);
 
   const handleMouse = isMobile ? undefined : (e: React.MouseEvent) => {
     const r = e.currentTarget.getBoundingClientRect();
-    mouseX.set(e.clientX - (r.left + r.width / 2));
-    mouseY.set(e.clientY - (r.top + r.height / 2));
+    mouseX.set(e.clientX - r.left - r.width / 2);
+    mouseY.set(e.clientY - r.top - r.height / 2);
   };
+  const handleMouseLeave = isMobile ? undefined : () => { mouseX.set(0); mouseY.set(0); };
 
   return (
     <section
