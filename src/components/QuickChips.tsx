@@ -14,18 +14,37 @@ const QuickChips = ({ options, onSelect }: QuickChipsProps) => {
   };
 
   return (
-    <div className="flex flex-wrap gap-2 pl-[46px]">
+    <div className="flex flex-wrap" style={{ gap: 8, paddingLeft: 38, marginTop: 4 }}>
       {options.map((option, i) => (
         <button
           key={option}
           onClick={() => handleClick(option)}
-          className="font-body text-[14px] font-medium text-white rounded-full transition-all duration-150"
+          className="font-body text-white cursor-pointer"
           style={{
+            fontSize: 14,
+            fontWeight: 500,
             background: "#0D0D0B",
-            padding: "8px 18px",
+            padding: "9px 18px",
+            borderRadius: 9999,
+            border: "none",
             opacity: hiding ? 0 : 1,
-            transform: hiding ? "scale(0.9)" : "scale(1)",
+            transform: hiding ? "scale(0.95)" : "scale(1)",
+            transition: "all 0.15s cubic-bezier(0.16,1,0.3,1)",
             animationDelay: `${i * 50}ms`,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#2a2a2a";
+            if (!hiding) e.currentTarget.style.transform = "scale(1.02)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "#0D0D0B";
+            if (!hiding) e.currentTarget.style.transform = "scale(1)";
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.transform = "scale(0.96)";
+          }}
+          onMouseUp={(e) => {
+            if (!hiding) e.currentTarget.style.transform = "scale(1.02)";
           }}
         >
           {option}

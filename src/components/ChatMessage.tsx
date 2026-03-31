@@ -3,24 +3,25 @@ interface ChatMessageProps {
   content: string;
 }
 
-const AIAvatar = () => (
+const AIAvatar = ({ size = 28 }: { size?: number }) => (
   <div
     className="flex-shrink-0 flex items-center justify-center rounded-full"
-    style={{ width: 36, height: 36, background: "#0D0D0B" }}
+    style={{ width: size, height: size, background: "#0D0D0B" }}
   >
-    <span className="text-white text-[14px] leading-none">✦</span>
+    <span className="text-white leading-none" style={{ fontSize: size * 0.43 }}>✦</span>
   </div>
 );
 
 const ChatMessage = ({ role, content }: ChatMessageProps) => (
   <div
     className={`flex items-end ${
-      role === "user" ? "justify-end" : "justify-start gap-2.5"
+      role === "user" ? "justify-end" : "justify-start"
     } animate-message-in`}
+    style={{ gap: role === "ai" ? 10 : 0 }}
   >
-    {role === "ai" && <AIAvatar />}
+    {role === "ai" && <AIAvatar size={28} />}
     <div
-      className="max-w-[75%]"
+      className="max-w-[85%] sm:max-w-[75%]"
       style={
         role === "user"
           ? {
@@ -37,7 +38,7 @@ const ChatMessage = ({ role, content }: ChatMessageProps) => (
             }
       }
     >
-      <p className="font-body text-[15px] leading-[1.6] whitespace-pre-wrap">{content}</p>
+      <p className="font-body whitespace-pre-wrap" style={{ fontSize: 15, lineHeight: 1.55 }}>{content}</p>
     </div>
   </div>
 );
