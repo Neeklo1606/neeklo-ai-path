@@ -3,24 +3,30 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, useMotionValue } from "framer-motion";
 import { ArrowRight, X, ExternalLink, Play } from "lucide-react";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import workFashion from "@/assets/work-fashion.webp";
+import workStudio from "@/assets/work-studio.webp";
+import workRacing from "@/assets/work-racing.webp";
+import workVision from "@/assets/work-vision.webp";
+import workEcommerce from "@/assets/work-ecommerce.webp";
+import workAssistant from "@/assets/work-assistant.webp";
 
 /* ─── types ─── */
 interface WorkMetric { label: string; value: string }
 interface Work {
   id: number; cat: string; title: string; client: string; result: string;
   tags: string[]; type: "video" | "site"; videoUrl?: string; previewUrl?: string;
-  bg: string; emoji: string; featured?: boolean; brief: string; solution: string;
+  bg: string; emoji: string; img?: string; featured?: boolean; brief: string; solution: string;
   metrics: WorkMetric[];
 }
 
 /* ─── data ─── */
 const works: Work[] = [
-  { id: 1, cat: "Ролики", title: "Имиджевый ролик", client: "Fashion Brand", result: "+40% узнаваемость", tags: ["Runway", "Kling", "Монтаж"], type: "video", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", bg: "linear-gradient(135deg, #1a0a0a 0%, #2d1515 50%, #1a1a2e 100%)", emoji: "🎬", featured: true, brief: "Fashion-бренд хотел имиджевый ролик для Instagram и показа на мероприятии.", solution: "AI-генерация сцен в Runway, монтаж в CapCut Pro, озвучка ElevenLabs.", metrics: [{ label: "Просмотров", value: "2M+" }, { label: "Охват", value: "+40%" }, { label: "Срок", value: "5 дней" }] },
-  { id: 2, cat: "Сайты", title: "Лендинг студии", client: "neeklo.studio", result: "+60% заявок", tags: ["React", "Lovable", "Framer Motion"], type: "site", previewUrl: "https://neeklo.ru", bg: "linear-gradient(135deg, #0f1535 0%, #1e3a7a 100%)", emoji: "🌐", brief: "Нужен современный сайт студии с AI-ассистентом и портфолио.", solution: "Разработка на Lovable + React, AI-чат, анимации на Framer Motion.", metrics: [{ label: "Конверсия", value: "+60%" }, { label: "Срок", value: "7 дней" }, { label: "Скорость", value: "98/100" }] },
-  { id: 3, cat: "Ролики", title: "Промо для бренда", client: "DA-Motors", result: "2M просмотров", tags: ["AI-видео", "Reels", "Монтаж"], type: "video", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", bg: "linear-gradient(135deg, #1a0808 0%, #3d1010 50%, #1a0a0a 100%)", emoji: "🏎️", brief: "Авто-дилер хотел вирусный промо-ролик для Reels и TikTok.", solution: "AI-генерация динамичных сцен, быстрый монтаж, трендовый саунд.", metrics: [{ label: "Просмотров", value: "2M" }, { label: "Подписчиков", value: "+8K" }, { label: "Срок", value: "3 дня" }] },
-  { id: 4, cat: "Mini App", title: "Vision AI App", client: "Tech Startup", result: "50K пользователей", tags: ["Telegram", "React", "Python"], type: "site", bg: "linear-gradient(135deg, #0d0d18 0%, #1a1a35 100%)", emoji: "📱", brief: "Стартап хотел голосовой AI-ассистент внутри Telegram.", solution: "Telegram Mini App на React, backend на Python FastAPI, интеграция GPT-4.", metrics: [{ label: "Пользователей", value: "50K" }, { label: "DAU", value: "12K" }, { label: "Срок", value: "21 день" }] },
-  { id: 5, cat: "Сайты", title: "Интернет-магазин", client: "Fashion Retail", result: "+120% конверсия", tags: ["React", "Shopify", "SEO"], type: "site", bg: "linear-gradient(135deg, #0a1628 0%, #1e4080 100%)", emoji: "🛍️", brief: "Fashion-ритейлер хотел современный магазин с AI-рекомендациями.", solution: "React + Shopify headless, AI-персонализация, SEO-оптимизация.", metrics: [{ label: "Конверсия", value: "+120%" }, { label: "Средний чек", value: "+35%" }, { label: "Срок", value: "14 дней" }] },
-  { id: 6, cat: "AI", title: "AI-продавец", client: "B2B компания", result: "80% автоматизация", tags: ["GPT-4", "n8n", "amoCRM"], type: "site", bg: "linear-gradient(135deg, #0a0a0a 0%, #252525 100%)", emoji: "🤖", brief: "B2B компания хотела автоматизировать обработку входящих лидов.", solution: "AI-агент на GPT-4, интеграция с amoCRM через n8n, Telegram-уведомления.", metrics: [{ label: "Автоматизация", value: "80%" }, { label: "Экономия", value: "40ч/мес" }, { label: "Срок", value: "14 дней" }] },
+  { id: 1, cat: "Ролики", title: "Имиджевый ролик", client: "Fashion Brand", result: "+40% узнаваемость", tags: ["Runway", "Kling", "Монтаж"], type: "video", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", bg: "linear-gradient(135deg, #1a0a0a 0%, #2d1515 50%, #1a1a2e 100%)", emoji: "🎬", img: workFashion, featured: true, brief: "Fashion-бренд хотел имиджевый ролик для Instagram и показа на мероприятии.", solution: "AI-генерация сцен в Runway, монтаж в CapCut Pro, озвучка ElevenLabs.", metrics: [{ label: "Просмотров", value: "2M+" }, { label: "Охват", value: "+40%" }, { label: "Срок", value: "5 дней" }] },
+  { id: 2, cat: "Сайты", title: "Лендинг студии", client: "neeklo.studio", result: "+60% заявок", tags: ["React", "Lovable", "Framer Motion"], type: "site", previewUrl: "https://neeklo.ru", bg: "linear-gradient(135deg, #0f1535 0%, #1e3a7a 100%)", emoji: "🌐", img: workStudio, brief: "Нужен современный сайт студии с AI-ассистентом и портфолио.", solution: "Разработка на Lovable + React, AI-чат, анимации на Framer Motion.", metrics: [{ label: "Конверсия", value: "+60%" }, { label: "Срок", value: "7 дней" }, { label: "Скорость", value: "98/100" }] },
+  { id: 3, cat: "Ролики", title: "Промо для бренда", client: "DA-Motors", result: "2M просмотров", tags: ["AI-видео", "Reels", "Монтаж"], type: "video", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", bg: "linear-gradient(135deg, #1a0808 0%, #3d1010 50%, #1a0a0a 100%)", emoji: "🏎️", img: workRacing, brief: "Авто-дилер хотел вирусный промо-ролик для Reels и TikTok.", solution: "AI-генерация динамичных сцен, быстрый монтаж, трендовый саунд.", metrics: [{ label: "Просмотров", value: "2M" }, { label: "Подписчиков", value: "+8K" }, { label: "Срок", value: "3 дня" }] },
+  { id: 4, cat: "Mini App", title: "Vision AI App", client: "Tech Startup", result: "50K пользователей", tags: ["Telegram", "React", "Python"], type: "site", bg: "linear-gradient(135deg, #0d0d18 0%, #1a1a35 100%)", emoji: "📱", img: workVision, brief: "Стартап хотел голосовой AI-ассистент внутри Telegram.", solution: "Telegram Mini App на React, backend на Python FastAPI, интеграция GPT-4.", metrics: [{ label: "Пользователей", value: "50K" }, { label: "DAU", value: "12K" }, { label: "Срок", value: "21 день" }] },
+  { id: 5, cat: "Сайты", title: "Интернет-магазин", client: "Fashion Retail", result: "+120% конверсия", tags: ["React", "Shopify", "SEO"], type: "site", bg: "linear-gradient(135deg, #0a1628 0%, #1e4080 100%)", emoji: "🛍️", img: workEcommerce, brief: "Fashion-ритейлер хотел современный магазин с AI-рекомендациями.", solution: "React + Shopify headless, AI-персонализация, SEO-оптимизация.", metrics: [{ label: "Конверсия", value: "+120%" }, { label: "Средний чек", value: "+35%" }, { label: "Срок", value: "14 дней" }] },
+  { id: 6, cat: "AI", title: "AI-продавец", client: "B2B компания", result: "80% автоматизация", tags: ["GPT-4", "n8n", "amoCRM"], type: "site", bg: "linear-gradient(135deg, #0a0a0a 0%, #252525 100%)", emoji: "🤖", img: workAssistant, brief: "B2B компания хотела автоматизировать обработку входящих лидов.", solution: "AI-агент на GPT-4, интеграция с amoCRM через n8n, Telegram-уведомления.", metrics: [{ label: "Автоматизация", value: "80%" }, { label: "Экономия", value: "40ч/мес" }, { label: "Срок", value: "14 дней" }] },
 ];
 
 const filterTabs = ["Все", "Сайты", "Ролики", "Mini App", "AI"];
@@ -72,7 +78,11 @@ const WorkCard = ({ work, index, onClick }: { work: Work; index: number; onClick
     onClick={onClick}
   >
     <div className="absolute inset-0" style={{ background: work.bg }}>
-      <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[52px] opacity-60 select-none">{work.emoji}</span>
+      {work.img ? (
+        <img src={work.img} alt={work.title} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+      ) : (
+        <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[52px] opacity-60 select-none">{work.emoji}</span>
+      )}
     </div>
     <div className="absolute bottom-0 left-0 right-0 z-[1]" style={{ height: "70%", background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.4) 50%, transparent 100%)" }} />
     <div className="absolute top-3 right-3 z-[2]">
@@ -249,17 +259,10 @@ const WorksPage = () => {
 
       {/* Grid */}
       <div className="px-5 md:px-10 pt-6">
-        <div className="hidden md:block" style={{ columns: 3, columnGap: 16 }}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
           {filtered.map((w, i) => (
-            <div key={w.id} className="mb-4 break-inside-avoid" style={{ height: w.featured ? 320 : 220 }}>
+            <div key={w.id} className={w.featured ? "col-span-2 md:col-span-2" : ""} style={{ height: w.featured ? 280 : 220 }}>
               <WorkCard work={w} index={i} onClick={() => setSelectedWork(w)} />
-            </div>
-          ))}
-        </div>
-        <div className="md:hidden flex flex-col gap-3">
-          {filtered.map((w, i) => (
-            <div key={w.id} style={{ height: 220 }}>
-              <WorkCard work={{ ...w, featured: false }} index={i} onClick={() => setSelectedWork(w)} />
             </div>
           ))}
         </div>
