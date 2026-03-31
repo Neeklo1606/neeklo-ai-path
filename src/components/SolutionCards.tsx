@@ -60,7 +60,7 @@ const SolutionCards = () => {
                 <img
                   src={s.icon}
                   alt={s.name}
-                  className="w-7 h-7 lg:w-8 lg:h-8 object-contain"
+                  className="w-7 h-7 lg:w-8 lg:h-8 object-contain transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110"
                   style={{ imageRendering: "pixelated" }}
                 />
               </div>
