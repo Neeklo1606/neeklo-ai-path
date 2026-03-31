@@ -4,6 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import Footer from "@/components/Footer";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import Hero from "@/components/Hero";
+import SolutionCards from "@/components/SolutionCards";
 
 import workFashion from "@/assets/work-fashion.webp";
 import workRacing from "@/assets/work-racing.webp";
