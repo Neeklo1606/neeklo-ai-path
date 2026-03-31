@@ -83,32 +83,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* PRODUCTS */}
-      <section className="mb-14 px-4 md:px-0" ref={productsSection.ref}>
-        <div className="max-w-[1200px] mx-auto">
-          <h2 className="text-[22px] md:text-[28px] font-bold mb-5 md:mb-8" style={revealStyle(productsSection.visible)}>Что делаем</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            {products.map((p, i) => (
-              <button
-                key={p.title}
-                onClick={() => navigate(`/services/${p.slug}`)}
-                className="game-card relative text-left active:scale-[0.97] transition-transform duration-100 hover:border-foreground/20"
-                style={revealStyle(productsSection.visible, i * 100)}
-              >
-                {p.badge && (
-                  <span className="absolute top-4 right-4 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary text-primary-foreground">{p.badge}</span>
-                )}
-                <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-card border border-border flex items-center justify-center mb-3">
-                  <p.icon size={16} className="text-foreground" />
-                </div>
-                <p className="text-[15px] font-bold mb-1">{p.title}</p>
-                <p className="text-[13px] text-muted-foreground font-medium mb-1">{p.price}</p>
-                <p className="text-[12px] text-muted-foreground leading-snug">{p.desc}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+      <SolutionCards />
 
       {/* HOW IT WORKS */}
       <section className="mb-14 px-4 md:px-0" ref={stepsSection.ref}>
