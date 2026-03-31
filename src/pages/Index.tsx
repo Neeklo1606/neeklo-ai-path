@@ -277,7 +277,12 @@ const WorksSection = () => {
               style={{ height: item.featured ? 280 : 200, background: item.bg }}
               {...fadeUp(i * 0.07)}
             >
-              <div className="absolute inset-0 flex items-center justify-center text-5xl">{item.emoji}</div>
+              <img
+                src={item.img}
+                alt={item.title}
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
+              />
               <div
                 className="absolute inset-x-0 bottom-0 p-4"
                 style={{ background: "linear-gradient(to top, rgba(0,0,0,0.72), transparent)" }}
