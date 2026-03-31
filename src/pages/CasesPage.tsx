@@ -19,6 +19,7 @@ const cases = [
 const CasesPage = () => {
   const [active, setActive] = useState<Filter>("Все");
   const navigate = useNavigate();
+  usePageTitle("Наши работы — neeklo");
 
   const filtered = active === "Все" ? cases : cases.filter((c) => c.tag === active);
 
