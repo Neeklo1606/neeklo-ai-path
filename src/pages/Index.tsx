@@ -72,6 +72,7 @@ const LandingPage = () => {
       <WorksSection />
       <Divider />
       <HowSection />
+      <AvitoReviewsSection />
       <CTASection navigate={navigate} />
       <Footer />
     </div>
@@ -376,6 +377,106 @@ const HowSection = () => (
     </div>
   </section>
 );
+
+/* ━━━ AVITO REVIEWS ━━━ */
+const avitoReviews = [
+  { name: "Алексей М.", rating: 5, date: "12 мар 2026", text: "Заказывали лендинг для автосервиса. Сделали за 5 дней, всё чётко по ТЗ. Конверсия выросла в 2 раза. Рекомендую!", avatar: "АМ" },
+  { name: "Марина К.", rating: 5, date: "28 фев 2026", text: "AI-ролики для нашего Instagram — просто огонь! Охваты выросли на 40%. Быстро, качественно и по адекватной цене.", avatar: "МК" },
+  { name: "Дмитрий В.", rating: 5, date: "15 фев 2026", text: "Telegram Mini App для записи клиентов. Работает идеально, клиенты довольны. Поддержка отвечает моментально.", avatar: "ДВ" },
+  { name: "Екатерина С.", rating: 5, date: "3 фев 2026", text: "AI-агент для обработки заявок — лучшее вложение. Автоматизировали 80% рутины, менеджеры теперь занимаются продажами.", avatar: "ЕС" },
+  { name: "Игорь П.", rating: 5, date: "20 янв 2026", text: "Второй раз обращаемся за роликами. Качество на уровне студии, а цена в разы ниже. Сроки всегда соблюдают.", avatar: "ИП" },
+  { name: "Ольга Н.", rating: 4, date: "10 янв 2026", text: "Сайт получился стильный и быстрый. Единственное — хотелось бы чуть больше правок в рамках пакета. В остальном — отлично!", avatar: "ОН" },
+];
+
+const AvitoReviewsSection = () => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  return (
+    <section style={{ background: "#fff", padding: "72px 0 80px" }}>
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
+        <motion.div className="flex items-center justify-between mb-8" {...fadeUp(0)}>
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="font-heading" style={{ fontSize: 32, fontWeight: 800 }}>Отзывы клиентов</h2>
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full font-body"
+                style={{ padding: "4px 12px", fontSize: 12, fontWeight: 600, background: "#00AAFF15", color: "#0078D4", border: "1px solid #00AAFF30" }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#0078D4"/></svg>
+                Авито
+              </span>
+            </div>
+            <p className="font-body" style={{ fontSize: 14, color: "#6A6860" }}>Реальные отзывы с Авито · рейтинг 5.0</p>
+          </div>
+          <a
+            href="https://www.avito.ru/brands/i104436874"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:flex items-center gap-2 font-body transition-all duration-200 hover:-translate-y-[1px]"
+            style={{ fontSize: 14, fontWeight: 600, color: "#0D0D0B", border: "1px solid #E0E0E0", borderRadius: 12, padding: "10px 20px" }}
+          >
+            Все отзывы на Авито
+            <ArrowRight size={14} />
+          </a>
+        </motion.div>
+
+        {/* Scrollable cards */}
+        <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-4 -mx-5 px-5 sm:-mx-8 sm:px-8 snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: "none" }}>
+          {avitoReviews.map((r, i) => (
+            <motion.div
+              key={i}
+              className="flex-shrink-0 snap-start"
+              style={{ width: 320 }}
+              {...fadeUp(i * 0.08)}
+            >
+              <div
+                className="h-full flex flex-col p-5 transition-all duration-200 hover:-translate-y-1"
+                style={{ background: "#F9F9F9", borderRadius: 20, border: "1px solid #F0F0F0" }}
+              >
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div
+                    className="flex-shrink-0 flex items-center justify-center rounded-full font-heading"
+                    style={{ width: 40, height: 40, background: "#0D0D0B", color: "#fff", fontSize: 13, fontWeight: 700 }}
+                  >
+                    {r.avatar}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-body truncate" style={{ fontSize: 14, fontWeight: 600, color: "#0D0D0B" }}>{r.name}</p>
+                    <p className="font-body" style={{ fontSize: 12, color: "#B0B0B0" }}>{r.date}</p>
+                  </div>
+                </div>
+                {/* Stars */}
+                <div className="flex gap-0.5 mb-3">
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <svg key={j} width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill={j < r.rating ? "#F5A623" : "#E0E0E0"} />
+                    </svg>
+                  ))}
+                </div>
+                {/* Text */}
+                <p className="font-body flex-1" style={{ fontSize: 14, color: "#3A3A3A", lineHeight: 1.6 }}>{r.text}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Mobile CTA */}
+        <div className="sm:hidden mt-4 flex justify-center">
+          <a
+            href="https://www.avito.ru/brands/i104436874"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 font-body"
+            style={{ fontSize: 14, fontWeight: 600, color: "#0D0D0B", border: "1px solid #E0E0E0", borderRadius: 12, padding: "10px 20px" }}
+          >
+            Все отзывы на Авито
+            <ArrowRight size={14} />
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+};
 
 /* ━━━ CTA ━━━ */
 const CTASection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => {
