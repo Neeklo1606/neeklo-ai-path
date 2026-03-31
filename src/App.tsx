@@ -12,6 +12,8 @@ import Onboarding from "@/components/Onboarding";
 import CookieBanner from "@/components/CookieBanner";
 import logoImg from "@/assets/logo.png";
 import Index from "./pages/Index";
+import { Menu, X, Home, MessageSquare, Sparkles, Image, FolderOpen, User, Settings, Bell } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const ChatPage = lazy(() => import("./pages/ChatPage"));
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
