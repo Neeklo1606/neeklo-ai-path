@@ -14,7 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Onest", "Inter", "system-ui", "sans-serif"],
+        heading: ["Unbounded", "system-ui", "sans-serif"],
+        body: ["Onest", "Inter", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
