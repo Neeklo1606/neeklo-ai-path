@@ -1,5 +1,5 @@
-import { Send, Mic } from "lucide-react";
-import { useState } from "react";
+import { Send } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -8,40 +8,65 @@ interface ChatInputProps {
 
 const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
   const [value, setValue] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const hasText = value.trim().length > 0;
+
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, 96) + "px"; // max ~4 rows
+  }, [value]);
 
   const handleSend = () => {
-    if (!value.trim() || disabled) return;
+    if (!hasText || disabled) return;
     onSend(value.trim());
     setValue("");
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   return (
-    <div className="fixed-bottom-bar bg-background border-t border-border" style={{ bottom: "calc(60px + env(safe-area-inset-bottom))", padding: "12px 20px" }}>
-      <div className="flex items-center gap-2.5">
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          placeholder="Напишите сообщение..."
-          disabled={disabled}
-          className="flex-1 bg-card rounded-full text-[14px] text-foreground placeholder:text-muted-foreground outline-none border-none focus:ring-0 transition-colors duration-200"
-          style={{ padding: "12px 20px" }}
-        />
-        <button
-          disabled={disabled}
-          className="w-[42px] h-[42px] rounded-full bg-card text-muted-foreground flex items-center justify-center active:scale-90 transition-all duration-150 flex-shrink-0 hover:text-foreground"
-        >
-          <Mic size={18} />
-        </button>
-        <button
-          onClick={handleSend}
-          disabled={!value.trim() || disabled}
-          className="w-[46px] h-[46px] rounded-full bg-primary text-primary-foreground flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-15 flex-shrink-0 shadow-sm"
-        >
-          <Send size={18} className="translate-x-[1px]" />
-        </button>
-      </div>
+    <div
+      className="bg-white flex items-end gap-3"
+      style={{ borderTop: "1px solid #F0F0F0", padding: "12px 16px" }}
+    >
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Напишите сообщение..."
+        disabled={disabled}
+        rows={1}
+        className="flex-1 font-body text-[15px] text-foreground placeholder:text-muted-foreground outline-none resize-none"
+        style={{
+          background: "#F9F9F9",
+          border: "1px solid #E5E5E5",
+          borderRadius: 9999,
+          padding: "11px 16px",
+          lineHeight: "1.4",
+        }}
+      />
+      <button
+        onClick={handleSend}
+        disabled={!hasText || disabled}
+        className="flex-shrink-0 flex items-center justify-center rounded-full transition-all duration-150 active:scale-90"
+        style={{
+          width: 40,
+          height: 40,
+          background: hasText ? "#0D0D0B" : "#F0F0F0",
+          color: hasText ? "white" : "#999",
+        }}
+      >
+        <Send size={17} className="translate-x-[1px]" />
+      </button>
     </div>
   );
 };
