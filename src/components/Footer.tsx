@@ -133,14 +133,7 @@ const Footer = () => {
           <div className="md:col-span-5 flex flex-col gap-5">
             {/* Logo */}
             <div className="flex items-center">
-              <div
-                className="rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ width: 32, height: 32, background: "#fff" }}
-              >
-                <span style={{ fontSize: 16, color: "#0D0D0B" }}>✦</span>
-              </div>
-              <span className="font-heading ml-2.5" style={{ fontSize: 20, fontWeight: 700 }}>neeklo</span>
-              <span className="font-body" style={{ fontSize: 14, color: "rgba(255,255,255,0.4)" }}>.studio</span>
+              <img src={logoWhite} alt="neeklo studio" className="h-8 w-auto opacity-90" />
             </div>
 
             {/* Tagline */}
