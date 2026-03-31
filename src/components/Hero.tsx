@@ -59,13 +59,12 @@ const Hero = () => {
 
       {/* Container */}
       <div
-        className="relative mx-auto flex items-center"
-        style={{ maxWidth: 1200, padding: "0 48px", minHeight: "calc(100vh - 64px)" }}
+        className="relative mx-auto flex items-center px-5 sm:px-8 lg:px-12"
+        style={{ maxWidth: 1200, minHeight: "calc(100vh - 64px)" }}
       >
         <div className="grid grid-cols-1 lg:grid-cols-[52%_48%] w-full gap-8 py-14 lg:py-0">
           {/* ===== LEFT ===== */}
-          <div className="flex flex-col justify-center text-center lg:text-left items-center lg:items-start px-0 sm:px-0"
-            style={{ padding: "56px 20px 40px" }}
+          <div className="flex flex-col justify-center text-center lg:text-left items-center lg:items-start py-10 lg:py-14"
           >
             {/* Category */}
             <motion.p
@@ -133,9 +132,9 @@ const Hero = () => {
                 onClick={() => navigate("/chat")}
                 className="flex items-center justify-center gap-2 font-body w-full sm:w-auto cursor-pointer"
                 style={{
-                  fontSize: 15, fontWeight: 600, padding: "13px 24px",
+                  fontSize: 15, fontWeight: 600, padding: "14px 28px",
                   background: "#0D0D0B", color: "#fff", border: "none",
-                  borderRadius: 10,
+                  borderRadius: 14,
                   transition: "all 0.2s cubic-bezier(0.16,1,0.3,1)",
                 }}
                 onMouseEnter={(e) => {
@@ -206,8 +205,8 @@ const Hero = () => {
                 <p className="font-body" style={{ fontSize: 13, fontWeight: 600, color: "#0D0D0B" }}>
                   47 клиентов доверяют
                 </p>
-                <p className="font-body" style={{ fontSize: 12, color: "#6A6860" }}>
-                  <span style={{ color: "#F5A623" }}>★★★★★</span> 4.9
+                <p className="font-body" style={{ fontSize: 12, color: "#6A6860", marginTop: 2 }}>
+                  <span style={{ color: "#F5A623" }}>★★★★★</span>
                 </p>
               </div>
             </motion.div>
