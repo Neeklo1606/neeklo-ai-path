@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { motion } from "framer-motion";
 
 const categories = ["Все", "Видео", "Разработка", "AI"] as const;
