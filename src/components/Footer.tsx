@@ -54,16 +54,36 @@ const Footer = () => {
   const [contact, setContact] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!name.trim() || !contact.trim()) {
+    const trimName = name.trim();
+    const trimContact = contact.trim();
+    if (!trimName || !trimContact) {
       setError("Заполните обязательные поля");
       return;
     }
-    setSubmitted(true);
+    if (trimName.length > 100 || trimContact.length > 255 || message.length > 1000) {
+      setError("Слишком длинный текст");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { error: dbError } = await supabase.from("contact_requests").insert({
+        name: trimName,
+        contact: trimContact,
+        message: message.trim() || null,
+      });
+      if (dbError) throw dbError;
+      setSubmitted(true);
+    } catch {
+      setError("Ошибка отправки, попробуйте позже");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleReset = () => {
