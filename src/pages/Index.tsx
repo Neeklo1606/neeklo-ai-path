@@ -10,6 +10,12 @@ import workFashion from "@/assets/work-fashion.webp";
 import workRacing from "@/assets/work-racing.webp";
 import workStudio from "@/assets/work-studio.webp";
 import workVision from "@/assets/work-vision.webp";
+import iconVideo from "@/assets/icon-video.png";
+import iconWeb from "@/assets/icon-web.png";
+import iconApp from "@/assets/icon-app.png";
+import iconAi from "@/assets/icon-ai.png";
+import iconDesign from "@/assets/icon-design.png";
+import iconAnalytics from "@/assets/icon-analytics.png";
 
 /* ─── animation helpers ─── */
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -22,12 +28,12 @@ const fadeUp = (delay: number) => ({
 
 /* ─── static data ─── */
 const services = [
-  { icon: "🎬", name: "AI-ролики", price: "от 25 000 ₽", badge: "ХИТ", badgeColor: "#0D0D0B" },
-  { icon: "🌐", name: "Сайты", price: "от 95 000 ₽" },
-  { icon: "📱", name: "Mini App", price: "от 65 000 ₽" },
-  { icon: "✦", name: "AI-агенты", price: "от 150 000 ₽", badge: "ТОП", badgeColor: "#0D0D0B" },
-  { icon: "🎨", name: "Дизайн", price: "от 30 000 ₽" },
-  { icon: "📊", name: "Аналитика", price: "от 40 000 ₽" },
+  { icon: iconVideo, name: "AI-ролики", price: "от 25 000 ₽", badge: "ХИТ", badgeColor: "#0D0D0B" },
+  { icon: iconWeb, name: "Сайты", price: "от 95 000 ₽" },
+  { icon: iconApp, name: "Mini App", price: "от 65 000 ₽" },
+  { icon: iconAi, name: "AI-агенты", price: "от 150 000 ₽", badge: "ТОП", badgeColor: "#0D0D0B" },
+  { icon: iconDesign, name: "Дизайн", price: "от 30 000 ₽" },
+  { icon: iconAnalytics, name: "Аналитика", price: "от 40 000 ₽" },
 ];
 
 const portfolioItems = [
@@ -218,9 +224,9 @@ const ServicesSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate
             <div className="relative">
               <div
                 className="flex items-center justify-center rounded-2xl"
-                style={{ width: 56, height: 56, background: "#EDECE8", fontSize: 24 }}
+                style={{ width: 56, height: 56, background: "#EDECE8" }}
               >
-                {s.icon}
+                <img src={s.icon} alt={s.name} className="w-7 h-7 object-contain" style={{ imageRendering: "pixelated" }} />
               </div>
               {s.badge && (
                 <span
