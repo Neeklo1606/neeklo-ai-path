@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import HolographicCard from "@/components/ui/holographic-card";
 
 import workFashion from "@/assets/work-fashion.webp";
 import workStudio from "@/assets/work-studio.webp";
@@ -10,127 +11,118 @@ import workVision from "@/assets/work-vision.webp";
 import workEcommerce from "@/assets/work-ecommerce.webp";
 import workAssistant from "@/assets/work-assistant.webp";
 
-const gradients: Record<string, string> = {
-  "AI-видео": "linear-gradient(135deg, #1a1a2e, #16213e)",
-  "Сайт": "linear-gradient(135deg, #0f3460, #533483)",
-  "Mini App": "linear-gradient(135deg, #0d0d0d, #1a1a1a)",
-  "AI": "linear-gradient(135deg, #0a0a0a, #2d2d2d)",
-};
-
 const cases = [
-  { cat: "AI-видео", title: "Имиджевый ролик", emoji: "🎬", img: workFashion, wide: true },
-  { cat: "Сайт", title: "Лендинг студии", emoji: "🌐", img: workStudio },
-  { cat: "AI-видео", title: "Промо для бренда", emoji: "🏎️", img: workRacing },
-  { cat: "Mini App", title: "Vision AI App", emoji: "📱", img: workVision },
-  { cat: "Сайт", title: "Интернет-магазин", emoji: "🛍️", img: workEcommerce },
-  { cat: "AI", title: "AI-ассистент", emoji: "✦", img: workAssistant },
+  { cat: "AI-видео", title: "Имиджевый ролик", img: workFashion, wide: true },
+  { cat: "Сайт", title: "Лендинг студии", img: workStudio },
+  { cat: "AI-видео", title: "Промо для бренда", img: workRacing },
+  { cat: "Mini App", title: "Vision AI App", img: workVision },
+  { cat: "Сайт", title: "Интернет-магазин", img: workEcommerce },
+  { cat: "AI", title: "AI-ассистент", img: workAssistant },
 ];
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
 const CasesSection = () => {
   const navigate = useNavigate();
-  const section = useScrollReveal(0.1);
+  const section = useScrollReveal(0.08);
 
   return (
     <section id="works" className="mt-8 mb-14 px-4 md:px-0" ref={section.ref}>
       <div className="max-w-[1200px] mx-auto">
         {/* Header */}
         <motion.div
-          className="flex items-center justify-between mb-5 md:mb-8"
+          className="flex items-center justify-between mb-4 md:mb-6"
           initial={{ opacity: 0, y: 16 }}
           animate={section.visible ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5, ease }}
         >
-          <h2 className="font-heading text-[28px] md:text-[36px] font-[800] text-foreground">
+          <h2 className="font-heading text-[24px] md:text-[36px] font-[800] text-foreground">
             Наши работы
           </h2>
+          <button
+            onClick={() => navigate("/cases")}
+            className="hidden md:flex items-center gap-1.5 font-body text-[13px] font-[600] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Все работы
+            <ArrowRight size={14} />
+          </button>
         </motion.div>
 
-        {/* Grid */}
-        <div className="flex flex-col gap-3 sm:grid sm:grid-cols-3 sm:gap-4">
+        {/* Grid — compact */}
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
           {cases.map((c, i) => (
-            <motion.button
+            <motion.div
               key={i}
-              onClick={() => navigate("/cases")}
-              className={`relative overflow-hidden cursor-pointer text-left ${
-                c.wide ? "sm:col-span-2" : ""
-              }`}
-              style={{ borderRadius: 16 }}
-              initial={{ opacity: 0, y: 24 }}
-              animate={section.visible ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, ease, delay: i * 0.07 }}
-              whileHover={{ scale: 1.02, boxShadow: "0 12px 40px rgba(0,0,0,0.18)" }}
-              whileTap={{ scale: 0.99 }}
+              className={c.wide ? "col-span-2 sm:col-span-2" : ""}
+              initial={{ opacity: 0, y: 28, scale: 0.97 }}
+              animate={section.visible ? { opacity: 1, y: 0, scale: 1 } : {}}
+              transition={{ duration: 0.5, ease, delay: i * 0.06 }}
             >
-              <div
-                className={`relative w-full ${
-                  i < 2
-                    ? "aspect-[4/3] sm:h-[280px] sm:aspect-auto"
-                    : "aspect-[4/3] sm:h-[220px] sm:aspect-auto"
-                }`}
-                style={{
-                  borderRadius: 16,
-                  overflow: "hidden",
-                  background: gradients[c.cat] || gradients["AI"],
-                }}
-              >
-                {c.img ? (
-                  <img
-                    src={c.img}
-                    alt={c.title}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-[48px]">{c.emoji}</span>
-                  </div>
-                )}
-
-                {/* Overlay */}
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background: "linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 55%)",
-                  }}
-                />
-
-                {/* Bottom content */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-4">
-                  <span
-                    className="inline-block font-body text-[12px] font-[600] text-white rounded-full backdrop-blur-sm"
-                    style={{
-                      background: "rgba(255,255,255,0.15)",
-                      padding: "5px 12px",
-                    }}
+              <HolographicCard className="group cursor-pointer">
+                <button
+                  onClick={() => navigate("/cases")}
+                  className="relative w-full text-left"
+                >
+                  <div
+                    className={`relative w-full overflow-hidden rounded-2xl ${
+                      c.wide
+                        ? "aspect-[16/9] sm:aspect-[2.2/1]"
+                        : "aspect-[3/4] sm:aspect-[4/3]"
+                    }`}
                   >
-                    {c.cat}
-                  </span>
-                  <p className="font-body text-[17px] sm:text-[15px] font-[700] text-white mt-2 leading-tight">
-                    {c.title}
-                  </p>
-                </div>
-              </div>
-            </motion.button>
+                    <img
+                      src={c.img}
+                      alt={c.title}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+
+                    {/* Dark gradient overlay */}
+                    <div
+                      className="absolute inset-0 rounded-2xl"
+                      style={{
+                        background:
+                          "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.15) 50%, transparent 100%)",
+                      }}
+                    />
+
+                    {/* Content */}
+                    <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
+                      <span
+                        className="inline-block font-body text-[11px] sm:text-[12px] font-[600] text-white/90 rounded-full backdrop-blur-md"
+                        style={{
+                          background: "rgba(255,255,255,0.12)",
+                          padding: "4px 10px",
+                        }}
+                      >
+                        {c.cat}
+                      </span>
+                      <p className="font-body text-[14px] sm:text-[15px] font-[700] text-white mt-1.5 leading-tight">
+                        {c.title}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              </HolographicCard>
+            </motion.div>
           ))}
         </div>
 
-        {/* View all button */}
+        {/* Mobile CTA */}
         <motion.div
-          className="flex justify-center mt-6"
-          initial={{ opacity: 0, y: 16 }}
+          className="flex justify-center mt-5 md:hidden"
+          initial={{ opacity: 0, y: 12 }}
           animate={section.visible ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, ease, delay: 0.5 }}
+          transition={{ duration: 0.4, ease, delay: 0.4 }}
         >
           <button
             onClick={() => navigate("/cases")}
-            className="font-body text-[14px] font-[600] text-foreground py-[10px] px-6 rounded-xl transition-colors duration-150 hover:bg-muted/30 flex items-center gap-2"
+            className="font-body text-[13px] font-[600] text-foreground py-2.5 px-5 rounded-xl transition-colors duration-150 hover:bg-muted/30 flex items-center gap-1.5"
             style={{ border: "1px solid hsl(var(--border))" }}
           >
-            Смотреть все работы
-            <ArrowRight size={15} />
+            Смотреть все
+            <ArrowRight size={14} />
           </button>
         </motion.div>
       </div>
