@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowRight, Send, Globe, Check } from "lucide-react";
+import { ArrowRight, Send, Globe, Check, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const serviceLinks = [
   { label: "AI-ролики", path: "/chat" },
