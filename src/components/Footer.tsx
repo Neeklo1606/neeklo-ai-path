@@ -208,7 +208,8 @@ const Footer = () => {
                   )}
                   <button
                     type="submit"
-                    className="flex items-center justify-center gap-2 font-body cursor-pointer hover:bg-[#F0EEE8] hover:-translate-y-[1px] active:scale-[0.97] transition-all duration-200"
+                    disabled={submitting}
+                    className="flex items-center justify-center gap-2 font-body cursor-pointer hover:bg-[#F0EEE8] hover:-translate-y-[1px] active:scale-[0.97] transition-all duration-200 disabled:opacity-60 disabled:pointer-events-none"
                     style={{
                       width: "100%",
                       padding: "12px 20px",
@@ -220,8 +221,7 @@ const Footer = () => {
                       border: "none",
                     }}
                   >
-                    Отправить заявку
-                    <ArrowRight size={16} />
+                    {submitting ? <Loader2 size={16} className="animate-spin" /> : <>Отправить заявку <ArrowRight size={16} /></>}
                   </button>
                 </form>
               )}
