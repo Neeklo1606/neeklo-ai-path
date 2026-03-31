@@ -59,8 +59,8 @@ const Hero = () => {
 
       {/* Container */}
       <div
-        className="relative mx-auto flex items-center"
-        style={{ maxWidth: 1200, padding: "0 48px", minHeight: "calc(100vh - 64px)" }}
+        className="relative mx-auto flex items-center px-5 sm:px-8 lg:px-12"
+        style={{ maxWidth: 1200, minHeight: "calc(100vh - 64px)" }}
       >
         <div className="grid grid-cols-1 lg:grid-cols-[52%_48%] w-full gap-8 py-14 lg:py-0">
           {/* ===== LEFT ===== */}
