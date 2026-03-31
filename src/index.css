@@ -406,9 +406,21 @@
   animation: page-in 250ms ease-out both;
 }
 
-@keyframes floatCard {
+@keyframes heroFloat1 {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes heroFloat2 {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+@keyframes heroFloat3 {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes heroFloat4 {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-11px); }
 }
 
 @keyframes typingBounce {
