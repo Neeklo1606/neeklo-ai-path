@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Home, MessageSquare, FolderOpen, User, Sparkles, Image, Search, Bell } from "lucide-react";
+import logoImg from "@/assets/logo.png";
 import { useLocation, useNavigate } from "react-router-dom";
 import SearchOverlay from "@/components/SearchOverlay";
 
