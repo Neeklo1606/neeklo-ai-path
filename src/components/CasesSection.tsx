@@ -52,7 +52,7 @@ const CasesSection = () => {
         </motion.div>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
           {cases.map((c, i) => (
             <motion.button
               key={i}
