@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import Footer from "@/components/Footer";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
