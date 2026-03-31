@@ -48,7 +48,7 @@ const CasesSection = () => {
         </motion.div>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
+        <div className="flex flex-col gap-3 sm:grid sm:grid-cols-3 sm:gap-4">
           {cases.map((c, i) => (
             <motion.button
               key={i}
@@ -56,10 +56,7 @@ const CasesSection = () => {
               className={`relative overflow-hidden cursor-pointer text-left ${
                 c.wide ? "sm:col-span-2" : ""
               }`}
-              style={{
-                borderRadius: 16,
-                height: i < 2 ? undefined : undefined, // handled by classes
-              }}
+              style={{ borderRadius: 16 }}
               initial={{ opacity: 0, y: 24 }}
               animate={section.visible ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, ease, delay: i * 0.07 }}
@@ -69,8 +66,8 @@ const CasesSection = () => {
               <div
                 className={`relative w-full ${
                   i < 2
-                    ? "h-[180px] sm:h-[280px]"
-                    : "h-[180px] sm:h-[220px]"
+                    ? "aspect-[4/3] sm:h-[280px] sm:aspect-auto"
+                    : "aspect-[4/3] sm:h-[220px] sm:aspect-auto"
                 }`}
                 style={{
                   borderRadius: 16,
@@ -78,7 +75,6 @@ const CasesSection = () => {
                   background: gradients[c.cat] || gradients["AI"],
                 }}
               >
-                {/* Image or emoji placeholder */}
                 {c.img ? (
                   <img
                     src={c.img}
@@ -102,17 +98,17 @@ const CasesSection = () => {
                 />
 
                 {/* Bottom content */}
-                <div className="absolute bottom-0 left-0 right-0 p-4">
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-4">
                   <span
-                    className="inline-block font-body text-[11px] font-[600] text-white rounded-full backdrop-blur-sm"
+                    className="inline-block font-body text-[12px] font-[600] text-white rounded-full backdrop-blur-sm"
                     style={{
                       background: "rgba(255,255,255,0.15)",
-                      padding: "4px 10px",
+                      padding: "5px 12px",
                     }}
                   >
                     {c.cat}
                   </span>
-                  <p className="font-body text-[15px] font-[700] text-white mt-1.5 leading-tight">
+                  <p className="font-body text-[17px] sm:text-[15px] font-[700] text-white mt-2 leading-tight">
                     {c.title}
                   </p>
                 </div>
