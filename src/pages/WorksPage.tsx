@@ -1,304 +1,291 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence, useMotionValue } from "framer-motion";
+import { ArrowRight, X, ExternalLink, Play } from "lucide-react";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
-/* ─── data ─── */
+/* ─── types ─── */
+interface WorkMetric { label: string; value: string }
 interface Work {
-  id: number;
-  cat: string;
-  title: string;
-  client: string;
-  result: string;
-  tags: string[];
-  bg: string;
-  emoji: string;
-  featured?: boolean;
-  desc: string;
+  id: number; cat: string; title: string; client: string; result: string;
+  tags: string[]; type: "video" | "site"; videoUrl?: string; previewUrl?: string;
+  bg: string; emoji: string; featured?: boolean; brief: string; solution: string;
+  metrics: WorkMetric[];
 }
 
+/* ─── data ─── */
 const works: Work[] = [
-  { id: 1, cat: "AI-видео", title: "Имиджевый ролик", client: "Fashion Brand", result: "+40% узнаваемость бренда", tags: ["Runway", "Kling", "Монтаж"], bg: "linear-gradient(135deg,#1a1a2e,#16213e)", emoji: "🎬", featured: true, desc: "Имиджевый AI-ролик для fashion-бренда. Съёмки в Бангкоке, AI-генерация фонов и персонажей." },
-  { id: 2, cat: "Сайты", title: "Лендинг студии", client: "neeklo.studio", result: "+60% заявок", tags: ["React", "Lovable", "Framer Motion"], bg: "linear-gradient(135deg,#0f1535,#1e3a7a)", emoji: "🌐", desc: "Корпоративный сайт с AI-ассистентом. Конверсия выросла с 2% до 5.2%." },
-  { id: 3, cat: "AI-видео", title: "Промо для бренда", client: "DA-Motors", result: "2M просмотров", tags: ["AI-видео", "Reels", "Монтаж"], bg: "linear-gradient(135deg,#1a0808,#3d1010)", emoji: "🏎️", desc: "Серия промо-роликов для автодилера. Охват 2M просмотров за первую неделю." },
-  { id: 4, cat: "Mini App", title: "Vision AI App", client: "Tech Startup", result: "50K пользователей", tags: ["Telegram", "React", "Python"], bg: "linear-gradient(135deg,#0d0d18,#1a1a35)", emoji: "📱", featured: true, desc: "Голосовой AI-ассистент в Telegram Mini App. 50K активных пользователей за 2 месяца." },
-  { id: 5, cat: "Сайты", title: "Интернет-магазин", client: "Fashion Retail", result: "+120% конверсия", tags: ["React", "Shopify", "SEO"], bg: "linear-gradient(135deg,#0a1628,#1e4080)", emoji: "🛍️", desc: "Интернет-магазин с AI-рекомендациями. Конверсия выросла с 1.1% до 2.4%." },
-  { id: 6, cat: "AI-агенты", title: "AI-продавец", client: "B2B компания", result: "80% автоматизация", tags: ["GPT-4", "n8n", "amoCRM"], bg: "linear-gradient(135deg,#0a0a0a,#252525)", emoji: "🤖", desc: "AI-агент для квалификации входящих лидов. Закрыл 80% первичных обращений без менеджера." },
-  { id: 7, cat: "Сайты", title: "Корпоративный сайт", client: "Engineering Firm", result: "В топ-3 Яндекс", tags: ["Next.js", "SEO", "Анимации"], bg: "linear-gradient(135deg,#0d1a0d,#1a3d1a)", emoji: "🏗️", desc: "Корпоративный сайт для инжиниринговой компании. Позиции в топ-3 за 3 месяца." },
-  { id: 8, cat: "AI-агенты", title: "Голосовой ассистент", client: "Medical Clinic", result: "-40% нагрузка на ресепшн", tags: ["Voice AI", "Python", "Telegram"], bg: "linear-gradient(135deg,#0a0a1a,#1a1a40)", emoji: "🎙️", desc: "Голосовой бот для записи на приём. Снял 40% нагрузки с ресепшн." },
+  { id: 1, cat: "Ролики", title: "Имиджевый ролик", client: "Fashion Brand", result: "+40% узнаваемость", tags: ["Runway", "Kling", "Монтаж"], type: "video", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", bg: "linear-gradient(135deg, #1a0a0a 0%, #2d1515 50%, #1a1a2e 100%)", emoji: "🎬", featured: true, brief: "Fashion-бренд хотел имиджевый ролик для Instagram и показа на мероприятии.", solution: "AI-генерация сцен в Runway, монтаж в CapCut Pro, озвучка ElevenLabs.", metrics: [{ label: "Просмотров", value: "2M+" }, { label: "Охват", value: "+40%" }, { label: "Срок", value: "5 дней" }] },
+  { id: 2, cat: "Сайты", title: "Лендинг студии", client: "neeklo.studio", result: "+60% заявок", tags: ["React", "Lovable", "Framer Motion"], type: "site", previewUrl: "https://neeklo.ru", bg: "linear-gradient(135deg, #0f1535 0%, #1e3a7a 100%)", emoji: "🌐", brief: "Нужен современный сайт студии с AI-ассистентом и портфолио.", solution: "Разработка на Lovable + React, AI-чат, анимации на Framer Motion.", metrics: [{ label: "Конверсия", value: "+60%" }, { label: "Срок", value: "7 дней" }, { label: "Скорость", value: "98/100" }] },
+  { id: 3, cat: "Ролики", title: "Промо для бренда", client: "DA-Motors", result: "2M просмотров", tags: ["AI-видео", "Reels", "Монтаж"], type: "video", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", bg: "linear-gradient(135deg, #1a0808 0%, #3d1010 50%, #1a0a0a 100%)", emoji: "🏎️", brief: "Авто-дилер хотел вирусный промо-ролик для Reels и TikTok.", solution: "AI-генерация динамичных сцен, быстрый монтаж, трендовый саунд.", metrics: [{ label: "Просмотров", value: "2M" }, { label: "Подписчиков", value: "+8K" }, { label: "Срок", value: "3 дня" }] },
+  { id: 4, cat: "Mini App", title: "Vision AI App", client: "Tech Startup", result: "50K пользователей", tags: ["Telegram", "React", "Python"], type: "site", bg: "linear-gradient(135deg, #0d0d18 0%, #1a1a35 100%)", emoji: "📱", brief: "Стартап хотел голосовой AI-ассистент внутри Telegram.", solution: "Telegram Mini App на React, backend на Python FastAPI, интеграция GPT-4.", metrics: [{ label: "Пользователей", value: "50K" }, { label: "DAU", value: "12K" }, { label: "Срок", value: "21 день" }] },
+  { id: 5, cat: "Сайты", title: "Интернет-магазин", client: "Fashion Retail", result: "+120% конверсия", tags: ["React", "Shopify", "SEO"], type: "site", bg: "linear-gradient(135deg, #0a1628 0%, #1e4080 100%)", emoji: "🛍️", brief: "Fashion-ритейлер хотел современный магазин с AI-рекомендациями.", solution: "React + Shopify headless, AI-персонализация, SEO-оптимизация.", metrics: [{ label: "Конверсия", value: "+120%" }, { label: "Средний чек", value: "+35%" }, { label: "Срок", value: "14 дней" }] },
+  { id: 6, cat: "AI", title: "AI-продавец", client: "B2B компания", result: "80% автоматизация", tags: ["GPT-4", "n8n", "amoCRM"], type: "site", bg: "linear-gradient(135deg, #0a0a0a 0%, #252525 100%)", emoji: "🤖", brief: "B2B компания хотела автоматизировать обработку входящих лидов.", solution: "AI-агент на GPT-4, интеграция с amoCRM через n8n, Telegram-уведомления.", metrics: [{ label: "Автоматизация", value: "80%" }, { label: "Экономия", value: "40ч/мес" }, { label: "Срок", value: "14 дней" }] },
 ];
 
-const filters = ["Все", "AI-видео", "Сайты", "Mini App", "AI-агенты"];
+const filterTabs = ["Все", "Сайты", "Ролики", "Mini App", "AI"];
 const ease = [0.16, 1, 0.3, 1] as const;
 
-/* ─── Detail Modal ─── */
-const WorkDetail = ({
-  work,
-  onClose,
-  onPrev,
-  onNext,
-  isMobile,
-  navigate,
-}: {
-  work: Work;
-  onClose: () => void;
-  onPrev: () => void;
-  onNext: () => void;
-  isMobile: boolean;
-  navigate: ReturnType<typeof useNavigate>;
-}) => {
+/* ─── count-up ─── */
+const useCountUp = (target: string, run: boolean) => {
+  const [val, setVal] = useState("0");
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
+    if (!run) return;
+    const num = parseInt(target.replace(/[^0-9]/g, ""), 10);
+    const prefix = target.match(/^[^0-9]*/)?.[0] || "";
+    const suffix = target.match(/[^0-9]*$/)?.[0] || "";
+    if (isNaN(num) || num === 0) { setVal(target); return; }
+    const steps = 20;
+    let step = 0;
+    const t = setTimeout(() => {
+      const iv = setInterval(() => {
+        step++;
+        setVal(prefix + Math.round((step / steps) * num) + suffix);
+        if (step >= steps) { clearInterval(iv); setVal(target); }
+      }, 30);
+    }, 100);
+    return () => clearTimeout(t);
+  }, [target, run]);
+  return val;
+};
 
-  const content = (
-    <>
-      {/* Image area */}
-      <div
-        className="relative flex items-center justify-center flex-shrink-0"
-        style={{ height: 240, background: work.bg }}
-      >
-        <span className="text-[64px]">{work.emoji}</span>
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center"
-          style={{ background: "rgba(0,0,0,0.2)", backdropFilter: "blur(8px)" }}
-        >
-          <X size={18} color="#fff" />
-        </button>
-      </div>
-
-      {/* Body */}
-      <div className="p-6">
-        <span
-          className="font-body rounded-full inline-block"
-          style={{ fontSize: 11, fontWeight: 600, padding: "4px 12px", background: "#F0F0F0", color: "#6A6860" }}
-        >
-          {work.cat}
-        </span>
-        <p className="font-body mt-1" style={{ fontSize: 13, color: "#6A6860" }}>{work.client}</p>
-        <h2 className="font-heading mt-2" style={{ fontSize: 22, fontWeight: 800 }}>{work.title}</h2>
-
-        {/* Result metric */}
-        <p className="font-heading mt-4" style={{ fontSize: 28, fontWeight: 800, color: "#0052FF" }}>
-          {work.result}
-        </p>
-
-        <p className="font-body mt-4" style={{ fontSize: 15, lineHeight: 1.65, color: "#0D0D0B" }}>
-          {work.desc}
-        </p>
-
-        {/* Tags */}
-        <div className="flex flex-wrap gap-2 mt-4">
-          {work.tags.map((t) => (
-            <span key={t} className="font-body rounded-full" style={{ fontSize: 12, fontWeight: 600, padding: "4px 12px", background: "#F0F0F0" }}>
-              {t}
-            </span>
-          ))}
-        </div>
-
-        <div className="w-full mt-6" style={{ height: 1, background: "#F0F0F0" }} />
-
-        <button
-          onClick={() => navigate("/chat")}
-          className="w-full font-body text-white rounded-xl mt-4 cursor-pointer hover:bg-[#1a1a1a] active:scale-[0.97] transition-all duration-200"
-          style={{ background: "#0D0D0B", padding: "14px 0", fontSize: 15, fontWeight: 600 }}
-        >
-          Заказать похожий проект →
-        </button>
-
-        {/* Prev / Next */}
-        <div className="flex justify-between mt-4">
-          <button onClick={onPrev} className="flex items-center gap-1 font-body cursor-pointer hover:text-foreground transition-colors" style={{ fontSize: 13, fontWeight: 600, color: "#6A6860" }}>
-            <ChevronLeft size={16} /> Предыдущий
-          </button>
-          <button onClick={onNext} className="flex items-center gap-1 font-body cursor-pointer hover:text-foreground transition-colors" style={{ fontSize: 13, fontWeight: 600, color: "#6A6860" }}>
-            Следующий <ChevronRight size={16} />
-          </button>
-        </div>
-      </div>
-    </>
-  );
-
-  if (isMobile) {
-    return (
-      <>
-        <motion.div className="fixed inset-0 z-50" style={{ background: "rgba(0,0,0,0.5)" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
-        <motion.div
-          className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl overflow-y-auto"
-          style={{ maxHeight: "90vh" }}
-          initial={{ y: "100%" }}
-          animate={{ y: 0 }}
-          exit={{ y: "100%" }}
-          transition={{ duration: 0.3, ease }}
-        >
-          {content}
-        </motion.div>
-      </>
-    );
-  }
-
+const MetricCell = ({ m, run }: { m: WorkMetric; run: boolean }) => {
+  const v = useCountUp(m.value, run);
   return (
-    <>
-      <motion.div className="fixed inset-0 z-50 flex items-center justify-center">
-        <motion.div className="fixed inset-0 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
-        <motion.div
-          className="relative z-10 bg-white rounded-3xl max-w-2xl w-full mx-4 overflow-hidden overflow-y-auto"
-          style={{ maxHeight: "85vh" }}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.25, ease }}
-        >
-          {content}
-        </motion.div>
-      </motion.div>
-    </>
+    <div className="bg-[#F9F9F9] rounded-2xl p-3 text-center">
+      <div className="font-heading text-[20px] font-[800] text-[#0D0D0B]">{v}</div>
+      <div className="font-body text-[11px] text-[#6A6860] mt-1">{m.label}</div>
+    </div>
   );
 };
 
-/* ─── Card ─── */
-const WorkCard = ({ work, index, onClick, isMobile }: { work: Work; index: number; onClick: () => void; isMobile: boolean }) => (
+/* ─── card ─── */
+const WorkCard = ({ work, index, onClick }: { work: Work; index: number; onClick: () => void }) => (
   <motion.div
-    className="rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] hover:shadow-xl transition-all duration-200"
-    style={{ breakInside: "avoid", marginBottom: isMobile ? 0 : 16 }}
-    initial={{ opacity: 0, y: 16 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.4, ease, delay: index * 0.06 }}
+    className="relative overflow-hidden rounded-[20px] cursor-pointer break-inside-avoid h-full"
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, amount: 0.15 }}
+    transition={{ duration: 0.45, ease, delay: index * 0.06 }}
+    whileHover={{ scale: 1.02, boxShadow: "0 16px 48px rgba(0,0,0,0.15)" }}
+    whileTap={{ scale: 0.99 }}
     onClick={onClick}
   >
-    <div
-      className="relative flex items-center justify-center"
-      style={{
-        height: !isMobile && work.featured ? 300 : isMobile ? 200 : 220,
-        background: work.bg,
-      }}
-    >
-      <span className="text-5xl">{work.emoji}</span>
-      <div className="absolute inset-x-0 bottom-0 p-4" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.72), transparent)" }}>
-        <span className="font-body rounded-full inline-block" style={{ fontSize: 11, fontWeight: 600, padding: "4px 12px", background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", color: "#fff" }}>
-          {work.cat}
-        </span>
-        <p className="font-body text-white mt-1.5" style={{ fontSize: 15, fontWeight: 700 }}>{work.title}</p>
+    <div className="absolute inset-0" style={{ background: work.bg }}>
+      <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[52px] opacity-60 select-none">{work.emoji}</span>
+    </div>
+    <div className="absolute bottom-0 left-0 right-0 z-[1]" style={{ height: "70%", background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.4) 50%, transparent 100%)" }} />
+    <div className="absolute top-3 right-3 z-[2]">
+      <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+        {work.type === "video" ? <Play size={12} fill="white" className="text-white ml-0.5" /> : <ExternalLink size={12} className="text-white" />}
       </div>
     </div>
-    <div className="flex items-center justify-between px-1 pt-2 pb-1">
-      <span className="font-body" style={{ fontSize: 13, fontWeight: 600, color: "#0052FF" }}>{work.result}</span>
-      <span className="font-body" style={{ fontSize: 13, fontWeight: 600, color: "#0D0D0B" }}>Смотреть →</span>
+    <div className="absolute bottom-0 left-0 right-0 z-[2] p-4">
+      <span className="inline-flex bg-white/15 backdrop-blur-sm border border-white/20 rounded-full font-body text-[11px] font-semibold text-white px-3 py-1 mb-2">{work.cat}</span>
+      <div className="font-body text-[16px] font-bold text-white leading-[1.3]">{work.title}</div>
+      <div className="flex items-center gap-1.5 mt-1">
+        <span className="text-[#4dff91] text-[12px]">↑</span>
+        <span className="font-body text-[12px] font-semibold text-[#4dff91]">{work.result}</span>
+      </div>
     </div>
   </motion.div>
 );
 
-/* ─── Page ─── */
-const WorksPage = () => {
+/* ─── modal ─── */
+const WorkModal = ({ work, onClose, onNav, canNav }: { work: Work; onClose: () => void; onNav: (dir: -1 | 1) => void; canNav: boolean }) => {
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
-  const [active, setActive] = useState("Все");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  usePageTitle("Работы – neeklo");
+  const [playing, setPlaying] = useState(false);
+  const dragY = useMotionValue(0);
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
-  const filtered = useMemo(
-    () => (active === "Все" ? works : works.filter((w) => w.cat === active)),
-    [active]
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+
+  useEffect(() => { setPlaying(false); }, [work.id]);
+
+  const headerH = isMobile ? 260 : 340;
+  const isVideo = work.type === "video" && work.videoUrl;
+
+  const card = (
+    <motion.div
+      className={isMobile ? "fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[24px] overflow-y-auto" : "bg-white rounded-[24px] w-full max-w-[680px] max-h-[88vh] overflow-y-auto"}
+      style={isMobile ? { maxHeight: "92vh" } : {}}
+      initial={isMobile ? { y: "100%" } : { scale: 0.9, opacity: 0 }}
+      animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1 }}
+      exit={isMobile ? { y: "100%" } : { scale: 0.9, opacity: 0 }}
+      transition={isMobile ? { duration: 0.35, ease } : { duration: 0.3, ease }}
+      drag={isMobile ? "y" : false}
+      dragConstraints={{ top: 0 }}
+      dragElastic={0.2}
+      onDragEnd={isMobile ? (_: any, info: any) => { if (info.offset.y > 80) onClose(); } : undefined}
+      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+    >
+      {/* header */}
+      <div className="relative overflow-hidden rounded-t-[24px]" style={{ height: headerH }}>
+        {isVideo && playing ? (
+          <iframe className="w-full h-full border-0" src={work.videoUrl + "?autoplay=1&rel=0"} allow="autoplay; fullscreen" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center" style={{ background: work.bg }}>
+            <span className="text-[64px] select-none">{work.emoji}</span>
+            {isVideo && (
+              <button onClick={() => setPlaying(true)} className="absolute inset-0 flex items-center justify-center group">
+                <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center transition-transform group-hover:scale-105">
+                  <Play size={24} fill="#0D0D0B" className="text-[#0D0D0B] ml-1" />
+                </div>
+              </button>
+            )}
+            {work.type === "site" && work.previewUrl && (
+              <button onClick={() => window.open(work.previewUrl, "_blank")} className="absolute top-3 right-3 bg-white/15 backdrop-blur border border-white/20 rounded-xl font-body text-[13px] font-semibold text-white px-3 py-2 hover:bg-white/25 transition-colors">
+                Открыть сайт ↗
+              </button>
+            )}
+          </div>
+        )}
+        <button onClick={onClose} className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center">
+          <X size={18} className="text-white" />
+        </button>
+      </div>
+
+      {/* body */}
+      <div className="px-5 pt-5 pb-8">
+        {isMobile && <div className="w-8 h-1 bg-[#E0E0E0] rounded-full mx-auto mb-4" />}
+        <div className="flex items-center justify-between">
+          <span className="bg-[#F5F5F5] text-[#6A6860] rounded-full font-body text-[11px] font-semibold px-3 py-1">{work.cat}</span>
+          <span className="font-body text-[13px] text-[#6A6860]">{work.client}</span>
+        </div>
+        <h2 className="font-heading text-[22px] font-[800] text-[#0D0D0B] mt-2 mb-4">{work.title}</h2>
+
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {work.metrics.map((m) => <MetricCell key={m.label} m={m} run />)}
+        </div>
+
+        <div className="mb-4">
+          <div className="font-body text-[12px] font-semibold uppercase tracking-[0.06em] text-[#B0B0B0] mb-2">Задача</div>
+          <div className="bg-[#F9F9F9] rounded-2xl p-4 font-body text-[15px] text-[#3A3A3A] leading-[1.65]">{work.brief}</div>
+        </div>
+        <div className="mb-6">
+          <div className="font-body text-[12px] font-semibold uppercase tracking-[0.06em] text-[#B0B0B0] mb-2">Решение</div>
+          <div className="bg-[#F9F9F9] rounded-2xl p-4 font-body text-[15px] text-[#3A3A3A] leading-[1.65]">{work.solution}</div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 mb-6">
+          {work.tags.map((t) => <span key={t} className="bg-[#F0F0F0] rounded-full font-body text-[12px] font-semibold text-[#6A6860] px-3 py-1.5">{t}</span>)}
+        </div>
+
+        <div className={isMobile ? "sticky bottom-0 bg-white pt-3 pb-[env(safe-area-inset-bottom)]" : ""}>
+          <button onClick={() => { onClose(); navigate("/chat"); }} className="w-full bg-[#0D0D0B] text-white rounded-2xl py-4 font-body text-[15px] font-bold flex items-center justify-center gap-2 hover:bg-[#1a1a1a] transition-colors cursor-pointer">
+            Заказать похожий проект <ArrowRight size={16} />
+          </button>
+        </div>
+
+        {canNav && (
+          <div className="flex justify-between mt-3">
+            <button onClick={() => onNav(-1)} className="font-body text-[13px] text-[#6A6860] hover:text-[#0D0D0B] transition-colors cursor-pointer">← Предыдущий</button>
+            <button onClick={() => onNav(1)} className="font-body text-[13px] text-[#6A6860] hover:text-[#0D0D0B] transition-colors cursor-pointer">Следующий →</button>
+          </div>
+        )}
+      </div>
+    </motion.div>
   );
 
-  const selectedIndex = selectedId !== null ? filtered.findIndex((w) => w.id === selectedId) : -1;
-  const selectedWork = selectedIndex >= 0 ? filtered[selectedIndex] : null;
+  return (
+    <>
+      <motion.div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} onClick={onClose} />
+      {isMobile ? card : <div className="fixed inset-0 flex items-center justify-center z-50 px-4" onClick={onClose}>{card}</div>}
+    </>
+  );
+};
 
-  const handleClose = useCallback(() => setSelectedId(null), []);
-  const handlePrev = useCallback(() => {
-    if (selectedIndex > 0) setSelectedId(filtered[selectedIndex - 1].id);
-    else setSelectedId(filtered[filtered.length - 1].id);
-  }, [selectedIndex, filtered]);
-  const handleNext = useCallback(() => {
-    if (selectedIndex < filtered.length - 1) setSelectedId(filtered[selectedIndex + 1].id);
-    else setSelectedId(filtered[0].id);
-  }, [selectedIndex, filtered]);
+/* ━━━ PAGE ━━━ */
+const WorksPage = () => {
+  usePageTitle("Работы – neeklo");
+  const navigate = useNavigate();
+  const [activeFilter, setActiveFilter] = useState("Все");
+  const [selectedWork, setSelectedWork] = useState<Work | null>(null);
+
+  const filtered = activeFilter === "Все" ? works : works.filter((w) => w.cat === activeFilter);
+
+  const handleNav = (dir: -1 | 1) => {
+    if (!selectedWork) return;
+    const idx = filtered.findIndex((w) => w.id === selectedWork.id);
+    setSelectedWork(filtered[(idx + dir + filtered.length) % filtered.length]);
+  };
+
+  useEffect(() => {
+    document.body.style.overflow = selectedWork ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [selectedWork]);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Sticky filter bar */}
-      <div
-        className="sticky z-10 border-b border-[#F0F0F0]"
-        style={{
-          top: isMobile ? 52 : 64,
-          background: "rgba(255,255,255,0.95)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-        }}
-      >
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-8 py-3 overflow-x-auto scrollbar-hide">
-          <div className="flex gap-2">
-            {filters.map((f) => (
-              <button
-                key={f}
-                onClick={() => setActive(f)}
-                className="font-body whitespace-nowrap rounded-full cursor-pointer transition-colors duration-150 flex-shrink-0"
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  padding: "6px 16px",
-                  background: active === f ? "#0D0D0B" : "transparent",
-                  color: active === f ? "#fff" : "#6A6860",
-                  border: active === f ? "1px solid #0D0D0B" : "1px solid #E0E0E0",
-                }}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
+    <div className="bg-white min-h-screen pb-[100px]">
+      {/* Header */}
+      <div className="px-5 pt-8 md:px-10 md:pt-10">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <h1 className="font-heading text-[22px] md:text-[28px] font-[800] text-[#0D0D0B]">Наши работы</h1>
+          <span className="bg-[#0D0D0B] text-white rounded-full font-body text-[13px] font-semibold px-3 py-1.5">150+ проектов</span>
+        </div>
+        <p className="font-body text-[15px] text-[#6A6860] mt-1">Реальные кейсы и результаты наших клиентов</p>
+      </div>
+
+      {/* Filters */}
+      <div className="sticky top-[64px] bg-white/95 backdrop-blur-md z-10 border-b border-[#F0F0F0] py-3 px-5 md:px-10 mt-6">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          {filterTabs.map((f) => (
+            <button
+              key={f}
+              onClick={() => setActiveFilter(f)}
+              className={`whitespace-nowrap rounded-full font-body text-[13px] font-semibold px-4 py-1.5 transition-colors cursor-pointer ${
+                activeFilter === f ? "bg-[#0D0D0B] text-white" : "border border-[#E0E0E0] text-[#6A6860] hover:border-[#B0B0B0]"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
-        {/* Header */}
-        <div style={{ paddingTop: 32 }}>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="font-heading" style={{ fontSize: 28, fontWeight: 800 }}>Наши работы</h1>
-            <span className="font-body text-white rounded-full" style={{ fontSize: 13, fontWeight: 600, padding: "4px 12px", background: "#0D0D0B" }}>
-              150+ проектов
-            </span>
-          </div>
-          <p className="font-body mt-1" style={{ fontSize: 15, color: "#6A6860" }}>
-            Реальные кейсы и результаты наших клиентов
-          </p>
+      {/* Grid */}
+      <div className="px-5 md:px-10 pt-6">
+        <div className="hidden md:block" style={{ columns: 3, columnGap: 16 }}>
+          {filtered.map((w, i) => (
+            <div key={w.id} className="mb-4 break-inside-avoid" style={{ height: w.featured ? 320 : 220 }}>
+              <WorkCard work={w} index={i} onClick={() => setSelectedWork(w)} />
+            </div>
+          ))}
         </div>
+        <div className="md:hidden flex flex-col gap-3">
+          {filtered.map((w, i) => (
+            <div key={w.id} style={{ height: 220 }}>
+              <WorkCard work={{ ...w, featured: false }} index={i} onClick={() => setSelectedWork(w)} />
+            </div>
+          ))}
+        </div>
+      </div>
 
-        {/* Grid */}
-        {isMobile ? (
-          <div className="flex flex-col gap-3" style={{ paddingTop: 20, paddingBottom: 100 }}>
-            {filtered.map((w, i) => (
-              <WorkCard key={w.id} work={w} index={i} onClick={() => setSelectedId(w.id)} isMobile />
-            ))}
-          </div>
-        ) : (
-          <div className="columns-3 gap-4" style={{ paddingTop: 24, paddingBottom: 100 }}>
-            {filtered.map((w, i) => (
-              <WorkCard key={w.id} work={w} index={i} onClick={() => setSelectedId(w.id)} isMobile={false} />
-            ))}
-          </div>
-        )}
+      {/* Bottom CTA */}
+      <div className="bg-[#0D0D0B] text-center mt-10" style={{ padding: "48px 20px" }}>
+        <h2 className="font-heading text-[24px] font-[800] text-white">Хотите такой же проект?</h2>
+        <p className="font-body text-[15px] text-white/50 mt-2 mb-6">Расскажите задачу – предложим решение за 1 час</p>
+        <button
+          onClick={() => navigate("/chat")}
+          className="bg-white text-[#0D0D0B] rounded-2xl px-8 py-4 font-body text-[15px] font-bold cursor-pointer"
+          style={{ transition: "all 0.2s cubic-bezier(0.16,1,0.3,1)" }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.background = "#F0EEE8"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.background = "#fff"; }}
+        >
+          Обсудить проект →
+        </button>
       </div>
 
       {/* Modal */}
       <AnimatePresence>
-        {selectedWork && (
-          <WorkDetail
-            work={selectedWork}
-            onClose={handleClose}
-            onPrev={handlePrev}
-            onNext={handleNext}
-            isMobile={isMobile}
-            navigate={navigate}
-          />
-        )}
+        {selectedWork && <WorkModal work={selectedWork} onClose={() => setSelectedWork(null)} onNav={handleNav} canNav={filtered.length > 1} />}
       </AnimatePresence>
+
+      <style>{`.no-scrollbar::-webkit-scrollbar{display:none}.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}`}</style>
     </div>
   );
 };
