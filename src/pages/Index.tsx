@@ -41,7 +41,7 @@ const steps = [
   { num: "03", title: "Менеджер берёт в работу", desc: "Обсуждаете детали, подписываете и стартуем" },
 ];
 
-const avatarColors = ["#D4C5B2", "#B8C9D4", "#C4D4B8", "#D4B8C9", "#C9C4D4"];
+
 
 const Divider = () => <div className="w-full" style={{ height: 1, background: "#E8E6E0" }} />;
 
