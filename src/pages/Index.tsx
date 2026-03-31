@@ -396,7 +396,7 @@ const CTASection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) 
         <motion.div className="inline-flex items-center gap-2 mb-4" {...anim(0)}>
           <span className="rounded-full flex-shrink-0 animate-pulse" style={{ width: 7, height: 7, background: "#00C853" }} />
           <span className="font-body uppercase" style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em" }}>
-            Первая консультация — бесплатно
+            Первая консультация – бесплатно
           </span>
         </motion.div>
 
