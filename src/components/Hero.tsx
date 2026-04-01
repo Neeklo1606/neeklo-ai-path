@@ -52,7 +52,7 @@ const Hero = () => {
       >
         {/* AI Orb */}
         <motion.div
-          className="relative mb-8"
+          className="relative mb-5"
           {...fade(0)}
         >
           <motion.div
