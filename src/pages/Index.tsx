@@ -396,10 +396,13 @@ const WorksSection = () => {
                       {item.cat}
                     </span>
                     <p className="font-body text-white mt-1.5" style={{ fontSize: 15, fontWeight: 700 }}>{item.title}</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <span style={{ color: "#4dff91", fontSize: 12 }}>↑</span>
+                      <span className="font-body" style={{ fontSize: 12, fontWeight: 600, color: "#4dff91" }}>{item.result}</span>
+                    </div>
                   </div>
                 </div>
               </HolographicCard>
-              <p className="font-body mt-1.5" style={{ fontSize: 13, fontWeight: 600, color: "#0052FF" }}>{item.result}</p>
             </motion.div>
           ))}
         </div>
