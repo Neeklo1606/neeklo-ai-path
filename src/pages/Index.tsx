@@ -4,6 +4,7 @@ import { motion, useMotionValue, useSpring, useTransform, useInView } from "fram
 import { useState, useRef } from "react";
 import HolographicCard from "@/components/ui/holographic-card";
 import Footer from "@/components/Footer";
+import TelegramManagerButton from "@/components/TelegramManagerButton";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import workAssistant from "@/assets/work-assistant.webp";
 import workEcommerce from "@/assets/work-ecommerce.webp";
@@ -65,6 +66,7 @@ const LandingPage = () => {
 
   return (
     <div className="flex-1 bg-background text-foreground pb-[100px] sm:pb-0 overflow-x-hidden">
+      <TelegramManagerButton />
       <HeroSection navigate={navigate} />
       <Divider />
       <ServicesSection navigate={navigate} />
