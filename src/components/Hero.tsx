@@ -93,8 +93,8 @@ const Hero = () => {
                     key={i}
                     className="rounded-full"
                     style={{
-                      width: 9,
-                      height: 9,
+                      width: 12,
+                      height: 12,
                       background: "#FFFFFF",
                       boxShadow: "0 0 6px rgba(255,255,255,0.6)",
                     }}
