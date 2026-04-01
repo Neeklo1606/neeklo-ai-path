@@ -7,12 +7,6 @@ import HolographicCard from "@/components/ui/holographic-card";
 import Footer from "@/components/Footer";
 import TelegramManagerButton from "@/components/TelegramManagerButton";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import iconVideo from "@/assets/icon-video.png";
-import iconWeb from "@/assets/icon-web.png";
-import iconApp from "@/assets/icon-app.png";
-import iconAi from "@/assets/icon-ai.png";
-import iconDesign from "@/assets/icon-design.png";
-import iconAnalytics from "@/assets/icon-analytics.png";
 
 /* ─── animation helpers ─── */
 const ease = [0.16, 1, 0.3, 1] as const;
