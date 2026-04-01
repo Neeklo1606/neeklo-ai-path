@@ -18,6 +18,7 @@ import workRacing from "@/assets/work-racing.webp";
 import workVision from "@/assets/work-vision.webp";
 import workEcommerce from "@/assets/work-ecommerce.webp";
 import workAssistant from "@/assets/work-assistant.webp";
+import mascotNewImg from "@/assets/mascot-new.png";
 
 /* ─── animation helpers ─── */
 const ease = [0.16, 1, 0.3, 1] as const;
