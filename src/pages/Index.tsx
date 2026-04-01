@@ -357,25 +357,20 @@ const HowSection = () => {
   return (
     <section style={{ background: "#F0EEE8", padding: "72px 0" }}>
       <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
-        <motion.h2 className="font-heading mb-10" style={{ fontSize: "clamp(28px,3.5vw,36px)", fontWeight: 800, color: "#0D0D0B" }} {...fadeUp(0)}>
+        <h2 className="font-heading mb-10 animate-fade-in" style={{ fontSize: "clamp(28px,3.5vw,36px)", fontWeight: 800, color: "#0D0D0B" }}>
           Как это работает
-        </motion.h2>
+        </h2>
 
         <div className="flex flex-col gap-6 md:gap-0 md:flex-row md:justify-between relative">
-          {/* Dashed connector for desktop */}
           <div className="hidden md:block absolute left-[calc(16.66%+24px)] right-[calc(16.66%+24px)] border-t-2 border-dashed border-[#D0CCC4]" style={{ top: 24 }} />
 
           {steps.map((s, i) => (
-            <motion.div
+            <div
               key={s.num}
-              className="flex items-start gap-5 md:flex-col md:items-center md:text-center md:flex-1 cursor-pointer group"
+              className="flex items-start gap-5 md:flex-col md:items-center md:text-center md:flex-1 cursor-pointer group animate-fade-in"
+              style={{ animationDelay: `${i * 100}ms`, animationFillMode: "both" }}
               onClick={() => navigate("/chat")}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.5, ease, delay: i * 0.12 }}
             >
-              {/* Number */}
               <span
                 className="font-heading flex-shrink-0 select-none transition-colors duration-200 group-hover:text-[#0D0D0B]"
                 style={{ fontSize: 48, fontWeight: 800, lineHeight: 1, color: "#D0CCC4", letterSpacing: "-0.02em" }}
@@ -390,21 +385,14 @@ const HowSection = () => {
                   {s.desc}
                 </p>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 
-        {/* Free consultation note */}
-        <motion.div
-          className="flex items-center gap-2 mt-10"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.4, delay: 0.4 }}
-        >
+        <div className="flex items-center gap-2 mt-10 animate-fade-in" style={{ animationDelay: "400ms", animationFillMode: "both" }}>
           <span style={{ color: "#00C853", fontSize: 18 }}>✓</span>
           <span className="font-body" style={{ fontSize: 14, color: "#6A6860" }}>Первая консультация — бесплатно</span>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
