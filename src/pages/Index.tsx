@@ -77,6 +77,39 @@ const LandingPage = () => {
 
 /* ━━━ HERO ━━━ */
 const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => {
+  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width:768px)").matches;
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const springX = useSpring(mouseX, { stiffness: 60, damping: 20 });
+  const springY = useSpring(mouseY, { stiffness: 60, damping: 20 });
+  // Mascot tilt follows cursor
+  const rotateY = useTransform(springX, [-500, 500], [-12, 12]);
+  const rotateX = useTransform(springY, [-500, 500], [8, -8]);
+  // Eyes pupil offset
+  const pupilX = useTransform(springX, [-500, 500], [-4, 4]);
+  const pupilY = useTransform(springY, [-500, 500], [-3, 3]);
+
+  const [blushing, setBlushing] = useState(false);
+  const blushTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  const handleMouse = isMobile ? undefined : (e: React.MouseEvent) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - r.left - r.width / 2;
+    const y = e.clientY - r.top - r.height / 2;
+    mouseX.set(x);
+    mouseY.set(y);
+    // Blush when cursor is close to mascot center
+    const dist = Math.sqrt(x * x + y * y);
+    if (dist < 120 && !blushing) {
+      setBlushing(true);
+      clearTimeout(blushTimer.current);
+      blushTimer.current = setTimeout(() => setBlushing(false), 1800);
+    }
+  };
+  const handleMouseLeave = isMobile ? undefined : () => { mouseX.set(0); mouseY.set(0); setBlushing(false); };
+
+  const size = isMobile ? 110 : 140;
+
   return (
     <section
       className="relative overflow-hidden flex flex-col items-center justify-center text-center"
@@ -86,42 +119,119 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
         backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.055) 1px, transparent 1px)",
         backgroundSize: "28px 28px",
       }}
+      onMouseMove={handleMouse}
+      onMouseLeave={handleMouseLeave}
     >
       <div className="relative z-10 flex flex-col items-center px-5 sm:px-8" style={{ maxWidth: 640 }}>
-        {/* Mascot */}
+        {/* Interactive Mascot */}
         <motion.div
-          className="relative mb-8"
-          style={{ width: 120, height: 120, flexShrink: 0 }}
+          className="relative mb-6 cursor-pointer"
+          style={{ width: size, height: size, flexShrink: 0, perspective: 600 }}
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 200, damping: 18, delay: 0.1 }}
+          transition={{ type: "spring", stiffness: 180, damping: 16, delay: 0.1 }}
+          onClick={() => navigate("/chat")}
+          whileTap={{ scale: 0.92 }}
         >
           <motion.div
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            style={{ position: "relative", width: 120, height: 120 }}
+            animate={{ y: [0, -8, 0] }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+            style={{ position: "relative", width: size, height: size, rotateX, rotateY, transformStyle: "preserve-3d" }}
           >
+            {/* Main mascot image */}
             <img
-              src={mascotGif}
-              alt="Neeklo AI"
+              src={mascotImg}
+              alt="Neeklo AI маскот"
               style={{
-                width: 120,
-                height: 120,
+                width: size,
+                height: size,
                 objectFit: "contain",
-                filter: "drop-shadow(0 12px 32px rgba(0,0,0,0.18))",
+                filter: "drop-shadow(0 16px 40px rgba(0,0,0,0.15))",
+                pointerEvents: "none",
               }}
             />
+
+            {/* Animated eyes overlay — pupils that follow cursor */}
+            <motion.div
+              className="absolute pointer-events-none"
+              style={{
+                top: "44%",
+                left: "29%",
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#111",
+                x: pupilX,
+                y: pupilY,
+              }}
+            />
+            <motion.div
+              className="absolute pointer-events-none"
+              style={{
+                top: "44%",
+                right: "29%",
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#111",
+                x: pupilX,
+                y: pupilY,
+              }}
+            />
+
+            {/* Wink — left eye blinks */}
+            <motion.div
+              className="absolute pointer-events-none"
+              style={{
+                top: "38%",
+                left: "22%",
+                width: "18%",
+                height: "16%",
+                borderRadius: "50%",
+                background: "#F0EEE8",
+                transformOrigin: "center",
+              }}
+              animate={{ scaleY: [0, 0, 0, 1, 0, 0] }}
+              transition={{ duration: 5, repeat: Infinity, times: [0, 0.58, 0.6, 0.64, 0.68, 1] }}
+            />
+
+            {/* Blush cheeks */}
+            <motion.div
+              className="absolute pointer-events-none rounded-full"
+              style={{ bottom: "32%", left: "16%", width: 18, height: 10, background: "rgba(255,140,140,0.5)", filter: "blur(4px)" }}
+              animate={{ opacity: blushing ? 0.7 : 0 }}
+              transition={{ duration: 0.4 }}
+            />
+            <motion.div
+              className="absolute pointer-events-none rounded-full"
+              style={{ bottom: "32%", right: "16%", width: 18, height: 10, background: "rgba(255,140,140,0.5)", filter: "blur(4px)" }}
+              animate={{ opacity: blushing ? 0.7 : 0 }}
+              transition={{ duration: 0.4 }}
+            />
+
             {/* Status dot */}
-            <div className="absolute" style={{ bottom: 2, right: 2, width: 16, height: 16, zIndex: 10 }}>
+            <div className="absolute" style={{ bottom: 4, right: 4, width: 16, height: 16, zIndex: 10 }}>
               <motion.div
                 className="absolute rounded-full"
                 style={{ inset: -3, background: "rgba(0,200,83,0.3)" }}
                 animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
                 transition={{ duration: 2, repeat: Infinity }}
               />
-              <div className="rounded-full" style={{ width: 16, height: 16, background: "radial-gradient(circle at 40% 35%, #4dff91 0%, #00C853 60%, #009940 100%)", border: "3px solid #F0EEE8", boxShadow: "0 0 10px rgba(0,200,83,0.7), 0 0 20px rgba(0,200,83,0.3)", position: "relative", zIndex: 1 }} />
+              <div className="rounded-full" style={{ width: 16, height: 16, background: "radial-gradient(circle at 40% 35%, #4dff91 0%, #00C853 60%, #009940 100%)", border: "3px solid #F0EEE8", boxShadow: "0 0 10px rgba(0,200,83,0.7)", position: "relative", zIndex: 1 }} />
             </div>
           </motion.div>
+
+          {/* Tooltip on hover */}
+          <motion.span
+            className="absolute -bottom-5 left-1/2 font-body whitespace-nowrap pointer-events-none"
+            style={{ fontSize: 11, color: "#6A6860", translateX: "-50%" }}
+            initial={{ opacity: 0, y: 4 }}
+            whileHover={{ opacity: 1, y: 0 }}
+            animate={{ opacity: [0, 0, 1, 1, 0], y: [4, 4, 0, 0, 4] }}
+            transition={{ duration: 6, repeat: Infinity, times: [0, 0.6, 0.65, 0.85, 0.9] }}
+          >
+            Нажми — поболтаем 💬
+          </motion.span>
         </motion.div>
 
         {/* Label */}
