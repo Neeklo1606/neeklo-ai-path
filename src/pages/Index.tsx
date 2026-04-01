@@ -331,10 +331,10 @@ const WorksSection = () => {
             >
               <HolographicCard className={`rounded-2xl overflow-hidden relative cursor-pointer ${item.featured ? "" : ""}`}>
                 <div
-                  className="relative w-full flex items-center justify-center"
+                  className="relative w-full"
                   style={{ height: item.featured ? 280 : 200, background: item.bg }}
                 >
-                  <span className="text-[52px] opacity-70 select-none">{item.emoji}</span>
+                  <img src={item.img} alt={item.title} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
                   <div
                     className="absolute inset-x-0 bottom-0 p-4"
                     style={{ background: "linear-gradient(to top, rgba(0,0,0,0.75), transparent)" }}
