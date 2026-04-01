@@ -61,7 +61,7 @@ const LandingPage = () => {
       <WorksSection />
       <Divider />
       <HowSection />
-      
+      <CTASection navigate={navigate} />
       <Footer />
     </div>
   );
