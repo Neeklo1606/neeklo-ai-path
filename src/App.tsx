@@ -203,14 +203,53 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+const AppContent = ({
+  showOnboarding,
+  onCompleteOnboarding,
+}: {
+  showOnboarding: boolean;
+  onCompleteOnboarding: () => void;
+}) => {
+  const { pathname } = useLocation();
+  const shouldShowOnboarding = showOnboarding && pathname === "/";
+
+  return (
+    <>
+      <ScrollToTop />
+      {shouldShowOnboarding && <Onboarding onComplete={onCompleteOnboarding} />}
+      <Layout>
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/" element={<P><Index /></P>} />
+            <Route path="/login" element={<P><LoginPage /></P>} />
+            <Route path="/register" element={<P><RegisterPage /></P>} />
+            <Route path="/chat" element={<P><ChatPage /></P>} />
+            <Route path="/services" element={<P><ServicesPage /></P>} />
+            <Route path="/works" element={<P><WorksPage /></P>} />
+            <Route path="/cases" element={<P><CasesPage /></P>} />
+            <Route path="/projects" element={<P><ProjectsPage /></P>} />
+            <Route path="/projects/:id" element={<P><ProjectDetailPage /></P>} />
+            <Route path="/profile" element={<P><ProfilePage /></P>} />
+            <Route path="/settings" element={<P><SettingsPage /></P>} />
+            <Route path="/services/:slug" element={<P><ServiceDetailPage /></P>} />
+            <Route path="/order/:serviceId" element={<P><OrderPage /></P>} />
+            <Route path="/manager-chat" element={<P><ManagerChatPage /></P>} />
+            <Route path="/notifications" element={<P><NotificationsPage /></P>} />
+            <Route path="/legal/:slug" element={<P><LegalPage /></P>} />
+            <Route path="/admin" element={<P><AdminPage /></P>} />
+            <Route path="*" element={<P><NotFound /></P>} />
+          </Routes>
+        </Suspense>
+      </Layout>
+      <CookieBanner />
+    </>
+  );
+};
+
 const App = () => {
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem("neeklo_onboarded")
   );
-
-  if (showOnboarding) {
-    return <Onboarding onComplete={() => setShowOnboarding(false)} />;
-  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -219,32 +258,10 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <ScrollToTop />
-            <Layout>
-              <Suspense fallback={null}>
-                <Routes>
-                  <Route path="/" element={<P><Index /></P>} />
-                  <Route path="/login" element={<P><LoginPage /></P>} />
-                  <Route path="/register" element={<P><RegisterPage /></P>} />
-                  <Route path="/chat" element={<P><ChatPage /></P>} />
-                  <Route path="/services" element={<P><ServicesPage /></P>} />
-                  <Route path="/works" element={<P><WorksPage /></P>} />
-                  <Route path="/cases" element={<P><CasesPage /></P>} />
-                  <Route path="/projects" element={<P><ProjectsPage /></P>} />
-                  <Route path="/projects/:id" element={<P><ProjectDetailPage /></P>} />
-                  <Route path="/profile" element={<P><ProfilePage /></P>} />
-                  <Route path="/settings" element={<P><SettingsPage /></P>} />
-                  <Route path="/services/:slug" element={<P><ServiceDetailPage /></P>} />
-                  <Route path="/order/:serviceId" element={<P><OrderPage /></P>} />
-                  <Route path="/manager-chat" element={<P><ManagerChatPage /></P>} />
-                  <Route path="/notifications" element={<P><NotificationsPage /></P>} />
-                  <Route path="/legal/:slug" element={<P><LegalPage /></P>} />
-                  <Route path="/admin" element={<P><AdminPage /></P>} />
-                  <Route path="*" element={<P><NotFound /></P>} />
-                </Routes>
-              </Suspense>
-            </Layout>
-            <CookieBanner />
+            <AppContent
+              showOnboarding={showOnboarding}
+              onCompleteOnboarding={() => setShowOnboarding(false)}
+            />
           </BrowserRouter>
         </MotionConfig>
       </TooltipProvider>
