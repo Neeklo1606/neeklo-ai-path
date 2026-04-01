@@ -18,6 +18,7 @@ import workRacing from "@/assets/work-racing.webp";
 import workVision from "@/assets/work-vision.webp";
 import workEcommerce from "@/assets/work-ecommerce.webp";
 import workAssistant from "@/assets/work-assistant.webp";
+import mascotNewImg from "@/assets/mascot-new.png";
 
 /* ─── animation helpers ─── */
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -117,7 +118,7 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
           AI-продакшн студия
         </motion.p>
 
-        {/* CSS Orb — bigger, just floating */}
+        {/* Mascot */}
         <motion.div
           className="relative mb-8 cursor-pointer"
           initial={{ scale: 0, opacity: 0 }}
@@ -127,31 +128,23 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
           whileTap={{ scale: 0.92 }}
           whileHover={{ scale: 1.05 }}
         >
-          <div
-            className="hero-orb-wrapper"
-            style={{ position: "relative", width: 120, height: 120, flexShrink: 0 }}
-          >
-            <div
+          <div className="hero-mascot-float" style={{ width: 140, height: 140 }}>
+            <img
+              src={mascotNewImg}
+              alt="Neeklo маскот"
               style={{
-                width: 120,
-                height: 120,
-                borderRadius: "50%",
-                background: "radial-gradient(circle at 35% 32%, #3a3a3a 0%, #1a1a1a 45%, #080808 100%)",
-                boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 8px 20px rgba(0,0,0,0.3), inset 0 -8px 20px rgba(0,0,0,0.6), inset 0 6px 14px rgba(255,255,255,0.06)",
-                position: "relative",
-                overflow: "visible",
+                width: 140,
+                height: 140,
+                objectFit: "contain",
+                filter: "drop-shadow(0 16px 40px rgba(0,0,0,0.15))",
+                pointerEvents: "none",
               }}
-            >
-              <div style={{ position: "absolute", top: 12, left: 18, width: 32, height: 20, borderRadius: "50%", background: "rgba(255,255,255,0.10)", transform: "rotate(-25deg)", pointerEvents: "none" }} />
-              <div style={{ position: "absolute", top: 24, right: 26, width: 10, height: 10, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
-              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -52%)", display: "flex", gap: 12 }}>
-                <div className="hero-orb-eye" style={{ width: 10, height: 10, borderRadius: "50%", background: "white", boxShadow: "0 0 8px rgba(255,255,255,0.9)" }} />
-                <div className="hero-orb-eye hero-orb-eye-2" style={{ width: 10, height: 10, borderRadius: "50%", background: "white", boxShadow: "0 0 8px rgba(255,255,255,0.9)" }} />
-              </div>
-              <div style={{ position: "absolute", bottom: 28, left: "50%", transform: "translateX(-50%)", width: 16, height: 7, borderBottom: "2px solid rgba(255,255,255,0.25)", borderRadius: "0 0 8px 8px" }} />
-            </div>
-            <div style={{ position: "absolute", bottom: 2, right: 2, width: 16, height: 16, borderRadius: "50%", background: "#00C853", border: "3px solid #F0EEE8", boxShadow: "0 0 10px rgba(0,200,83,0.6)" }} />
+            />
           </div>
+          <style>{`
+            .hero-mascot-float { animation: mascot-float 3.5s ease-in-out infinite; }
+            @keyframes mascot-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+          `}</style>
         </motion.div>
 
         {/* H1 */}
