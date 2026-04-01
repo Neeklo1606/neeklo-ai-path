@@ -59,6 +59,7 @@ const LandingPage = () => {
       <ServicesSection navigate={navigate} />
       <Divider />
       <WorksSection />
+      <ReviewsSection />
       <Divider />
       <HowSection />
       <CTASection navigate={navigate} />
