@@ -133,7 +133,7 @@ const Footer = () => {
           <div className="md:col-span-5 flex flex-col gap-5">
             {/* Logo */}
             <div className="flex items-center">
-              <img src={logoWhite} alt="neeklo studio" className="h-8 w-auto opacity-90" />
+              <img src={logoWhite} alt="neeklo studio" className="h-12 w-auto opacity-90" />
             </div>
 
             {/* Tagline */}

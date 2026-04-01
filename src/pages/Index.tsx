@@ -1,8 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, ArrowRight } from "lucide-react";
-import { motion, useMotionValue, useSpring, useTransform, useInView } from "framer-motion";
-import { useState, useRef, useCallback } from "react";
-import mascotImg from "@/assets/mascot.png";
+import { ChevronDown, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion, useInView } from "framer-motion";
+import { useState, useRef, useCallback, useEffect } from "react";
 import HolographicCard from "@/components/ui/holographic-card";
 import Footer from "@/components/Footer";
 import TelegramManagerButton from "@/components/TelegramManagerButton";
@@ -51,12 +50,26 @@ const portfolioItems = [
 const filters = ["Все", "AI-видео", "Сайт", "Mini App", "AI"];
 
 const steps = [
-  { num: "01", title: "Опиши задачу", desc: "Напиши в чат – AI задаст уточняющие вопросы" },
+  { num: "01", title: "Опиши задачу", desc: "Напиши в чат, AI задаст уточняющие вопросы" },
   { num: "02", title: "AI собирает бриф", desc: "Формирует ТЗ, срок и предварительную стоимость" },
   { num: "03", title: "Менеджер берёт в работу", desc: "Обсуждаете детали, подписываете, стартуем" },
 ];
 
+const reviews = [
+  { name: "Юлия", date: "27 марта", service: "Генерация фото и создание видео", text: "Получился видеоролик очень красивым, зрелищным, длина 1,5 минуты, я думаю, родные будут очень довольны. Спасибо ребятам, отлично поработали! Рекомендую!" },
+  { name: "Степа", date: "27 марта", service: "Генерация фото и создание видео", text: "Все было оперативно выполнено и раньше сроков. Вежливый исполнитель, все корректировки были сделаны быстро. Результат получился отличный." },
+  { name: "Мануфактура Черепановых", date: "26 марта", service: "Видеосвет", text: "Отличный продавец" },
+  { name: "Регина", date: "25 марта", service: "Генерация фото и создание видео", text: "Обратилась к Никите для создания мультика для использования в работе. В итоге работа была выполнена точь-в-точь как по моему запросу и даже лучше. Рекомендую к сотрудничеству 👍🏻" },
+  { name: "Мария", date: "22 марта", service: "Генерация фото и создание видео", text: "Никита, ролик — просто огонь! 😱 Спасибо огромное за крутую работу с ИИ: получилось именно то, что нужно, да ещё и в разы круче, чем я ожидала. Ты суперпрофессионал: быстро, чётко, всегда на связи!" },
+  { name: "P.s", date: "19 марта", service: "Telegram Mini App и чат-боты", text: "Все отлично, быстро, в срок!" },
+  { name: "АДСК", date: "17 марта", service: "Генерация фото и создание видео", text: "Сделали крутой рекламный ролик для компании. Очень доволен результатом! Рекомендую 👍" },
+  { name: "Андрей", date: "12 марта", service: "Генерация фото и создание видео", text: "Всё на высшем уровне! Ребята профессионалы своего дела, желаю развития и успехов. Смело обращайтесь!" },
+];
 
+const avatarColors = ["#D4C5B2", "#B8C9D4", "#C4D4B8", "#D4B8C9", "#C9C4D4", "#B8D4C5", "#D4D0B8", "#C5B8D4"];
+
+const feedbackEmojis = ["😡", "😕", "😐", "🙂", "😍"];
+const feedbackSteps = ["rating", "improve", "opinion", "done"] as const;
 
 const Divider = () => <div className="w-full" style={{ height: 1, background: "#E8E6E0" }} />;
 
@@ -84,39 +97,6 @@ const LandingPage = () => {
 
 /* ━━━ HERO ━━━ */
 const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => {
-  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width:768px)").matches;
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const springX = useSpring(mouseX, { stiffness: 60, damping: 20 });
-  const springY = useSpring(mouseY, { stiffness: 60, damping: 20 });
-  // Mascot tilt follows cursor
-  const rotateY = useTransform(springX, [-500, 500], [-12, 12]);
-  const rotateX = useTransform(springY, [-500, 500], [8, -8]);
-  // Eyes pupil offset
-  const pupilX = useTransform(springX, [-500, 500], [-4, 4]);
-  const pupilY = useTransform(springY, [-500, 500], [-3, 3]);
-
-  const [blushing, setBlushing] = useState(false);
-  const blushTimer = useRef<ReturnType<typeof setTimeout>>();
-
-  const handleMouse = isMobile ? undefined : (e: React.MouseEvent) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - r.left - r.width / 2;
-    const y = e.clientY - r.top - r.height / 2;
-    mouseX.set(x);
-    mouseY.set(y);
-    // Blush when cursor is close to mascot center
-    const dist = Math.sqrt(x * x + y * y);
-    if (dist < 120 && !blushing) {
-      setBlushing(true);
-      clearTimeout(blushTimer.current);
-      blushTimer.current = setTimeout(() => setBlushing(false), 1800);
-    }
-  };
-  const handleMouseLeave = isMobile ? undefined : () => { mouseX.set(0); mouseY.set(0); setBlushing(false); };
-
-  const size = isMobile ? 160 : 200;
-
   return (
     <section
       className="relative overflow-hidden flex flex-col items-center justify-center text-center"
@@ -126,14 +106,20 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
         backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.055) 1px, transparent 1px)",
         backgroundSize: "28px 28px",
       }}
-      onMouseMove={handleMouse}
-      onMouseLeave={handleMouseLeave}
     >
       <div className="relative z-10 flex flex-col items-center px-5 sm:px-8" style={{ maxWidth: 640 }}>
-        {/* Interactive Mascot */}
+        {/* Label on top */}
+        <motion.p
+          className="font-body tracking-wide"
+          style={{ fontSize: 13, color: "#6A6860", marginBottom: 24 }}
+          {...fadeUp(0)}
+        >
+          AI-продакшн студия
+        </motion.p>
+
+        {/* CSS Orb — bigger, just floating */}
         <motion.div
-          className="relative mb-6 cursor-pointer"
-          style={{ width: size, height: size, flexShrink: 0, perspective: 800 }}
+          className="relative mb-8 cursor-pointer"
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 180, damping: 16, delay: 0.1 }}
@@ -141,91 +127,62 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
           whileTap={{ scale: 0.92 }}
           whileHover={{ scale: 1.05 }}
         >
-          <motion.div
-            animate={{ y: [0, -12, 0] }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-            style={{ position: "relative", width: size, height: size, rotateX, rotateY, transformStyle: "preserve-3d" }}
+          <div
+            className="hero-orb-wrapper"
+            style={{ position: "relative", width: 120, height: 120, flexShrink: 0 }}
           >
-            <img
-              src={mascotImg}
-              alt="Neeklo AI маскот"
+            <div
               style={{
-                width: size,
-                height: size,
-                objectFit: "contain",
-                filter: "drop-shadow(0 20px 50px rgba(0,0,0,0.18))",
-                pointerEvents: "none",
+                width: 120,
+                height: 120,
+                borderRadius: "50%",
+                background: "radial-gradient(circle at 35% 32%, #3a3a3a 0%, #1a1a1a 45%, #080808 100%)",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 8px 20px rgba(0,0,0,0.3), inset 0 -8px 20px rgba(0,0,0,0.6), inset 0 6px 14px rgba(255,255,255,0.06)",
+                position: "relative",
+                overflow: "visible",
               }}
-            />
-
-            {/* Blush cheeks */}
-            <motion.div
-              className="absolute pointer-events-none rounded-full"
-              style={{ bottom: "30%", left: "14%", width: 24, height: 14, background: "rgba(255,140,140,0.5)", filter: "blur(5px)" }}
-              animate={{ opacity: blushing ? 0.7 : 0 }}
-              transition={{ duration: 0.4 }}
-            />
-            <motion.div
-              className="absolute pointer-events-none rounded-full"
-              style={{ bottom: "30%", right: "14%", width: 24, height: 14, background: "rgba(255,140,140,0.5)", filter: "blur(5px)" }}
-              animate={{ opacity: blushing ? 0.7 : 0 }}
-              transition={{ duration: 0.4 }}
-            />
-          </motion.div>
-
-          {/* Tooltip */}
-          <motion.span
-            className="absolute -bottom-6 left-1/2 font-body whitespace-nowrap pointer-events-none"
-            style={{ fontSize: 12, color: "#6A6860", translateX: "-50%" }}
-            animate={{ opacity: [0, 0, 1, 1, 0], y: [4, 4, 0, 0, 4] }}
-            transition={{ duration: 6, repeat: Infinity, times: [0, 0.6, 0.65, 0.85, 0.9] }}
-          >
-            Нажми — поболтаем 💬
-          </motion.span>
+            >
+              <div style={{ position: "absolute", top: 12, left: 18, width: 32, height: 20, borderRadius: "50%", background: "rgba(255,255,255,0.10)", transform: "rotate(-25deg)", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", top: 24, right: 26, width: 10, height: 10, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
+              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -52%)", display: "flex", gap: 12 }}>
+                <div className="hero-orb-eye" style={{ width: 10, height: 10, borderRadius: "50%", background: "white", boxShadow: "0 0 8px rgba(255,255,255,0.9)" }} />
+                <div className="hero-orb-eye hero-orb-eye-2" style={{ width: 10, height: 10, borderRadius: "50%", background: "white", boxShadow: "0 0 8px rgba(255,255,255,0.9)" }} />
+              </div>
+              <div style={{ position: "absolute", bottom: 28, left: "50%", transform: "translateX(-50%)", width: 16, height: 7, borderBottom: "2px solid rgba(255,255,255,0.25)", borderRadius: "0 0 8px 8px" }} />
+            </div>
+            <div style={{ position: "absolute", bottom: 2, right: 2, width: 16, height: 16, borderRadius: "50%", background: "#00C853", border: "3px solid #F0EEE8", boxShadow: "0 0 10px rgba(0,200,83,0.6)" }} />
+          </div>
         </motion.div>
-
-        {/* Label */}
-        <motion.p
-          className="font-body tracking-wide"
-          style={{ fontSize: 13, color: "#6A6860", marginBottom: 20 }}
-          {...fadeUp(0.08)}
-        >
-          AI-продакшн студия
-        </motion.p>
 
         {/* H1 */}
         <motion.div {...fadeUp(0.18)}>
           <h1
             className="font-heading"
-            style={{ fontWeight: 800, fontSize: "clamp(38px,5vw,68px)", lineHeight: 1.02, letterSpacing: "-0.03em", color: "#0D0D0B" }}
+            style={{ fontWeight: 800, fontSize: "clamp(32px, 5vw, 58px)", lineHeight: 1.08, letterSpacing: "-0.03em", color: "#0D0D0B" }}
           >
-            От идеи до результата
+            Сайты и AI-агенты
+            <br />
+            под ключ
           </h1>
-          <p
-            className="font-heading"
-            style={{ fontWeight: 700, fontSize: "clamp(26px,3.5vw,48px)", color: "#6A6860", marginTop: 4, lineHeight: 1.02, letterSpacing: "-0.03em" }}
-          >
-            за 48 часов
-          </p>
         </motion.div>
 
         {/* Subtitle */}
         <motion.p
           className="font-body"
-          style={{ fontSize: 16, color: "#6A6860", lineHeight: 1.65, marginTop: 16, maxWidth: 360 }}
+          style={{ fontSize: 16, color: "#9A958B", lineHeight: 1.6, marginTop: 16, marginBottom: 36 }}
           {...fadeUp(0.28)}
         >
-          Сайты, Mini App, AI-агенты и видео
+          Пиши задачу. Получай результат.
         </motion.p>
 
         {/* CTA */}
-        <motion.div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mt-8" {...fadeUp(0.4)}>
+        <motion.div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto" {...fadeUp(0.4)}>
           <button
             onClick={() => navigate("/chat")}
             className="flex items-center justify-center gap-2 font-body w-full sm:w-auto cursor-pointer hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200"
             style={{ fontSize: 15, fontWeight: 600, padding: "14px 28px", background: "#0D0D0B", color: "#fff", border: "none", borderRadius: 14 }}
           >
-            Заказать проект →
+            Заказать проект <ArrowRight size={16} />
           </button>
           <button
             onClick={() => document.getElementById("works")?.scrollIntoView({ behavior: "smooth" })}
@@ -233,9 +190,9 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
             style={{ fontSize: 14, fontWeight: 500, padding: "13px 16px", background: "transparent", color: "#6A6860", border: "none" }}
           >
             Смотреть работы
+            <ChevronDown size={14} className="inline ml-1" />
           </button>
         </motion.div>
-
       </div>
 
       {/* Scroll arrow */}
@@ -246,6 +203,14 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
       >
         <ChevronDown size={22} color="#B0ADA8" />
       </motion.div>
+
+      <style>{`
+        .hero-orb-wrapper { animation: hero-float 3.5s ease-in-out infinite; }
+        @keyframes hero-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+        .hero-orb-eye { animation: hero-blink 4s ease-in-out infinite; }
+        .hero-orb-eye-2 { animation: hero-blink 4s ease-in-out infinite 0.1s; }
+        @keyframes hero-blink { 0%,90%,100%{transform:scaleY(1)} 95%{transform:scaleY(0.05)} }
+      `}</style>
     </section>
   );
 };
@@ -270,7 +235,7 @@ const ServicesSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate
                 className="flex items-center justify-center rounded-2xl"
                 style={{ width: 56, height: 56, background: "#EDECE8" }}
               >
-                <img src={s.icon} alt={s.name} className="w-7 h-7 object-contain" style={{ imageRendering: "pixelated" }} />
+                <img src={s.icon} alt={s.name} className="w-7 h-7 object-contain" loading="lazy" />
               </div>
               {s.badge && (
                 <span
@@ -329,12 +294,12 @@ const WorksSection = () => {
               className={item.featured ? "col-span-2 md:col-span-2" : ""}
               {...fadeUp(i * 0.07)}
             >
-              <HolographicCard className={`rounded-2xl overflow-hidden relative cursor-pointer ${item.featured ? "" : ""}`}>
+              <HolographicCard className="rounded-2xl overflow-hidden relative cursor-pointer">
                 <div
                   className="relative w-full"
                   style={{ height: item.featured ? 280 : 200, background: item.bg }}
                 >
-                  <img src={item.img} alt={item.title} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                  <img src={item.img} alt={item.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} />
                   <div
                     className="absolute inset-x-0 bottom-0 p-4"
                     style={{ background: "linear-gradient(to top, rgba(0,0,0,0.75), transparent)" }}
@@ -361,65 +326,98 @@ const WorksSection = () => {
   );
 };
 
-/* ━━━ REVIEWS ━━━ */
-const reviews = [
-  { name: "Юлия", date: "27 марта", service: "Генерация фото и создание видео", text: "Получился видеоролик очень красивым, зрелищным, длина 1,5 минуты, я думаю, родные будут очень довольны. Спасибо ребятам, отлично поработали! Рекомендую!" },
-  { name: "Степа", date: "27 марта", service: "Генерация фото и создание видео", text: "Все было оперативно выполнено и раньше сроков. Вежливый исполнитель, все корректировки были сделаны быстро. Результат получился отличный. Спасибо большое исполнителю." },
-  { name: "Мануфактура Черепановых", date: "26 марта", service: "Видеосвет", text: "Отличный продавец" },
-  { name: "Регина", date: "25 марта", service: "Генерация фото и создание видео", text: "Обратилась к Никите для создания мультика для использования в работе. В итоге работа была выполнена точь-в-точь как по моему запросу и даже лучше, я осталась очень довольна. Рекомендую к сотрудничеству 👍🏻" },
-  { name: "Мария", date: "22 марта", service: "Генерация фото и создание видео", text: "Никита, ролик — просто огонь! 😱 Спасибо огромное за крутую работу с ИИ: получилось именно то, что нужно, да ещё и в разы круче, чем я ожидала. Ты суперпрофессионал: быстро, чётко, всегда на связи!" },
-  { name: "P.s", date: "19 марта", service: "Telegram Mini App и чат-боты", text: "Все отлично, быстро, в срок!" },
-  { name: "АДСК", date: "17 марта", service: "Генерация фото и создание видео", text: "Сделали крутой рекламный ролик для компании. Очень доволен результатом! Рекомендую 👍" },
-  { name: "Андрей", date: "12 марта", service: "Генерация фото и создание видео", text: "Всё на высшем уровне! Ребята профессионалы своего дела, желаю развития и успехов. Смело обращайтесь, подскажут и сориентируют по всем вопросам." },
-];
+/* ━━━ REVIEWS — horizontal slider ━━━ */
+const ReviewsSection = () => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
 
-const avatarColors = ["#D4C5B2", "#B8C9D4", "#C4D4B8", "#D4B8C9", "#C9C4D4", "#B8D4C5", "#D4D0B8", "#C5B8D4"];
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }, []);
 
-const ReviewsSection = () => (
-  <section style={{ background: "#F0EEE8", padding: "clamp(48px,6vw,64px) 0" }}>
-    <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
-      <motion.h2 className="font-heading mb-8" style={{ fontSize: "clamp(24px,3.5vw,28px)", fontWeight: 800, color: "#0D0D0B" }} {...fadeUp(0)}>
-        Что говорят клиенты
-      </motion.h2>
+  useEffect(() => {
+    checkScroll();
+    const el = scrollRef.current;
+    if (el) el.addEventListener("scroll", checkScroll, { passive: true });
+    return () => el?.removeEventListener("scroll", checkScroll);
+  }, [checkScroll]);
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {reviews.map((r, i) => (
-          <motion.div
-            key={r.name}
-            className="bg-white"
-            style={{ borderRadius: 20, padding: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
-            {...fadeUp(i * 0.06)}
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div
-                className="flex items-center justify-center rounded-full font-heading flex-shrink-0"
-                style={{ width: 40, height: 40, background: avatarColors[i % avatarColors.length], fontSize: 15, fontWeight: 700, color: "#0D0D0B" }}
+  const scroll = (dir: number) => {
+    scrollRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
+  };
+
+  return (
+    <section style={{ background: "#F0EEE8", padding: "clamp(48px,6vw,64px) 0" }}>
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
+        <div className="flex items-center justify-between mb-5">
+          <motion.h2 className="font-heading" style={{ fontSize: "clamp(24px,3.5vw,28px)", fontWeight: 800, color: "#0D0D0B" }} {...fadeUp(0)}>
+            Что говорят клиенты
+          </motion.h2>
+          <div className="hidden sm:flex gap-2">
+            <button
+              onClick={() => scroll(-1)}
+              disabled={!canScrollLeft}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-colors border-none cursor-pointer disabled:opacity-30"
+              style={{ background: "#E8E6E0" }}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => scroll(1)}
+              disabled={!canScrollRight}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-colors border-none cursor-pointer disabled:opacity-30"
+              style={{ background: "#E8E6E0" }}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div
+          ref={scrollRef}
+          className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
+        >
+          <style>{`.reviews-slider::-webkit-scrollbar{display:none}`}</style>
+          {reviews.map((r, i) => (
+            <div
+              key={r.name + i}
+              className="bg-white flex-shrink-0 snap-start"
+              style={{ borderRadius: 20, padding: 18, width: 260, minHeight: 160, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+            >
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <div
+                  className="flex items-center justify-center rounded-full font-heading flex-shrink-0"
+                  style={{ width: 36, height: 36, background: avatarColors[i % avatarColors.length], fontSize: 14, fontWeight: 700, color: "#0D0D0B" }}
+                >
+                  {r.name.charAt(0)}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-body truncate" style={{ fontSize: 14, fontWeight: 700, color: "#0D0D0B" }}>{r.name}</p>
+                  <p className="font-body" style={{ fontSize: 11, color: "#9A958B" }}>{r.date}</p>
+                </div>
+              </div>
+              <div className="mb-2" style={{ fontSize: 12, color: "#F5A623", letterSpacing: 1 }}>★★★★★</div>
+              <p className="font-body" style={{ fontSize: 13, color: "#3A3A3A", lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                {r.text}
+              </p>
+              <span
+                className="inline-block font-body mt-2.5"
+                style={{ fontSize: 10, fontWeight: 600, color: "#6A6860", background: "#F5F5F5", borderRadius: 9999, padding: "3px 10px" }}
               >
-                {r.name.charAt(0)}
-              </div>
-              <div className="min-w-0">
-                <p className="font-body" style={{ fontSize: 15, fontWeight: 700, color: "#0D0D0B" }}>{r.name}</p>
-                <p className="font-body" style={{ fontSize: 12, color: "#9A958B" }}>{r.date}</p>
-              </div>
-              <span className="ml-auto flex-shrink-0" style={{ fontSize: 13, color: "#F5A623", letterSpacing: 1 }}>
-                ★★★★★
+                {r.service}
               </span>
             </div>
-            <p className="font-body" style={{ fontSize: 14, color: "#3A3A3A", lineHeight: 1.65 }}>
-              {r.text}
-            </p>
-            <span
-              className="inline-block font-body mt-3"
-              style={{ fontSize: 11, fontWeight: 600, color: "#6A6860", background: "#F5F5F5", borderRadius: 9999, padding: "4px 12px" }}
-            >
-              {r.service}
-            </span>
-          </motion.div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 const HowSection = () => {
   const navigate = useNavigate();
@@ -458,45 +456,173 @@ const HowSection = () => {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 mt-10 animate-fade-in" style={{ animationDelay: "400ms", animationFillMode: "both" }}>
+        <button
+          onClick={() => navigate("/chat")}
+          className="flex items-center gap-2 mt-10 animate-fade-in cursor-pointer hover:opacity-80 transition-opacity"
+          style={{ animationDelay: "400ms", animationFillMode: "both", background: "none", border: "none", padding: 0 }}
+        >
           <span style={{ color: "#00C853", fontSize: 18 }}>✓</span>
-          <span className="font-body" style={{ fontSize: 14, color: "#6A6860" }}>Первая консультация — бесплатно</span>
-        </div>
+          <span className="font-body" style={{ fontSize: 14, color: "#0D0D0B", fontWeight: 600 }}>Первая консультация бесплатно</span>
+        </button>
       </div>
     </section>
   );
 };
 
-/* ━━━ CTA ━━━ */
-const CTASection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
-  <section style={{ background: "#0D0D0B", padding: "64px 20px", textAlign: "center" }}>
-    <div className="flex items-center justify-center gap-2 mb-4">
-      <span className="rounded-full animate-pulse" style={{ width: 7, height: 7, background: "#00C853", flexShrink: 0 }} />
-      <span className="font-body uppercase" style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: "rgba(255,255,255,0.5)" }}>
-        Бесплатная консультация
-      </span>
-    </div>
-    <h2 className="font-heading" style={{ fontWeight: 800, fontSize: "clamp(24px,4vw,28px)", color: "#fff", marginBottom: 12 }}>
-      Начнём работу сегодня?
-    </h2>
-    <p className="font-body mx-auto" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", maxWidth: 360, marginBottom: 32, lineHeight: 1.6 }}>
-      Опиши задачу в чат — AI соберёт бриф за 5 минут
-    </p>
-    <button
-      onClick={() => navigate("/chat")}
-      className="font-body w-full sm:w-auto cursor-pointer hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200"
-      style={{ background: "#fff", color: "#0D0D0B", borderRadius: 16, padding: "16px 32px", fontSize: 15, fontWeight: 700, border: "none" }}
-    >
-      Написать в чат →
-    </button>
-    <div className="flex justify-center items-center gap-4 flex-wrap mt-8 font-body" style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>
-      <span>47+ клиентов</span>
-      <span>·</span>
-      <span>★ 4.9/5</span>
-      <span>·</span>
-      <span>48ч срок</span>
-    </div>
-  </section>
-);
+/* ━━━ CTA with feedback form ━━━ */
+const CTASection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => {
+  const [step, setStep] = useState<typeof feedbackSteps[number]>("rating");
+  const [rating, setRating] = useState<number | null>(null);
+  const [improve, setImprove] = useState("");
+  const [opinion, setOpinion] = useState("");
+
+  const handleNext = () => {
+    if (step === "rating" && rating !== null) setStep("improve");
+    else if (step === "improve") setStep("opinion");
+    else if (step === "opinion") setStep("done");
+  };
+
+  return (
+    <section style={{ background: "#0D0D0B", padding: "64px 20px", textAlign: "center" }}>
+      <h2 className="font-heading" style={{ fontWeight: 800, fontSize: "clamp(24px,4vw,28px)", color: "#fff", marginBottom: 8 }}>
+        Расскажите, как вам наш сервис
+      </h2>
+      <p className="font-body mx-auto" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", maxWidth: 360, marginBottom: 32, lineHeight: 1.6 }}>
+        Мини-опрос из 3 шагов. Займет меньше минуты
+      </p>
+
+      <div className="mx-auto" style={{ maxWidth: 380 }}>
+        {step === "rating" && (
+          <div>
+            <p className="font-body mb-4" style={{ fontSize: 14, color: "rgba(255,255,255,0.6)" }}>Оцените наш сервис</p>
+            <div className="flex justify-center gap-3 mb-6">
+              {feedbackEmojis.map((emoji, i) => (
+                <button
+                  key={i}
+                  onClick={() => setRating(i)}
+                  className="transition-all duration-150 cursor-pointer"
+                  style={{
+                    fontSize: 36,
+                    background: "none",
+                    border: "none",
+                    opacity: rating === null ? 1 : rating === i ? 1 : 0.3,
+                    transform: rating === i ? "scale(1.3)" : "scale(1)",
+                    filter: rating === i ? "drop-shadow(0 0 8px rgba(255,255,255,0.3))" : "none",
+                  }}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={handleNext}
+              disabled={rating === null}
+              className="font-body w-full cursor-pointer transition-all duration-200 disabled:opacity-30"
+              style={{ background: "#fff", color: "#0D0D0B", borderRadius: 14, padding: "14px", fontSize: 15, fontWeight: 600, border: "none" }}
+            >
+              Далее
+            </button>
+          </div>
+        )}
+
+        {step === "improve" && (
+          <div>
+            <p className="font-body mb-4" style={{ fontSize: 14, color: "rgba(255,255,255,0.6)" }}>Чем можно улучшить сервис?</p>
+            <textarea
+              value={improve}
+              onChange={(e) => setImprove(e.target.value)}
+              placeholder="Ваши пожелания..."
+              rows={3}
+              className="font-body w-full mb-4 placeholder:text-[rgba(255,255,255,0.3)]"
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: 12,
+                padding: "12px 14px",
+                fontSize: 14,
+                color: "#fff",
+                resize: "none",
+                outline: "none",
+              }}
+            />
+            <button
+              onClick={handleNext}
+              className="font-body w-full cursor-pointer transition-all duration-200"
+              style={{ background: "#fff", color: "#0D0D0B", borderRadius: 14, padding: "14px", fontSize: 15, fontWeight: 600, border: "none" }}
+            >
+              Далее
+            </button>
+          </div>
+        )}
+
+        {step === "opinion" && (
+          <div>
+            <p className="font-body mb-4" style={{ fontSize: 14, color: "rgba(255,255,255,0.6)" }}>Своё мнение / обратная связь</p>
+            <textarea
+              value={opinion}
+              onChange={(e) => setOpinion(e.target.value)}
+              placeholder="Что ещё хотите сказать..."
+              rows={3}
+              className="font-body w-full mb-4 placeholder:text-[rgba(255,255,255,0.3)]"
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: 12,
+                padding: "12px 14px",
+                fontSize: 14,
+                color: "#fff",
+                resize: "none",
+                outline: "none",
+              }}
+            />
+            <button
+              onClick={handleNext}
+              className="font-body w-full cursor-pointer transition-all duration-200"
+              style={{ background: "#fff", color: "#0D0D0B", borderRadius: 14, padding: "14px", fontSize: 15, fontWeight: 600, border: "none" }}
+            >
+              Отправить
+            </button>
+          </div>
+        )}
+
+        {step === "done" && (
+          <div>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🙏</div>
+            <p className="font-heading" style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Спасибо за отзыв!</p>
+            <p className="font-body" style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", marginBottom: 24 }}>Ваше мнение помогает нам стать лучше</p>
+            <a
+              href="https://t.me/neeklo_studio"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-body inline-flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 transition-all duration-200"
+              style={{ background: "#fff", color: "#0D0D0B", borderRadius: 14, padding: "14px 28px", fontSize: 15, fontWeight: 600, textDecoration: "none" }}
+            >
+              Наш Telegram-канал <ArrowRight size={16} />
+            </a>
+          </div>
+        )}
+      </div>
+
+      {/* Step indicator */}
+      {step !== "done" && (
+        <div className="flex justify-center gap-2 mt-6">
+          {["rating", "improve", "opinion"].map((s, i) => (
+            <div
+              key={s}
+              className="rounded-full"
+              style={{
+                width: step === s ? 20 : 6,
+                height: 6,
+                background: step === s ? "#fff" : "rgba(255,255,255,0.2)",
+                borderRadius: 9999,
+                transition: "all 0.2s",
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+};
 
 export default LandingPage;
