@@ -14,28 +14,11 @@ const avatarColors = ["#D4C5B2", "#B8C9D4", "#C4D4B8", "#D4B8C9", "#C9C4D4"];
 
 const Hero = () => {
   const navigate = useNavigate();
-  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width:768px)").matches;
-
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  const springX = useSpring(mouseX, { stiffness: 60, damping: 20 });
-  const springY = useSpring(mouseY, { stiffness: 60, damping: 20 });
-
-  const eyeOffsetX = useTransform(springX, [-300, 300], [-6, 6]);
-  const eyeOffsetY = useTransform(springY, [-300, 300], [-4, 4]);
-
-  const handleMouseMove = isMobile ? undefined : (e: React.MouseEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    mouseX.set(e.clientX - (rect.left + rect.width / 2));
-    mouseY.set(e.clientY - (rect.top + rect.height / 2));
-  };
 
   return (
     <section
       className="relative overflow-hidden"
       style={{ background: "#F0EEE8", minHeight: "calc(100vh - 64px)" }}
-      onMouseMove={handleMouseMove}
     >
       {/* Dot grid */}
       <div
