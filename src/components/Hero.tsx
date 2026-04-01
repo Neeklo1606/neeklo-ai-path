@@ -86,7 +86,7 @@ const Hero = () => {
               {/* Eyes */}
               <motion.div
                 className="flex items-center justify-center"
-                style={{ gap: 10, x: eyeOffsetX, y: eyeOffsetY, marginTop: -4 }}
+                style={{ gap: 14, x: eyeOffsetX, y: eyeOffsetY, marginTop: -4 }}
               >
                 {[0, 1].map((i) => (
                   <motion.div
