@@ -3,12 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, useMotionValue } from "framer-motion";
 import { ArrowRight, X, ExternalLink, Play } from "lucide-react";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import workFashion from "@/assets/work-fashion.webp";
-import workStudio from "@/assets/work-studio.webp";
-import workRacing from "@/assets/work-racing.webp";
-import workVision from "@/assets/work-vision.webp";
-import workEcommerce from "@/assets/work-ecommerce.webp";
-import workAssistant from "@/assets/work-assistant.webp";
 
 /* ─── types ─── */
 interface WorkMetric { label: string; value: string }
