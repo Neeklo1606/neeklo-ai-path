@@ -52,7 +52,7 @@ const Hero = () => {
       >
         {/* AI Orb */}
         <motion.div
-          className="relative mb-8"
+          className="relative mb-5"
           {...fade(0)}
         >
           <motion.div
@@ -64,8 +64,8 @@ const Hero = () => {
             <div
               className="relative rounded-full flex items-center justify-center flex-shrink-0"
               style={{
-                width: 88,
-                height: 88,
+                width: 120,
+                height: 120,
                 background: "#0D0D0B",
                 boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.12)",
               }}
@@ -86,20 +86,20 @@ const Hero = () => {
               {/* Eyes */}
               <motion.div
                 className="flex items-center justify-center"
-                style={{ gap: 10, x: eyeOffsetX, y: eyeOffsetY, marginTop: -4 }}
+                style={{ gap: 14, x: eyeOffsetX, y: eyeOffsetY, marginTop: -4 }}
               >
                 {[0, 1].map((i) => (
                   <motion.div
                     key={i}
                     className="rounded-full"
                     style={{
-                      width: 9,
-                      height: 9,
+                      width: 12,
+                      height: 12,
                       background: "#FFFFFF",
                       boxShadow: "0 0 6px rgba(255,255,255,0.6)",
                     }}
-                    animate={{ scaleY: [1, 1, 0.1, 1, 1] }}
-                    transition={{ duration: 4, repeat: Infinity, times: [0, 0.45, 0.5, 0.55, 1] }}
+                    animate={{}}
+                    transition={{}}
                   />
                 ))}
               </motion.div>
@@ -119,22 +119,6 @@ const Hero = () => {
               />
             </div>
 
-            {/* Status dot */}
-            <motion.div
-              className="absolute"
-              style={{
-                width: 12,
-                height: 12,
-                bottom: 4,
-                right: 4,
-                background: "#00C853",
-                borderRadius: "50%",
-                border: "2px solid #F0EEE8",
-                boxShadow: "0 0 6px rgba(0,200,83,0.5)",
-              }}
-              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
           </motion.div>
         </motion.div>
 
@@ -146,7 +130,7 @@ const Hero = () => {
             fontWeight: 500,
             color: "#6A6860",
             letterSpacing: "0.04em",
-            marginBottom: 24,
+            marginBottom: 16,
           }}
           {...fade(0.06)}
         >
