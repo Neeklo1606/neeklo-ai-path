@@ -7,6 +7,18 @@ import HolographicCard from "@/components/ui/holographic-card";
 import Footer from "@/components/Footer";
 import TelegramManagerButton from "@/components/TelegramManagerButton";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import iconVideo from "@/assets/icon-video.png";
+import iconWeb from "@/assets/icon-web.png";
+import iconApp from "@/assets/icon-app.png";
+import iconAi from "@/assets/icon-ai.png";
+import iconDesign from "@/assets/icon-design.png";
+import iconAnalytics from "@/assets/icon-analytics.png";
+import workFashion from "@/assets/work-fashion.webp";
+import workStudio from "@/assets/work-studio.webp";
+import workRacing from "@/assets/work-racing.webp";
+import workVision from "@/assets/work-vision.webp";
+import workEcommerce from "@/assets/work-ecommerce.webp";
+import workAssistant from "@/assets/work-assistant.webp";
 
 /* ─── animation helpers ─── */
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -19,19 +31,21 @@ const fadeUp = (delay: number) => ({
 
 /* ─── static data ─── */
 const services = [
-  { emoji: "🎬", name: "AI-ролики", price: "от 25 000 ₽", badge: "ХИТ" },
-  { emoji: "🌐", name: "Сайт под ключ", price: "от 95 000 ₽" },
-  { emoji: "📱", name: "Telegram Mini App", price: "от 65 000 ₽" },
-  { emoji: "✦", name: "AI-агент", price: "от 150 000 ₽", badge: "ТОП" },
+  { icon: iconVideo, name: "AI-ролики", price: "от 25 000 ₽", badge: "ХИТ", badgeColor: "#0D0D0B" },
+  { icon: iconWeb, name: "Сайты", price: "от 95 000 ₽" },
+  { icon: iconApp, name: "Mini App", price: "от 65 000 ₽" },
+  { icon: iconAi, name: "AI-агенты", price: "от 150 000 ₽", badge: "ТОП", badgeColor: "#0D0D0B" },
+  { icon: iconDesign, name: "Дизайн", price: "от 30 000 ₽" },
+  { icon: iconAnalytics, name: "Аналитика", price: "от 40 000 ₽" },
 ];
 
 const portfolioItems = [
-  { id: 1, cat: "AI-видео", title: "Имиджевый ролик", result: "+40% узнаваемость", bg: "linear-gradient(135deg,#1a0a0a,#2d1515,#1a1a2e)", emoji: "🎬", featured: true },
-  { id: 2, cat: "Сайт", title: "Лендинг студии", result: "+60% заявок", bg: "linear-gradient(135deg,#0f1535,#1e3a7a)", emoji: "🌐" },
-  { id: 3, cat: "AI-видео", title: "Промо для бренда", result: "2M просмотров", bg: "linear-gradient(135deg,#1a0808,#3d1010)", emoji: "🏎️" },
-  { id: 4, cat: "Mini App", title: "Vision AI App", result: "50K пользователей", bg: "linear-gradient(135deg,#0d0d18,#1a1a35)", emoji: "📱" },
-  { id: 5, cat: "Сайты", title: "Интернет-магазин", result: "+120% конверсия", bg: "linear-gradient(135deg,#0a1628,#1e4080)", emoji: "🛍️" },
-  { id: 6, cat: "AI", title: "AI-ассистент", result: "80% автоматизация", bg: "linear-gradient(135deg,#0a0a0a,#252525)", emoji: "🤖" },
+  { id: 1, cat: "AI-видео", title: "Имиджевый ролик", result: "+40% узнаваемость", bg: "linear-gradient(135deg,#1a1a2e,#16213e)", img: workFashion, featured: true },
+  { id: 2, cat: "Сайт", title: "Лендинг студии", result: "+60% заявок", bg: "linear-gradient(135deg,#0f3460,#533483)", img: workStudio },
+  { id: 3, cat: "AI-видео", title: "Промо для бренда", result: "2M просмотров", bg: "linear-gradient(135deg,#1a0a0a,#3d1515)", img: workRacing },
+  { id: 4, cat: "Mini App", title: "Vision AI App", result: "50K пользователей", bg: "linear-gradient(135deg,#0d0d0d,#1a1a2a)", img: workVision },
+  { id: 5, cat: "Сайты", title: "Интернет-магазин", result: "+120% конверсия", bg: "linear-gradient(135deg,#0a1628,#1e3a5f)", img: workEcommerce },
+  { id: 6, cat: "AI", title: "AI-ассистент", result: "80% автоматизация", bg: "linear-gradient(135deg,#0a0a0a,#2d2d2d)", img: workAssistant },
 ];
 
 const filters = ["Все", "AI-видео", "Сайт", "Mini App", "AI"];
@@ -240,43 +254,35 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
 const ServicesSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
   <section className="bg-white" style={{ padding: "48px 20px" }}>
     <div className="max-w-[1280px] mx-auto md:px-10">
-      <motion.h2 className="font-heading" style={{ fontSize: "clamp(28px,3.5vw,36px)", fontWeight: 800, color: "#0D0D0B" }} {...fadeUp(0)}>Что делаем</motion.h2>
+      <motion.h2 className="font-heading" style={{ fontSize: "clamp(28px,3.5vw,36px)", fontWeight: 800, color: "#0D0D0B" }} {...fadeUp(0)}>Продукты</motion.h2>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 mt-6" style={{ gap: 12 }}>
+      <div className="grid grid-cols-3 md:grid-cols-6 mt-6" style={{ gap: 10 }}>
         {services.map((s, i) => (
           <motion.div
             key={s.name}
             className="relative flex flex-col items-center text-center cursor-pointer hover:-translate-y-[3px] hover:shadow-lg active:scale-[0.98] transition-all duration-200"
-            style={{ background: "#F7F6F3", borderRadius: 18, padding: "24px 12px 18px" }}
+            style={{ background: "#F7F6F3", borderRadius: 16, padding: "20px 8px 16px" }}
             onClick={() => navigate("/chat")}
-            {...fadeUp(i * 0.06)}
+            {...fadeUp(i * 0.05)}
           >
-            {/* Emoji icon */}
             <div className="relative">
               <div
                 className="flex items-center justify-center rounded-2xl"
-                style={{ width: 56, height: 56, background: "#EDECE8", fontSize: 28 }}
+                style={{ width: 56, height: 56, background: "#EDECE8" }}
               >
-                {s.emoji}
+                <img src={s.icon} alt={s.name} className="w-7 h-7 object-contain" style={{ imageRendering: "pixelated" }} />
               </div>
               {s.badge && (
                 <span
                   className="absolute -top-1.5 -right-3 font-body text-white"
-                  style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 9999, background: "#0D0D0B" }}
+                  style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 9999, background: s.badgeColor }}
                 >
                   {s.badge}
                 </span>
               )}
             </div>
-            <p className="font-heading mt-3" style={{ fontSize: 14, fontWeight: 700, color: "#0D0D0B" }}>{s.name}</p>
+            <p className="font-heading mt-3" style={{ fontSize: 13, fontWeight: 700, color: "#0D0D0B" }}>{s.name}</p>
             <p className="font-body mt-1" style={{ fontSize: 12, color: "#8A8880" }}>{s.price}</p>
-            <button
-              className="font-body mt-3 w-full cursor-pointer hover:bg-[#1a1a1a] active:scale-[0.97] transition-all duration-150"
-              style={{ fontSize: 13, fontWeight: 600, padding: "8px 0", background: "#0D0D0B", color: "#fff", border: "none", borderRadius: 10 }}
-              onClick={(e) => { e.stopPropagation(); navigate("/chat"); }}
-            >
-              Заказать
-            </button>
           </motion.div>
         ))}
       </div>
@@ -325,10 +331,10 @@ const WorksSection = () => {
             >
               <HolographicCard className={`rounded-2xl overflow-hidden relative cursor-pointer ${item.featured ? "" : ""}`}>
                 <div
-                  className="relative w-full flex items-center justify-center"
+                  className="relative w-full"
                   style={{ height: item.featured ? 280 : 200, background: item.bg }}
                 >
-                  <span className="text-[52px] opacity-70 select-none">{item.emoji}</span>
+                  <img src={item.img} alt={item.title} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
                   <div
                     className="absolute inset-x-0 bottom-0 p-4"
                     style={{ background: "linear-gradient(to top, rgba(0,0,0,0.75), transparent)" }}
