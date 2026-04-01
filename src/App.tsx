@@ -190,7 +190,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   if (hideNav) return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 flex flex-col">{children}</div>
-      {!hideBottomNav && <BottomNav />}
     </div>
   );
 
