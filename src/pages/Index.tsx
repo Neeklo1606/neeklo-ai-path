@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, ArrowRight } from "lucide-react";
-import { motion, useInView } from "framer-motion";
-import { useState, useRef } from "react";
-import mascotGif from "@/assets/mascot.gif";
+import { motion, useMotionValue, useSpring, useTransform, useInView } from "framer-motion";
+import { useState, useRef, useCallback } from "react";
+import mascotImg from "@/assets/mascot.png";
 import HolographicCard from "@/components/ui/holographic-card";
 import Footer from "@/components/Footer";
 import TelegramManagerButton from "@/components/TelegramManagerButton";
