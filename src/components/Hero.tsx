@@ -64,8 +64,8 @@ const Hero = () => {
             <div
               className="relative rounded-full flex items-center justify-center flex-shrink-0"
               style={{
-                width: 88,
-                height: 88,
+                width: 120,
+                height: 120,
                 background: "#0D0D0B",
                 boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.12)",
               }}
