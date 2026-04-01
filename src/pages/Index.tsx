@@ -7,12 +7,6 @@ import HolographicCard from "@/components/ui/holographic-card";
 import Footer from "@/components/Footer";
 import TelegramManagerButton from "@/components/TelegramManagerButton";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import iconVideo from "@/assets/icon-video.png";
-import iconWeb from "@/assets/icon-web.png";
-import iconApp from "@/assets/icon-app.png";
-import iconAi from "@/assets/icon-ai.png";
-import iconDesign from "@/assets/icon-design.png";
-import iconAnalytics from "@/assets/icon-analytics.png";
 
 /* ─── animation helpers ─── */
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -25,12 +19,10 @@ const fadeUp = (delay: number) => ({
 
 /* ─── static data ─── */
 const services = [
-  { icon: iconVideo, name: "AI-ролики", price: "от 25 000 ₽", badge: "ХИТ", badgeColor: "#0D0D0B" },
-  { icon: iconWeb, name: "Сайты", price: "от 95 000 ₽" },
-  { icon: iconApp, name: "Mini App", price: "от 65 000 ₽" },
-  { icon: iconAi, name: "AI-агенты", price: "от 150 000 ₽", badge: "ТОП", badgeColor: "#0D0D0B" },
-  { icon: iconDesign, name: "Дизайн", price: "от 30 000 ₽" },
-  { icon: iconAnalytics, name: "Аналитика", price: "от 40 000 ₽" },
+  { emoji: "🎬", name: "AI-ролики", price: "от 25 000 ₽", badge: "ХИТ" },
+  { emoji: "🌐", name: "Сайт под ключ", price: "от 95 000 ₽" },
+  { emoji: "📱", name: "Telegram Mini App", price: "от 65 000 ₽" },
+  { emoji: "✦", name: "AI-агент", price: "от 150 000 ₽", badge: "ТОП" },
 ];
 
 const portfolioItems = [
@@ -304,36 +296,43 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
 const ServicesSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
   <section className="bg-white" style={{ padding: "48px 20px" }}>
     <div className="max-w-[1280px] mx-auto md:px-10">
-      <motion.h2 className="font-heading" style={{ fontSize: "clamp(28px,3.5vw,36px)", fontWeight: 800, color: "#0D0D0B" }} {...fadeUp(0)}>Продукты</motion.h2>
+      <motion.h2 className="font-heading" style={{ fontSize: "clamp(28px,3.5vw,36px)", fontWeight: 800, color: "#0D0D0B" }} {...fadeUp(0)}>Что делаем</motion.h2>
 
-      <div className="grid grid-cols-3 md:grid-cols-6 mt-6" style={{ gap: 10 }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 mt-6" style={{ gap: 12 }}>
         {services.map((s, i) => (
           <motion.div
             key={s.name}
             className="relative flex flex-col items-center text-center cursor-pointer hover:-translate-y-[3px] hover:shadow-lg active:scale-[0.98] transition-all duration-200"
-            style={{ background: "#F7F6F3", borderRadius: 16, padding: "20px 8px 16px" }}
+            style={{ background: "#F7F6F3", borderRadius: 18, padding: "24px 12px 18px" }}
             onClick={() => navigate("/chat")}
-            {...fadeUp(i * 0.05)}
+            {...fadeUp(i * 0.06)}
           >
-            {/* Icon */}
+            {/* Emoji icon */}
             <div className="relative">
               <div
                 className="flex items-center justify-center rounded-2xl"
-                style={{ width: 56, height: 56, background: "#EDECE8" }}
+                style={{ width: 56, height: 56, background: "#EDECE8", fontSize: 28 }}
               >
-                <img src={s.icon} alt={s.name} className="w-7 h-7 object-contain" style={{ imageRendering: "pixelated" }} />
+                {s.emoji}
               </div>
               {s.badge && (
                 <span
                   className="absolute -top-1.5 -right-3 font-body text-white"
-                  style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 9999, background: s.badgeColor }}
+                  style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 9999, background: "#0D0D0B" }}
                 >
                   {s.badge}
                 </span>
               )}
             </div>
-            <p className="font-heading mt-3" style={{ fontSize: 13, fontWeight: 700, color: "#0D0D0B" }}>{s.name}</p>
+            <p className="font-heading mt-3" style={{ fontSize: 14, fontWeight: 700, color: "#0D0D0B" }}>{s.name}</p>
             <p className="font-body mt-1" style={{ fontSize: 12, color: "#8A8880" }}>{s.price}</p>
+            <button
+              className="font-body mt-3 w-full cursor-pointer hover:bg-[#1a1a1a] active:scale-[0.97] transition-all duration-150"
+              style={{ fontSize: 13, fontWeight: 600, padding: "8px 0", background: "#0D0D0B", color: "#fff", border: "none", borderRadius: 10 }}
+              onClick={(e) => { e.stopPropagation(); navigate("/chat"); }}
+            >
+              Заказать
+            </button>
           </motion.div>
         ))}
       </div>
