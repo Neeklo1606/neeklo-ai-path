@@ -66,6 +66,7 @@ const LandingPage = () => {
 
   return (
     <div className="flex-1 bg-background text-foreground pb-[100px] sm:pb-0 overflow-x-hidden">
+      <TelegramManagerButton />
       <HeroSection navigate={navigate} />
       <Divider />
       <ServicesSection navigate={navigate} />
