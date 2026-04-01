@@ -363,10 +363,17 @@ const WorksSection = () => {
 
 /* ━━━ REVIEWS ━━━ */
 const reviews = [
-  { name: "Максим О.", role: "Владелец автосалона", avatar: "МО", avatarBg: "#D4C5B2", text: "Сделали лендинг за 7 дней. Заявок стало в 2 раза больше с первой недели. Никита всегда на связи, объяснял каждый шаг.", rating: 5, project: "Лендинг + AI-агент" },
-  { name: "Анна К.", role: "Основатель fashion-бренда", avatar: "АК", avatarBg: "#B8C9D4", text: "AI-ролики получились лучше чем я ожидала. Сняли за 3 дня, набрали 500K просмотров. Теперь только к ним.", rating: 5, project: "AI-видео" },
-  { name: "Дмитрий С.", role: "CEO IT-стартапа", avatar: "ДС", avatarBg: "#C4D4B8", text: "Telegram Mini App для нашего сервиса. Сделали точно по ТЗ, в срок. 50K пользователей за 2 месяца после запуска.", rating: 5, project: "Telegram Mini App" },
+  { name: "Юлия", date: "27 марта", service: "Генерация фото и создание видео", text: "Получился видеоролик очень красивым, зрелищным, длина 1,5 минуты, я думаю, родные будут очень довольны. Спасибо ребятам, отлично поработали! Рекомендую!" },
+  { name: "Степа", date: "27 марта", service: "Генерация фото и создание видео", text: "Все было оперативно выполнено и раньше сроков. Вежливый исполнитель, все корректировки были сделаны быстро. Результат получился отличный. Спасибо большое исполнителю." },
+  { name: "Мануфактура Черепановых", date: "26 марта", service: "Видеосвет", text: "Отличный продавец" },
+  { name: "Регина", date: "25 марта", service: "Генерация фото и создание видео", text: "Обратилась к Никите для создания мультика для использования в работе. В итоге работа была выполнена точь-в-точь как по моему запросу и даже лучше, я осталась очень довольна. Рекомендую к сотрудничеству 👍🏻" },
+  { name: "Мария", date: "22 марта", service: "Генерация фото и создание видео", text: "Никита, ролик — просто огонь! 😱 Спасибо огромное за крутую работу с ИИ: получилось именно то, что нужно, да ещё и в разы круче, чем я ожидала. Ты суперпрофессионал: быстро, чётко, всегда на связи!" },
+  { name: "P.s", date: "19 марта", service: "Telegram Mini App и чат-боты", text: "Все отлично, быстро, в срок!" },
+  { name: "АДСК", date: "17 марта", service: "Генерация фото и создание видео", text: "Сделали крутой рекламный ролик для компании. Очень доволен результатом! Рекомендую 👍" },
+  { name: "Андрей", date: "12 марта", service: "Генерация фото и создание видео", text: "Всё на высшем уровне! Ребята профессионалы своего дела, желаю развития и успехов. Смело обращайтесь, подскажут и сориентируют по всем вопросам." },
 ];
+
+const avatarColors = ["#D4C5B2", "#B8C9D4", "#C4D4B8", "#D4B8C9", "#C9C4D4", "#B8D4C5", "#D4D0B8", "#C5B8D4"];
 
 const ReviewsSection = () => (
   <section style={{ background: "#F0EEE8", padding: "clamp(48px,6vw,64px) 0" }}>
@@ -375,37 +382,37 @@ const ReviewsSection = () => (
         Что говорят клиенты
       </motion.h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {reviews.map((r, i) => (
           <motion.div
             key={r.name}
             className="bg-white"
             style={{ borderRadius: 20, padding: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
-            {...fadeUp(i * 0.1)}
+            {...fadeUp(i * 0.06)}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 mb-3">
               <div
                 className="flex items-center justify-center rounded-full font-heading flex-shrink-0"
-                style={{ width: 44, height: 44, background: r.avatarBg, fontSize: 15, fontWeight: 700, color: "#0D0D0B" }}
+                style={{ width: 40, height: 40, background: avatarColors[i % avatarColors.length], fontSize: 15, fontWeight: 700, color: "#0D0D0B" }}
               >
-                {r.avatar}
+                {r.name.charAt(0)}
               </div>
               <div className="min-w-0">
                 <p className="font-body" style={{ fontSize: 15, fontWeight: 700, color: "#0D0D0B" }}>{r.name}</p>
-                <p className="font-body" style={{ fontSize: 13, color: "#6A6860" }}>{r.role}</p>
+                <p className="font-body" style={{ fontSize: 12, color: "#9A958B" }}>{r.date}</p>
               </div>
               <span className="ml-auto flex-shrink-0" style={{ fontSize: 13, color: "#F5A623", letterSpacing: 1 }}>
-                {"★".repeat(r.rating)}
+                ★★★★★
               </span>
             </div>
-            <p className="font-body mt-3" style={{ fontSize: 14, color: "#3A3A3A", lineHeight: 1.65 }}>
+            <p className="font-body" style={{ fontSize: 14, color: "#3A3A3A", lineHeight: 1.65 }}>
               {r.text}
             </p>
             <span
               className="inline-block font-body mt-3"
               style={{ fontSize: 11, fontWeight: 600, color: "#6A6860", background: "#F5F5F5", borderRadius: 9999, padding: "4px 12px" }}
             >
-              {r.project}
+              {r.service}
             </span>
           </motion.div>
         ))}
