@@ -122,48 +122,22 @@ const Hero = () => {
           </motion.div>
         </motion.div>
 
-        {/* Eyebrow */}
-        <motion.p
-          className="font-body"
-          style={{
-            fontSize: 13,
-            fontWeight: 500,
-            color: "#6A6860",
-            letterSpacing: "0.04em",
-            marginBottom: 16,
-          }}
-          {...fade(0.06)}
-        >
-          AI-продакшн студия
-        </motion.p>
-
         {/* Headline */}
-        <motion.div style={{ marginBottom: 20 }} {...fade(0.12, 20)}>
+        <motion.div style={{ marginBottom: 20 }} {...fade(0.1, 20)}>
           <h1
             className="font-heading"
             style={{
               fontWeight: 800,
-              fontSize: "clamp(36px, 5vw, 64px)",
-              lineHeight: 1.05,
+              fontSize: "clamp(32px, 5vw, 58px)",
+              lineHeight: 1.08,
               letterSpacing: "-0.03em",
               color: "#0D0D0B",
             }}
           >
-            От идеи до результата
+            Сайты и AI-агенты
+            <br />
+            под ключ
           </h1>
-          <p
-            className="font-heading"
-            style={{
-              fontWeight: 700,
-              fontSize: "clamp(26px, 3.5vw, 44px)",
-              lineHeight: 1.05,
-              letterSpacing: "-0.03em",
-              color: "#6A6860",
-              marginTop: 6,
-            }}
-          >
-            за 48 часов
-          </p>
         </motion.div>
 
         {/* Subtitle */}
@@ -171,16 +145,13 @@ const Hero = () => {
           className="font-body"
           style={{
             fontSize: 16,
-            color: "#6A6860",
-            lineHeight: 1.65,
-            maxWidth: 400,
+            color: "#9A958B",
+            lineHeight: 1.6,
             marginBottom: 36,
           }}
           {...fade(0.2)}
         >
-          Сайты, Mini App, AI-агенты и видео.
-          <br />
-          Быстро. Чисто. С результатом.
+          Пиши задачу. Получай результат.
         </motion.p>
 
         {/* CTA Buttons */}
