@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, ArrowRight } from "lucide-react";
 import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
+import { useState, useRef } from "react";
 import mascotGif from "@/assets/mascot.gif";
 import HolographicCard from "@/components/ui/holographic-card";
 import Footer from "@/components/Footer";
