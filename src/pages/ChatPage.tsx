@@ -254,12 +254,17 @@ const ChatPage = () => {
 
   return (
     <div
+      className="chat-page-root"
       style={{
         display: "flex",
         flexDirection: "column",
         height: "100dvh",
+        maxHeight: "-webkit-fill-available",
         overflow: "hidden",
         background: "white",
+        position: "fixed",
+        inset: 0,
+        zIndex: 50,
       }}
     >
       {/* ━━━ HEADER ━━━ */}
