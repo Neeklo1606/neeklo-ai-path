@@ -119,22 +119,6 @@ const Hero = () => {
               />
             </div>
 
-            {/* Status dot */}
-            <motion.div
-              className="absolute"
-              style={{
-                width: 12,
-                height: 12,
-                bottom: 4,
-                right: 4,
-                background: "#00C853",
-                borderRadius: "50%",
-                border: "2px solid #F0EEE8",
-                boxShadow: "0 0 6px rgba(0,200,83,0.5)",
-              }}
-              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
           </motion.div>
         </motion.div>
 
