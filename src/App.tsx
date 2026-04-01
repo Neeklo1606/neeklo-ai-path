@@ -229,7 +229,7 @@ const AppContent = ({
             <Route path="/" element={<P><Index /></P>} />
             <Route path="/login" element={<P><LoginPage /></P>} />
             <Route path="/register" element={<P><RegisterPage /></P>} />
-            <Route path="/chat" element={<P><ChatPage /></P>} />
+            <Route path="/chat" element={<ChatPage />} />
             <Route path="/services" element={<P><ServicesPage /></P>} />
             <Route path="/works" element={<P><WorksPage /></P>} />
             <Route path="/cases" element={<P><CasesPage /></P>} />
@@ -239,10 +239,11 @@ const AppContent = ({
             <Route path="/settings" element={<P><SettingsPage /></P>} />
             <Route path="/services/:slug" element={<P><ServiceDetailPage /></P>} />
             <Route path="/order/:serviceId" element={<P><OrderPage /></P>} />
-            <Route path="/manager-chat" element={<P><ManagerChatPage /></P>} />
+            <Route path="/manager-chat" element={<ManagerChatPage />} />
             <Route path="/notifications" element={<P><NotificationsPage /></P>} />
             <Route path="/legal/:slug" element={<P><LegalPage /></P>} />
             <Route path="/admin" element={<P><AdminPage /></P>} />
+            <Route path="/admin/*" element={<P><AdminPage /></P>} />
             <Route path="*" element={<P><NotFound /></P>} />
           </Routes>
         </Suspense>
