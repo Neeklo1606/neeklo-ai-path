@@ -254,3 +254,5 @@ const App = () => {
 };
 
 export default App;
+
+// Ready for production - neeklo.studio 2026
