@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, ArrowRight } from "lucide-react";
-import { motion, useMotionValue, useSpring, useTransform, useInView } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { useState, useRef } from "react";
+import mascotGif from "@/assets/mascot.gif";
 import HolographicCard from "@/components/ui/holographic-card";
 import Footer from "@/components/Footer";
 import TelegramManagerButton from "@/components/TelegramManagerButton";
@@ -82,21 +83,6 @@ const LandingPage = () => {
 
 /* ━━━ HERO ━━━ */
 const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => {
-  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width:768px)").matches;
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const springX = useSpring(mouseX, { stiffness: 50, damping: 18 });
-  const springY = useSpring(mouseY, { stiffness: 50, damping: 18 });
-  const eyeX = useTransform(springX, [-400, 400], [-7, 7]);
-  const eyeY = useTransform(springY, [-400, 400], [-5, 5]);
-
-  const handleMouse = isMobile ? undefined : (e: React.MouseEvent) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    mouseX.set(e.clientX - r.left - r.width / 2);
-    mouseY.set(e.clientY - r.top - r.height / 2);
-  };
-  const handleMouseLeave = isMobile ? undefined : () => { mouseX.set(0); mouseY.set(0); };
-
   return (
     <section
       className="relative overflow-hidden flex flex-col items-center justify-center text-center"
@@ -106,14 +92,12 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
         backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.055) 1px, transparent 1px)",
         backgroundSize: "28px 28px",
       }}
-      onMouseMove={handleMouse}
-      onMouseLeave={handleMouseLeave}
     >
       <div className="relative z-10 flex flex-col items-center px-5 sm:px-8" style={{ maxWidth: 640 }}>
-        {/* Orb */}
+        {/* Mascot */}
         <motion.div
           className="relative mb-8"
-          style={{ width: 96, height: 96, flexShrink: 0 }}
+          style={{ width: 120, height: 120, flexShrink: 0 }}
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 200, damping: 18, delay: 0.1 }}
@@ -121,47 +105,20 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
           <motion.div
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            style={{ position: "relative", width: 96, height: 96 }}
+            style={{ position: "relative", width: 120, height: 120 }}
           >
-            {/* Outer glow ring */}
-            <motion.div
-              className="absolute rounded-full"
-              style={{ inset: -6, zIndex: 0, background: "radial-gradient(circle, rgba(0,0,0,0.12) 0%, transparent 70%)" }}
-              animate={{ scale: [1, 1.08, 1], opacity: [0.4, 0.7, 0.4] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            />
-
-            {/* Main sphere */}
-            <div
-              className="rounded-full"
+            <img
+              src={mascotGif}
+              alt="Neeklo AI"
               style={{
-                width: 96, height: 96, position: "relative", zIndex: 1, overflow: "hidden",
-                background: "radial-gradient(circle at 35% 35%, #3a3a3a 0%, #1a1a1a 40%, #0a0a0a 100%)",
-                boxShadow: "0 20px 60px rgba(0,0,0,0.4), 0 8px 20px rgba(0,0,0,0.3), inset 0 -8px 20px rgba(0,0,0,0.5), inset 0 8px 16px rgba(255,255,255,0.06), inset 2px 3px 8px rgba(255,255,255,0.04)",
+                width: 120,
+                height: 120,
+                objectFit: "contain",
+                filter: "drop-shadow(0 12px 32px rgba(0,0,0,0.18))",
               }}
-            >
-              {/* Top-left shine */}
-              <div className="absolute pointer-events-none" style={{ top: 12, left: 16, width: 30, height: 20, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 70%)", transform: "rotate(-25deg)" }} />
-              {/* Secondary shine */}
-              <div className="absolute pointer-events-none" style={{ top: 18, right: 20, width: 10, height: 10, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
-              {/* Bottom rim light */}
-              <div className="absolute pointer-events-none" style={{ bottom: 8, left: "50%", transform: "translateX(-50%)", width: 60, height: 20, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(255,255,255,0.04) 0%, transparent 70%)" }} />
-
-              {/* Face */}
-              <div className="absolute" style={{ top: "50%", left: "50%", transform: "translate(-50%, -46%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, zIndex: 2 }}>
-                {/* Eyes */}
-                <motion.div className="flex items-center" style={{ gap: 9, x: eyeX, y: eyeY }}>
-                  <motion.div className="rounded-full" style={{ width: 8, height: 8, background: "#fff", boxShadow: "0 0 8px rgba(255,255,255,0.8), 0 0 16px rgba(255,255,255,0.3)" }} animate={{ scaleY: [1, 1, 0.05, 1, 1] }} transition={{ duration: 3.5, repeat: Infinity, times: [0, 0.42, 0.48, 0.54, 1] }} />
-                  <motion.div className="rounded-full" style={{ width: 8, height: 8, background: "#fff", boxShadow: "0 0 8px rgba(255,255,255,0.8), 0 0 16px rgba(255,255,255,0.3)" }} animate={{ scaleY: [1, 1, 0.05, 1, 1] }} transition={{ duration: 4.2, repeat: Infinity, times: [0, 0.42, 0.48, 0.54, 1], delay: 0.08 }} />
-                </motion.div>
-                {/* Smile */}
-                <div style={{ width: 14, height: 6, borderBottom: "2px solid rgba(255,255,255,0.3)", borderRadius: "0 0 8px 8px", marginTop: 2 }} />
-              </div>
-            </div>
-
+            />
             {/* Status dot */}
             <div className="absolute" style={{ bottom: 2, right: 2, width: 16, height: 16, zIndex: 10 }}>
-              {/* Pulse ring */}
               <motion.div
                 className="absolute rounded-full"
                 style={{ inset: -3, background: "rgba(0,200,83,0.3)" }}
