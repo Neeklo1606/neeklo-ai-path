@@ -77,12 +77,8 @@ const WorkCard = ({ work, index, onClick }: { work: Work; index: number; onClick
     whileTap={{ scale: 0.99 }}
     onClick={onClick}
   >
-    <div className="absolute inset-0" style={{ background: work.bg }}>
-      {work.img ? (
-        <img src={work.img} alt={work.title} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
-      ) : (
-        <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[52px] opacity-60 select-none">{work.emoji}</span>
-      )}
+    <div className="absolute inset-0 flex items-center justify-center" style={{ background: work.bg }}>
+      <span className="text-[52px] opacity-70 select-none">{work.emoji}</span>
     </div>
     <div className="absolute bottom-0 left-0 right-0 z-[1]" style={{ height: "70%", background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.4) 50%, transparent 100%)" }} />
     <div className="absolute top-3 right-3 z-[2]">
