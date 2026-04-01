@@ -101,7 +101,7 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
   };
   const handleMouseLeave = isMobile ? undefined : () => { mouseX.set(0); mouseY.set(0); setBlushing(false); };
 
-  const size = isMobile ? 110 : 140;
+  const size = isMobile ? 160 : 200;
 
   return (
     <section
@@ -119,19 +119,19 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
         {/* Interactive Mascot */}
         <motion.div
           className="relative mb-6 cursor-pointer"
-          style={{ width: size, height: size, flexShrink: 0, perspective: 600 }}
+          style={{ width: size, height: size, flexShrink: 0, perspective: 800 }}
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 180, damping: 16, delay: 0.1 }}
           onClick={() => navigate("/chat")}
           whileTap={{ scale: 0.92 }}
+          whileHover={{ scale: 1.05 }}
         >
           <motion.div
-            animate={{ y: [0, -8, 0] }}
+            animate={{ y: [0, -12, 0] }}
             transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
             style={{ position: "relative", width: size, height: size, rotateX, rotateY, transformStyle: "preserve-3d" }}
           >
-            {/* Main mascot image */}
             <img
               src={mascotImg}
               alt="Neeklo AI маскот"
@@ -139,87 +139,30 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
                 width: size,
                 height: size,
                 objectFit: "contain",
-                filter: "drop-shadow(0 16px 40px rgba(0,0,0,0.15))",
+                filter: "drop-shadow(0 20px 50px rgba(0,0,0,0.18))",
                 pointerEvents: "none",
               }}
-            />
-
-            {/* Animated eyes overlay — pupils that follow cursor */}
-            <motion.div
-              className="absolute pointer-events-none"
-              style={{
-                top: "44%",
-                left: "29%",
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: "#111",
-                x: pupilX,
-                y: pupilY,
-              }}
-            />
-            <motion.div
-              className="absolute pointer-events-none"
-              style={{
-                top: "44%",
-                right: "29%",
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: "#111",
-                x: pupilX,
-                y: pupilY,
-              }}
-            />
-
-            {/* Wink — left eye blinks */}
-            <motion.div
-              className="absolute pointer-events-none"
-              style={{
-                top: "38%",
-                left: "22%",
-                width: "18%",
-                height: "16%",
-                borderRadius: "50%",
-                background: "#F0EEE8",
-                transformOrigin: "center",
-              }}
-              animate={{ scaleY: [0, 0, 0, 1, 0, 0] }}
-              transition={{ duration: 5, repeat: Infinity, times: [0, 0.58, 0.6, 0.64, 0.68, 1] }}
             />
 
             {/* Blush cheeks */}
             <motion.div
               className="absolute pointer-events-none rounded-full"
-              style={{ bottom: "32%", left: "16%", width: 18, height: 10, background: "rgba(255,140,140,0.5)", filter: "blur(4px)" }}
+              style={{ bottom: "30%", left: "14%", width: 24, height: 14, background: "rgba(255,140,140,0.5)", filter: "blur(5px)" }}
               animate={{ opacity: blushing ? 0.7 : 0 }}
               transition={{ duration: 0.4 }}
             />
             <motion.div
               className="absolute pointer-events-none rounded-full"
-              style={{ bottom: "32%", right: "16%", width: 18, height: 10, background: "rgba(255,140,140,0.5)", filter: "blur(4px)" }}
+              style={{ bottom: "30%", right: "14%", width: 24, height: 14, background: "rgba(255,140,140,0.5)", filter: "blur(5px)" }}
               animate={{ opacity: blushing ? 0.7 : 0 }}
               transition={{ duration: 0.4 }}
             />
-
-            {/* Status dot */}
-            <div className="absolute" style={{ bottom: 4, right: 4, width: 16, height: 16, zIndex: 10 }}>
-              <motion.div
-                className="absolute rounded-full"
-                style={{ inset: -3, background: "rgba(0,200,83,0.3)" }}
-                animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
-              <div className="rounded-full" style={{ width: 16, height: 16, background: "radial-gradient(circle at 40% 35%, #4dff91 0%, #00C853 60%, #009940 100%)", border: "3px solid #F0EEE8", boxShadow: "0 0 10px rgba(0,200,83,0.7)", position: "relative", zIndex: 1 }} />
-            </div>
           </motion.div>
 
-          {/* Tooltip on hover */}
+          {/* Tooltip */}
           <motion.span
-            className="absolute -bottom-5 left-1/2 font-body whitespace-nowrap pointer-events-none"
-            style={{ fontSize: 11, color: "#6A6860", translateX: "-50%" }}
-            initial={{ opacity: 0, y: 4 }}
-            whileHover={{ opacity: 1, y: 0 }}
+            className="absolute -bottom-6 left-1/2 font-body whitespace-nowrap pointer-events-none"
+            style={{ fontSize: 12, color: "#6A6860", translateX: "-50%" }}
             animate={{ opacity: [0, 0, 1, 1, 0], y: [4, 4, 0, 0, 4] }}
             transition={{ duration: 6, repeat: Infinity, times: [0, 0.6, 0.65, 0.85, 0.9] }}
           >
