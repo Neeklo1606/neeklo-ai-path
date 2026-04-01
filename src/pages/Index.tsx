@@ -7,6 +7,18 @@ import HolographicCard from "@/components/ui/holographic-card";
 import Footer from "@/components/Footer";
 import TelegramManagerButton from "@/components/TelegramManagerButton";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import iconVideo from "@/assets/icon-video.png";
+import iconWeb from "@/assets/icon-web.png";
+import iconApp from "@/assets/icon-app.png";
+import iconAi from "@/assets/icon-ai.png";
+import iconDesign from "@/assets/icon-design.png";
+import iconAnalytics from "@/assets/icon-analytics.png";
+import workFashion from "@/assets/work-fashion.webp";
+import workStudio from "@/assets/work-studio.webp";
+import workRacing from "@/assets/work-racing.webp";
+import workVision from "@/assets/work-vision.webp";
+import workEcommerce from "@/assets/work-ecommerce.webp";
+import workAssistant from "@/assets/work-assistant.webp";
 
 /* ─── animation helpers ─── */
 const ease = [0.16, 1, 0.3, 1] as const;
