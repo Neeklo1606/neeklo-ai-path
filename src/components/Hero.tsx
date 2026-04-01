@@ -1,6 +1,6 @@
 import { ArrowRight, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -14,28 +14,11 @@ const avatarColors = ["#D4C5B2", "#B8C9D4", "#C4D4B8", "#D4B8C9", "#C9C4D4"];
 
 const Hero = () => {
   const navigate = useNavigate();
-  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width:768px)").matches;
-
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  const springX = useSpring(mouseX, { stiffness: 60, damping: 20 });
-  const springY = useSpring(mouseY, { stiffness: 60, damping: 20 });
-
-  const eyeOffsetX = useTransform(springX, [-300, 300], [-6, 6]);
-  const eyeOffsetY = useTransform(springY, [-300, 300], [-4, 4]);
-
-  const handleMouseMove = isMobile ? undefined : (e: React.MouseEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    mouseX.set(e.clientX - (rect.left + rect.width / 2));
-    mouseY.set(e.clientY - (rect.top + rect.height / 2));
-  };
 
   return (
     <section
       className="relative overflow-hidden"
       style={{ background: "#F0EEE8", minHeight: "calc(100vh - 64px)" }}
-      onMouseMove={handleMouseMove}
     >
       {/* Dot grid */}
       <div
@@ -50,76 +33,53 @@ const Hero = () => {
         className="relative mx-auto flex flex-col items-center justify-center text-center px-5 sm:px-8"
         style={{ maxWidth: 800, minHeight: "calc(100vh - 64px)", paddingTop: 40, paddingBottom: 80 }}
       >
-        {/* AI Orb */}
+        {/* AI Orb — pure CSS */}
         <motion.div
           className="relative mb-5"
           {...fade(0)}
         >
-          <motion.div
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-            style={{ willChange: "transform" }}
+          <div
+            className="hero-orb-wrapper"
+            style={{ position: "relative", width: 96, height: 96, flexShrink: 0 }}
           >
-            {/* Main orb */}
+            {/* Main sphere */}
             <div
-              className="relative rounded-full flex items-center justify-center flex-shrink-0"
               style={{
-                width: 120,
-                height: 120,
-                background: "#0D0D0B",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.12)",
+                width: 96,
+                height: 96,
+                borderRadius: "50%",
+                background: "radial-gradient(circle at 35% 32%, #3a3a3a 0%, #1a1a1a 45%, #080808 100%)",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 8px 20px rgba(0,0,0,0.3), inset 0 -8px 20px rgba(0,0,0,0.6), inset 0 6px 14px rgba(255,255,255,0.06)",
+                position: "relative",
+                overflow: "visible",
               }}
             >
               {/* Highlight */}
-              <div
-                className="absolute rounded-full"
-                style={{
-                  top: 10,
-                  left: 14,
-                  width: 28,
-                  height: 18,
-                  background: "rgba(255,255,255,0.07)",
-                  transform: "rotate(-20deg)",
-                }}
-              />
+              <div style={{ position: "absolute", top: 10, left: 15, width: 28, height: 18, borderRadius: "50%", background: "rgba(255,255,255,0.10)", transform: "rotate(-25deg)", pointerEvents: "none" }} />
+              {/* Small highlight */}
+              <div style={{ position: "absolute", top: 20, right: 22, width: 9, height: 9, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
 
               {/* Eyes */}
-              <motion.div
-                className="flex items-center justify-center"
-                style={{ gap: 14, x: eyeOffsetX, y: eyeOffsetY, marginTop: -4 }}
-              >
-                {[0, 1].map((i) => (
-                  <motion.div
-                    key={i}
-                    className="rounded-full"
-                    style={{
-                      width: 12,
-                      height: 12,
-                      background: "#FFFFFF",
-                      boxShadow: "0 0 6px rgba(255,255,255,0.6)",
-                    }}
-                    animate={{}}
-                    transition={{}}
-                  />
-                ))}
-              </motion.div>
+              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -52%)", display: "flex", gap: 10 }}>
+                <div className="hero-orb-eye" style={{ width: 8, height: 8, borderRadius: "50%", background: "white", boxShadow: "0 0 8px rgba(255,255,255,0.9)" }} />
+                <div className="hero-orb-eye hero-orb-eye-2" style={{ width: 8, height: 8, borderRadius: "50%", background: "white", boxShadow: "0 0 8px rgba(255,255,255,0.9)" }} />
+              </div>
 
               {/* Smile */}
-              <div
-                className="absolute"
-                style={{
-                  bottom: 22,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  width: 18,
-                  height: 8,
-                  borderBottom: "2px solid rgba(255,255,255,0.2)",
-                  borderRadius: "0 0 10px 10px",
-                }}
-              />
+              <div style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", width: 14, height: 6, borderBottom: "2px solid rgba(255,255,255,0.25)", borderRadius: "0 0 8px 8px" }} />
             </div>
 
-          </motion.div>
+            {/* Status dot */}
+            <div style={{ position: "absolute", bottom: 2, right: 2, width: 14, height: 14, borderRadius: "50%", background: "#00C853", border: "3px solid #F0EEE8", boxShadow: "0 0 10px rgba(0,200,83,0.6)" }} />
+          </div>
+
+          <style>{`
+            .hero-orb-wrapper { animation: hero-float 3.5s ease-in-out infinite; }
+            @keyframes hero-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+            .hero-orb-eye { animation: hero-blink 4s ease-in-out infinite; }
+            .hero-orb-eye-2 { animation: hero-blink 4s ease-in-out infinite 0.1s; }
+            @keyframes hero-blink { 0%,90%,100%{transform:scaleY(1)} 95%{transform:scaleY(0.05)} }
+          `}</style>
         </motion.div>
 
         {/* Headline */}
