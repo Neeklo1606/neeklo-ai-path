@@ -16,14 +16,14 @@ import Index from "./pages/Index";
 import { Menu, X, Home, MessageSquare, Sparkles, Image, FolderOpen, User, Settings, Bell } from "lucide-react";
 
 
-const ChatPage = lazy(() => import("./pages/ChatPage"));
+import ChatPage from "./pages/ChatPage";
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProjectDetailPage = lazy(() => import("./pages/ProjectDetailPage"));
-const ManagerChatPage = lazy(() => import("./pages/ManagerChatPage"));
+import ManagerChatPage from "./pages/ManagerChatPage";
 const ServicesPage = lazy(() => import("./pages/ServicesPage"));
 const ServiceDetailPage = lazy(() => import("./pages/ServiceDetailPage"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
@@ -38,6 +38,12 @@ const queryClient = new QueryClient();
 
 const P = ({ children }: { children: React.ReactNode }) => (
   <PageTransition>{children}</PageTransition>
+);
+
+const RouteLoadingFallback = () => (
+  <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
+    Загрузка страницы...
+  </div>
 );
 
 const HIDE_NAV_ROUTES = ["/chat", "/manager-chat"];
@@ -218,7 +224,7 @@ const AppContent = ({
       <ScrollToTop />
       {shouldShowOnboarding && <Onboarding onComplete={onCompleteOnboarding} />}
       <Layout>
-        <Suspense fallback={null}>
+        <Suspense fallback={<RouteLoadingFallback />}>
           <Routes>
             <Route path="/" element={<P><Index /></P>} />
             <Route path="/login" element={<P><LoginPage /></P>} />
