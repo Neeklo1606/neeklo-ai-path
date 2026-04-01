@@ -15,12 +15,7 @@ interface Project {
 }
 
 /* ─── data ─── */
-const mockProjects: Project[] = [
-  { id: "1", emoji: "🌐", title: "Лендинг для DA-Motors", service: "Сайт", status: "in_progress", price: 95000, paid: 47500, deadline: "15 апр 2026", progress: 75, manager: "Никита К.", managerInitials: "НК", brief: "Современный лендинг для авто-дилера с формой заявки и интеграцией CRM.", tasks: [{ title: "Дизайн в Figma", done: true }, { title: "Верстка главной страницы", done: true }, { title: "Форма заявки + CRM", done: true }, { title: "Мобильная адаптация", done: false }, { title: "SEO-оптимизация", done: false }], timeline: ["Бриф", "Предложение", "Разработка", "Проверка", "Сдача"], currentStep: 2 },
-  { id: "2", emoji: "📱", title: "Telegram Mini App", service: "Mini App", status: "review", price: 200000, paid: 200000, deadline: "5 апр 2026", progress: 95, manager: "Никита К.", managerInitials: "НК", brief: "Каталог услуг и запись на приём внутри Telegram.", tasks: [{ title: "UI/UX дизайн", done: true }, { title: "Frontend разработка", done: true }, { title: "Backend API", done: true }, { title: "Оплата Stars", done: true }, { title: "Финальное тестирование", done: false }], timeline: ["Бриф", "Предложение", "Разработка", "Проверка", "Сдача"], currentStep: 3 },
-  { id: "3", emoji: "✦", title: "AI-агент продаж", service: "AI-агент", status: "briefing", price: 150000, paid: 0, deadline: "30 апр 2026", progress: 15, manager: "Никита К.", managerInitials: "НК", brief: "AI-ассистент для квалификации входящих лидов и ответов на вопросы.", tasks: [{ title: "Сбор брифа", done: true }, { title: "Сценарии диалогов", done: false }, { title: "GPT интеграция", done: false }, { title: "CRM подключение", done: false }, { title: "Тестирование", done: false }], timeline: ["Бриф", "Предложение", "Разработка", "Проверка", "Сдача"], currentStep: 0 },
-  { id: "4", emoji: "🎬", title: "Имиджевые ролики", service: "AI-видео", status: "done", price: 80000, paid: 80000, deadline: "1 мар 2026", progress: 100, manager: "Никита К.", managerInitials: "НК", brief: "Серия из 5 коротких роликов для Instagram Reels и TikTok.", tasks: [{ title: "Сценарий", done: true }, { title: "AI-генерация", done: true }, { title: "Монтаж", done: true }, { title: "Озвучка", done: true }, { title: "Финальная сдача", done: true }], timeline: ["Бриф", "Предложение", "Разработка", "Проверка", "Сдача"], currentStep: 4 },
-];
+const mockProjects: Project[] = [];
 
 const statusConfig: Record<string, { label: string; color: string; bg: string; border: string }> = {
   new: { label: "Новый", color: "#888888", bg: "#F5F5F5", border: "#E0E0E0" },
@@ -119,10 +114,17 @@ const ProjectsPage = () => {
       {/* List */}
       <div className="px-5 md:px-10 pt-4 flex flex-col gap-3">
         {filtered.length === 0 ? (
-          <div className="mt-16 flex flex-col items-center text-center px-8">
-            <span className="text-[48px]">📋</span>
-            <p className="font-body text-[16px] font-semibold text-[#0D0D0B] mt-3">Проектов пока нет</p>
-            <button onClick={() => navigate("/chat")} className="mt-4 bg-[#0D0D0B] text-white rounded-2xl px-6 py-3 font-body text-[15px] font-semibold cursor-pointer">Заказать первый проект</button>
+          <div className="mt-20 flex flex-col items-center text-center px-8">
+            <div className="w-20 h-20 rounded-3xl bg-[#F0EEE8] flex items-center justify-center mb-5">
+              <span className="text-[40px]">🚀</span>
+            </div>
+            <p className="font-heading text-[20px] font-[800] text-[#0D0D0B]">Начни первый проект</p>
+            <p className="font-body text-[14px] text-[#6A6860] mt-2 max-w-[280px] leading-relaxed">
+              Опиши задачу в чат — AI соберёт бриф, а менеджер возьмёт проект в работу
+            </p>
+            <button onClick={() => navigate("/chat")} className="mt-6 bg-[#0D0D0B] text-white rounded-2xl px-8 py-4 font-body text-[15px] font-bold cursor-pointer hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 flex items-center gap-2">
+              Начать проект →
+            </button>
           </div>
         ) : (
           filtered.map((p, i) => {
