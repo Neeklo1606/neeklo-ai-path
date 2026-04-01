@@ -130,7 +130,7 @@ const Hero = () => {
             fontWeight: 500,
             color: "#6A6860",
             letterSpacing: "0.04em",
-            marginBottom: 24,
+            marginBottom: 16,
           }}
           {...fade(0.06)}
         >
