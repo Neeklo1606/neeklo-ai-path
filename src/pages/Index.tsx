@@ -458,4 +458,36 @@ const HowSection = () => {
   );
 };
 
+/* ━━━ CTA ━━━ */
+const CTASection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
+  <section style={{ background: "#0D0D0B", padding: "64px 20px", textAlign: "center" }}>
+    <div className="flex items-center justify-center gap-2 mb-4">
+      <span className="rounded-full animate-pulse" style={{ width: 7, height: 7, background: "#00C853", flexShrink: 0 }} />
+      <span className="font-body uppercase" style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: "rgba(255,255,255,0.5)" }}>
+        Бесплатная консультация
+      </span>
+    </div>
+    <h2 className="font-heading" style={{ fontWeight: 800, fontSize: "clamp(24px,4vw,28px)", color: "#fff", marginBottom: 12 }}>
+      Начнём работу сегодня?
+    </h2>
+    <p className="font-body mx-auto" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", maxWidth: 360, marginBottom: 32, lineHeight: 1.6 }}>
+      Опиши задачу в чат — AI соберёт бриф за 5 минут
+    </p>
+    <button
+      onClick={() => navigate("/chat")}
+      className="font-body w-full sm:w-auto cursor-pointer hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200"
+      style={{ background: "#fff", color: "#0D0D0B", borderRadius: 16, padding: "16px 32px", fontSize: 15, fontWeight: 700, border: "none" }}
+    >
+      Написать в чат →
+    </button>
+    <div className="flex justify-center items-center gap-4 flex-wrap mt-8 font-body" style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>
+      <span>47+ клиентов</span>
+      <span>·</span>
+      <span>★ 4.9/5</span>
+      <span>·</span>
+      <span>48ч срок</span>
+    </div>
+  </section>
+);
+
 export default LandingPage;
