@@ -59,6 +59,7 @@ const LandingPage = () => {
       <ServicesSection navigate={navigate} />
       <Divider />
       <WorksSection />
+      <ReviewsSection />
       <Divider />
       <HowSection />
       <CTASection navigate={navigate} />
@@ -411,7 +412,59 @@ const WorksSection = () => {
   );
 };
 
-/* ━━━ HOW IT WORKS ━━━ */
+/* ━━━ REVIEWS ━━━ */
+const reviews = [
+  { name: "Максим О.", role: "Владелец автосалона", avatar: "МО", avatarBg: "#D4C5B2", text: "Сделали лендинг за 7 дней. Заявок стало в 2 раза больше с первой недели. Никита всегда на связи, объяснял каждый шаг.", rating: 5, project: "Лендинг + AI-агент" },
+  { name: "Анна К.", role: "Основатель fashion-бренда", avatar: "АК", avatarBg: "#B8C9D4", text: "AI-ролики получились лучше чем я ожидала. Сняли за 3 дня, набрали 500K просмотров. Теперь только к ним.", rating: 5, project: "AI-видео" },
+  { name: "Дмитрий С.", role: "CEO IT-стартапа", avatar: "ДС", avatarBg: "#C4D4B8", text: "Telegram Mini App для нашего сервиса. Сделали точно по ТЗ, в срок. 50K пользователей за 2 месяца после запуска.", rating: 5, project: "Telegram Mini App" },
+];
+
+const ReviewsSection = () => (
+  <section style={{ background: "#F0EEE8", padding: "clamp(48px,6vw,64px) 0" }}>
+    <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
+      <motion.h2 className="font-heading mb-8" style={{ fontSize: "clamp(24px,3.5vw,28px)", fontWeight: 800, color: "#0D0D0B" }} {...fadeUp(0)}>
+        Что говорят клиенты
+      </motion.h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {reviews.map((r, i) => (
+          <motion.div
+            key={r.name}
+            className="bg-white"
+            style={{ borderRadius: 20, padding: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+            {...fadeUp(i * 0.1)}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="flex items-center justify-center rounded-full font-heading flex-shrink-0"
+                style={{ width: 44, height: 44, background: r.avatarBg, fontSize: 15, fontWeight: 700, color: "#0D0D0B" }}
+              >
+                {r.avatar}
+              </div>
+              <div className="min-w-0">
+                <p className="font-body" style={{ fontSize: 15, fontWeight: 700, color: "#0D0D0B" }}>{r.name}</p>
+                <p className="font-body" style={{ fontSize: 13, color: "#6A6860" }}>{r.role}</p>
+              </div>
+              <span className="ml-auto flex-shrink-0" style={{ fontSize: 13, color: "#F5A623", letterSpacing: 1 }}>
+                {"★".repeat(r.rating)}
+              </span>
+            </div>
+            <p className="font-body mt-3" style={{ fontSize: 14, color: "#3A3A3A", lineHeight: 1.65 }}>
+              {r.text}
+            </p>
+            <span
+              className="inline-block font-body mt-3"
+              style={{ fontSize: 11, fontWeight: 600, color: "#6A6860", background: "#F5F5F5", borderRadius: 9999, padding: "4px 12px" }}
+            >
+              {r.project}
+            </span>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
 const HowSection = () => {
   const navigate = useNavigate();
   return (
