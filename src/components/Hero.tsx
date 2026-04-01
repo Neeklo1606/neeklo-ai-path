@@ -98,8 +98,8 @@ const Hero = () => {
                       background: "#FFFFFF",
                       boxShadow: "0 0 6px rgba(255,255,255,0.6)",
                     }}
-                    animate={{ scaleY: [1, 1, 0.1, 1, 1] }}
-                    transition={{ duration: 4, repeat: Infinity, times: [0, 0.45, 0.5, 0.55, 1] }}
+                    animate={{}}
+                    transition={{}}
                   />
                 ))}
               </motion.div>
