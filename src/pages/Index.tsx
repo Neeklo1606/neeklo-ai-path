@@ -353,30 +353,63 @@ const WorksSection = () => {
 };
 
 /* ━━━ HOW IT WORKS ━━━ */
-const HowSection = () => (
-  <section style={{ background: "#F0EEE8", padding: "72px 0" }}>
-    <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
-      <motion.h2 className="font-heading mb-10" style={{ fontSize: 32, fontWeight: 800 }} {...fadeUp(0)}>Как это работает</motion.h2>
+const HowSection = () => {
+  const navigate = useNavigate();
+  return (
+    <section style={{ background: "#F0EEE8", padding: "72px 0" }}>
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
+        <motion.h2 className="font-heading mb-10" style={{ fontSize: "clamp(28px,3.5vw,36px)", fontWeight: 800, color: "#0D0D0B" }} {...fadeUp(0)}>
+          Как это работает
+        </motion.h2>
 
-      {/* Steps with dashed connector */}
-      <div className="flex flex-col md:flex-row items-start md:items-start justify-between relative gap-10 md:gap-0">
-        {steps.map((s, i) => (
-          <motion.div key={s.num} className="flex-1 flex flex-col items-center text-center relative" {...fadeUp(i * 0.1)}>
-            <div
-              className="flex items-center justify-center rounded-full font-heading bg-[#F0EEE8] relative z-10"
-              style={{ width: 48, height: 48, border: "2px solid #0D0D0B", fontSize: 16, fontWeight: 700 }}
+        <div className="flex flex-col gap-6 md:gap-0 md:flex-row md:justify-between relative">
+          {/* Dashed connector for desktop */}
+          <div className="hidden md:block absolute left-[calc(16.66%+24px)] right-[calc(16.66%+24px)] border-t-2 border-dashed border-[#D0CCC4]" style={{ top: 24 }} />
+
+          {steps.map((s, i) => (
+            <motion.div
+              key={s.num}
+              className="flex items-start gap-5 md:flex-col md:items-center md:text-center md:flex-1 cursor-pointer group"
+              onClick={() => navigate("/chat")}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.5, ease, delay: i * 0.12 }}
             >
-              {s.num}
-            </div>
-            <p className="font-body mt-4" style={{ fontSize: 16, fontWeight: 700 }}>{s.title}</p>
-            <p className="font-body mt-2 max-w-[240px]" style={{ fontSize: 14, color: "#6A6860" }}>{s.desc}</p>
-          </motion.div>
-        ))}
-        <div className="hidden md:block absolute left-[calc(16.66%+24px)] right-[calc(16.66%+24px)] border-t-2 border-dashed border-[#D0CCC4]" style={{ top: 24 }} />
+              {/* Number */}
+              <span
+                className="font-heading flex-shrink-0 select-none transition-colors duration-200 group-hover:text-[#0D0D0B]"
+                style={{ fontSize: 48, fontWeight: 800, lineHeight: 1, color: "#D0CCC4", letterSpacing: "-0.02em" }}
+              >
+                {s.num}
+              </span>
+              <div className="pt-1 md:pt-0 md:mt-2">
+                <p className="font-body group-hover:text-[#0052FF] transition-colors duration-200" style={{ fontSize: 17, fontWeight: 700, color: "#0D0D0B" }}>
+                  {s.title}
+                </p>
+                <p className="font-body mt-1 md:max-w-[240px]" style={{ fontSize: 14, color: "#6A6860", lineHeight: 1.55 }}>
+                  {s.desc}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Free consultation note */}
+        <motion.div
+          className="flex items-center gap-2 mt-10"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, delay: 0.4 }}
+        >
+          <span style={{ color: "#00C853", fontSize: 18 }}>✓</span>
+          <span className="font-body" style={{ fontSize: 14, color: "#6A6860" }}>Первая консультация — бесплатно</span>
+        </motion.div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 /* ━━━ AVITO REVIEWS ━━━ */
 const avitoReviews = [
