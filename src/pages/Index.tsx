@@ -4,6 +4,7 @@ import { motion, useMotionValue, useSpring, useTransform, useInView } from "fram
 import { useState, useRef } from "react";
 import HolographicCard from "@/components/ui/holographic-card";
 import Footer from "@/components/Footer";
+import TelegramManagerButton from "@/components/TelegramManagerButton";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import workAssistant from "@/assets/work-assistant.webp";
 import workEcommerce from "@/assets/work-ecommerce.webp";
