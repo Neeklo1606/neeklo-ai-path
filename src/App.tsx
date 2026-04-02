@@ -239,9 +239,7 @@ const AppContent = ({
 };
 
 const App = () => {
-  const [showOnboarding, setShowOnboarding] = useState(
-    () => !localStorage.getItem("neeklo_onboarded")
-  );
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   return (
     <QueryClientProvider client={queryClient}>
