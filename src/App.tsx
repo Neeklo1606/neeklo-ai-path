@@ -41,8 +41,20 @@ const P = ({ children }: { children: React.ReactNode }) => (
 );
 
 const RouteLoadingFallback = () => (
-  <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
-    Loading...
+  <div
+    className="flex min-h-[60vh] items-center justify-center"
+    style={{ opacity: 0, animation: "page-in 200ms ease-out 100ms both" }}
+  >
+    <div
+      className="rounded-full"
+      style={{
+        width: 28,
+        height: 28,
+        border: "2.5px solid #E0E0E0",
+        borderTopColor: "#0D0D0B",
+        animation: "spin 0.6s linear infinite",
+      }}
+    />
   </div>
 );
 
