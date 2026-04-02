@@ -64,8 +64,8 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
     <section
       className="relative overflow-hidden flex flex-col items-center justify-center text-center"
       style={{
-        background: "#F0EEE8",
-        height: "calc(100dvh - 52px)",
+        backgroundColor: "#F0EEE8",
+        minHeight: "calc(100dvh - 64px)",
         backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.055) 1px, transparent 1px)",
         backgroundSize: "28px 28px",
       }}
@@ -146,7 +146,6 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
       <style>{`
         .hero-mascot-float { animation: mascot-float 3.5s ease-in-out infinite; will-change: transform; }
         @keyframes mascot-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-        @media (min-width: 768px) { section:first-of-type { height: calc(100vh - 64px) !important; } }
       `}</style>
     </section>
   );
