@@ -11,10 +11,10 @@ import ScrollToTop from "@/components/ScrollToTop";
 import PageTransition from "@/components/PageTransition";
 import Onboarding from "@/components/Onboarding";
 import CookieBanner from "@/components/CookieBanner";
+import { LanguageProvider, useLanguage } from "@/hooks/useLanguage";
 import logoImg from "@/assets/logo.png";
 import Index from "./pages/Index";
 import { Menu, X, Home, MessageSquare, Sparkles, Image, FolderOpen, User, Settings, Bell } from "lucide-react";
-
 
 import ChatPage from "./pages/ChatPage";
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
@@ -42,30 +42,31 @@ const P = ({ children }: { children: React.ReactNode }) => (
 
 const RouteLoadingFallback = () => (
   <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
-    Загрузка страницы...
+    Loading...
   </div>
 );
 
 const HIDE_NAV_ROUTES = ["/chat", "/manager-chat"];
 
-const navItems = [
-  { icon: Home, label: "Главная", path: "/" },
-  { icon: MessageSquare, label: "Чат", path: "/chat" },
-  { icon: Sparkles, label: "Услуги", path: "/services" },
-  { icon: Image, label: "Работы", path: "/cases" },
-  { icon: FolderOpen, label: "Проекты", path: "/projects" },
-];
-
-const accountItems = [
-  { icon: User, label: "Профиль", path: "/profile" },
-  { icon: Bell, label: "Уведомления", path: "/notifications" },
-  { icon: Settings, label: "Настройки", path: "/settings" },
-];
-
 const MobileHeader = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
+  const { t, lang, toggleLang } = useLanguage();
+
+  const navItems = [
+    { icon: Home, label: t("nav.home"), path: "/" },
+    { icon: MessageSquare, label: t("nav.chat"), path: "/chat" },
+    { icon: Sparkles, label: t("nav.services"), path: "/services" },
+    { icon: Image, label: t("nav.works"), path: "/cases" },
+    { icon: FolderOpen, label: t("nav.projects"), path: "/projects" },
+  ];
+
+  const accountItems = [
+    { icon: User, label: t("nav.profile"), path: "/profile" },
+    { icon: Bell, label: t("nav.notifications"), path: "/notifications" },
+    { icon: Settings, label: t("nav.settings"), path: "/settings" },
+  ];
 
   return (
     <header
@@ -82,7 +83,23 @@ const MobileHeader = () => {
         <img src={logoImg} alt="neeklo" className="h-8 w-auto" />
       </button>
 
-      {/* Overlay */}
+      <div className="flex items-center gap-2">
+        {/* Lang toggle */}
+        <button
+          onClick={toggleLang}
+          className="flex items-center justify-center h-7 px-2 rounded-md text-[11px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-150 font-body uppercase tracking-wide"
+        >
+          {lang === "ru" ? "EN" : "RU"}
+        </button>
+
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center justify-center w-9 h-9 rounded-lg text-foreground hover:bg-muted transition-colors"
+        >
+          <Menu size={22} strokeWidth={1.8} />
+        </button>
+      </div>
+
       {open && (
         <div
           className="fixed inset-0 z-[60]"
@@ -91,14 +108,6 @@ const MobileHeader = () => {
         />
       )}
 
-      <button
-        onClick={() => setOpen(true)}
-        className="flex items-center justify-center w-9 h-9 rounded-lg text-foreground hover:bg-muted transition-colors"
-      >
-        <Menu size={22} strokeWidth={1.8} />
-      </button>
-
-      {/* Slide-in menu */}
       <div
         className="fixed top-0 right-0 z-[70] bg-white"
         style={{
@@ -112,15 +121,10 @@ const MobileHeader = () => {
           boxShadow: open ? "-4px 0 24px rgba(0,0,0,0.08)" : "none",
         }}
       >
-        {/* Close */}
-        <button
-          onClick={() => setOpen(false)}
-          className="absolute top-5 right-5 w-9 h-9 flex items-center justify-center"
-        >
+        <button onClick={() => setOpen(false)} className="absolute top-5 right-5 w-9 h-9 flex items-center justify-center">
           <X size={24} strokeWidth={1.6} className="text-[#0D0D0B]" />
         </button>
 
-        {/* Group 1 — Navigation */}
         <nav className="mt-8">
           {navItems.map(({ icon: Icon, label, path }) => {
             const active = pathname === path;
@@ -146,22 +150,10 @@ const MobileHeader = () => {
           })}
         </nav>
 
-        {/* Divider */}
         <div style={{ height: 1, background: "#F0F0F0", margin: "16px 0" }} />
 
-        {/* Group 2 — Account */}
-        <p
-          style={{
-            fontFamily: "'Onest', sans-serif",
-            fontSize: 11,
-            fontWeight: 600,
-            color: "#B0B0B0",
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            marginBottom: 8,
-          }}
-        >
-          Аккаунт
+        <p style={{ fontFamily: "'Onest', sans-serif", fontSize: 11, fontWeight: 600, color: "#B0B0B0", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+          {t("nav.account")}
         </p>
         <nav>
           {accountItems.map(({ icon: Icon, label, path }) => (
@@ -169,14 +161,7 @@ const MobileHeader = () => {
               key={path}
               onClick={() => { setOpen(false); navigate(path); }}
               className="flex items-center gap-3 w-full text-left"
-              style={{
-                padding: "11px 0",
-                fontFamily: "'Onest', sans-serif",
-                fontSize: 15,
-                fontWeight: 500,
-                color: "#6A6860",
-                transition: "color 0.15s",
-              }}
+              style={{ padding: "11px 0", fontFamily: "'Onest', sans-serif", fontSize: 15, fontWeight: 500, color: "#6A6860", transition: "color 0.15s" }}
             >
               <Icon size={18} strokeWidth={1.6} />
               {label}
@@ -261,21 +246,21 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <MotionConfig reducedMotion="user">
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppContent
-              showOnboarding={showOnboarding}
-              onCompleteOnboarding={() => setShowOnboarding(false)}
-            />
-          </BrowserRouter>
-        </MotionConfig>
+        <LanguageProvider>
+          <MotionConfig reducedMotion="user">
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppContent
+                showOnboarding={showOnboarding}
+                onCompleteOnboarding={() => setShowOnboarding(false)}
+              />
+            </BrowserRouter>
+          </MotionConfig>
+        </LanguageProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
 };
 
 export default App;
-
-// Ready for production - neeklo.studio 2026
