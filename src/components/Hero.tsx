@@ -3,13 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import mascotImg from "@/assets/mascot-new.webp";
 
-const ease = [0.16, 1, 0.3, 1] as const;
-const fade = (delay: number, y = 0) => ({
-  initial: { opacity: 0, y },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: y ? 0.55 : 0.4, ease, delay },
-});
-
 const Hero = () => {
   const navigate = useNavigate();
 
@@ -32,18 +25,24 @@ const Hero = () => {
       >
         <motion.div
           className="relative mb-6 cursor-pointer"
-          {...fade(0)}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           onClick={() => navigate("/chat")}
-          whileTap={{ scale: 0.92 }}
-          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.94 }}
+          whileHover={{ scale: 1.06 }}
         >
-          <div className="hero-mascot-float" style={{ width: 120, height: 120 }}>
+          <div className="hero-mascot-float" style={{ width: 200, height: 200 }}>
             <img
               src={mascotImg}
               alt="Neeklo маскот"
-              width={120}
-              height={120}
-              style={{ objectFit: "contain", filter: "drop-shadow(0 16px 40px rgba(0,0,0,0.15))", pointerEvents: "none" }}
+              width={200}
+              height={200}
+              style={{
+                objectFit: "contain",
+                filter: "drop-shadow(0 20px 50px rgba(0,0,0,0.18)) saturate(1.15) contrast(1.05)",
+                pointerEvents: "none",
+              }}
             />
           </div>
           <style>{`
@@ -52,10 +51,15 @@ const Hero = () => {
           `}</style>
         </motion.div>
 
-        <motion.div style={{ marginBottom: 20 }} {...fade(0.1, 20)}>
+        <motion.div
+          style={{ marginBottom: 20 }}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1], delay: 0.12 }}
+        >
           <h1
             className="font-heading"
-            style={{ fontWeight: 800, fontSize: "clamp(32px, 5vw, 58px)", lineHeight: 1.08, letterSpacing: "-0.03em", color: "#0D0D0B" }}
+            style={{ fontWeight: 800, fontSize: "clamp(34px, 5.5vw, 60px)", lineHeight: 1.08, letterSpacing: "-0.03em", color: "#0D0D0B" }}
           >
             Сайты и AI-агенты<br />под ключ
           </h1>
@@ -63,13 +67,20 @@ const Hero = () => {
 
         <motion.p
           className="font-body"
-          style={{ fontSize: 16, color: "#9A958B", lineHeight: 1.6, marginBottom: 36 }}
-          {...fade(0.2)}
+          style={{ fontSize: 17, color: "#807B72", lineHeight: 1.6, marginBottom: 40 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.22 }}
         >
           Пиши задачу. Получай результат.
         </motion.p>
 
-        <motion.div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto" {...fade(0.3)}>
+        <motion.div
+          className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+        >
           <button
             onClick={() => navigate("/chat")}
             className="flex items-center justify-center gap-2 font-body w-full sm:w-auto cursor-pointer hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200"
