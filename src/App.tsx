@@ -242,8 +242,8 @@ const AppContent = ({
             <Route path="/manager-chat" element={<ManagerChatPage />} />
             <Route path="/notifications" element={<P><NotificationsPage /></P>} />
             <Route path="/legal/:slug" element={<P><LegalPage /></P>} />
-            <Route path="/admin" element={<P><AdminPage /></P>} />
-            <Route path="/admin/*" element={<P><AdminPage /></P>} />
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin/*" element={<AdminPage />} />
             <Route path="*" element={<P><NotFound /></P>} />
           </Routes>
         </Suspense>
