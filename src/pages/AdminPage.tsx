@@ -289,22 +289,8 @@ const AdminPage = () => {
     .filter(l => filterStatus === 'all' || l.status === filterStatus)
     .filter(l => l.name.toLowerCase().includes(searchLeads.toLowerCase()) || l.contact.toLowerCase().includes(searchLeads.toLowerCase()));
 
-  /* ═══════ CONVERSATIONS LIST ═══════ */
-  const conversations = useMemo(() => {
-    const convs: { type: string; id: string; name: string; lastMsg: string; time: string; unread: number }[] = [];
-    leads.forEach(l => {
-      const msgs = messages[l.id] || [];
-      const last = msgs[msgs.length - 1];
-      convs.push({ type: 'lead', id: l.id, name: l.name, lastMsg: last?.text || l.msg, time: last?.time || l.time, unread: l.unread });
-    });
-    projects.forEach(p => {
-      const msgs = messages[p.id] || [];
-      if (msgs.length === 0) return;
-      const last = msgs[msgs.length - 1];
-      convs.push({ type: 'project', id: p.id, name: p.title, lastMsg: last?.text || '', time: last?.time || '', unread: 0 });
-    });
-    return convs;
-  }, [leads, projects, messages]);
+
+
 
   /* ═══════ KANBAN COLUMNS ═══════ */
   const kanbanCols = ['briefing', 'in_progress', 'review', 'done', 'cancelled'];
