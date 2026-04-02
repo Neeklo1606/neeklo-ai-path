@@ -146,7 +146,6 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
       <style>{`
         .hero-mascot-float { animation: mascot-float 3.5s ease-in-out infinite; will-change: transform; }
         @keyframes mascot-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-        @media (min-width: 768px) { section:first-of-type { height: calc(100vh - 64px) !important; } }
       `}</style>
     </section>
   );
