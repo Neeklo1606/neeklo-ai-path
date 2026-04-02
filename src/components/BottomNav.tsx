@@ -1,16 +1,18 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Home, MessageCircle, FolderOpen, User } from "lucide-react";
-
-const navItems = [
-  { icon: Home, label: "Главная", path: "/" },
-  { icon: MessageCircle, label: "Чат", path: "/chat" },
-  { icon: FolderOpen, label: "Проекты", path: "/projects" },
-  { icon: User, label: "Профиль", path: "/profile" },
-];
+import { useLanguage } from "@/hooks/useLanguage";
 
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useLanguage();
+
+  const navItems = [
+    { icon: Home, label: t("nav.home"), path: "/" },
+    { icon: MessageCircle, label: t("nav.chat"), path: "/chat" },
+    { icon: FolderOpen, label: t("nav.projects"), path: "/projects" },
+    { icon: User, label: t("nav.profile"), path: "/profile" },
+  ];
 
   return (
     <nav
@@ -34,30 +36,11 @@ const BottomNav = () => {
               onClick={() => navigate(path)}
               className="flex flex-col items-center justify-center gap-1 active:scale-[0.92] transition-transform duration-75 relative"
             >
-              {/* Active dot indicator */}
               {active && (
-                <div
-                  className="absolute top-1.5 w-1 h-1 rounded-full transition-all duration-200"
-                  style={{ background: "#0D0D0B" }}
-                />
+                <div className="absolute top-1.5 w-1 h-1 rounded-full transition-all duration-200" style={{ background: "#0D0D0B" }} />
               )}
-              <Icon
-                size={22}
-                strokeWidth={active ? 2 : 1.5}
-                style={{
-                  color: active ? "#0D0D0B" : "#888",
-                  transition: "color 0.15s",
-                }}
-              />
-              <span
-                className="font-body leading-none"
-                style={{
-                  fontSize: 10,
-                  fontWeight: active ? 600 : 500,
-                  color: active ? "#0D0D0B" : "#888",
-                  transition: "color 0.15s",
-                }}
-              >
+              <Icon size={22} strokeWidth={active ? 2 : 1.5} style={{ color: active ? "#0D0D0B" : "#888", transition: "color 0.15s" }} />
+              <span className="font-body leading-none" style={{ fontSize: 10, fontWeight: active ? 600 : 500, color: active ? "#0D0D0B" : "#888", transition: "color 0.15s" }}>
                 {label}
               </span>
             </button>
