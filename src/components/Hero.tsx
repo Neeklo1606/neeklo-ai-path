@@ -1,7 +1,7 @@
 import { ArrowRight, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import mascotImg from "@/assets/mascot-new.webp";
+import mascotImg from "@/assets/mascot-nobg.webp";
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -31,12 +31,14 @@ const Hero = () => {
             <img
               src={mascotImg}
               alt="Neeklo маскот"
-              width={200}
-              height={200}
-              style={{
-                width: "100%", height: "100%",
-                objectFit: "contain",
-                filter: "drop-shadow(0 16px 40px rgba(0,0,0,0.18)) saturate(1.15) contrast(1.05)",
+                width={400}
+                height={400}
+                decoding="async"
+                fetchPriority="high"
+                style={{
+                  width: "100%", height: "100%",
+                  objectFit: "contain",
+                  filter: "drop-shadow(0 12px 32px rgba(0,0,0,0.15))",
                 pointerEvents: "none",
               }}
             />
