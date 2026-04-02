@@ -73,7 +73,7 @@ const Divider = () => <div className="w-full" style={{ height: 1, background: "#
 /* ━━━ MAIN PAGE ━━━ */
 const LandingPage = () => {
   const navigate = useNavigate();
-  usePageTitle("neeklo – AI-продакшн студия");
+  usePageTitle("neeklo — Сайты и AI-агенты под ключ");
 
   return (
     <div className="flex-1 bg-background text-foreground pb-[100px] sm:pb-0 overflow-x-hidden">
@@ -98,58 +98,55 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
     className="relative overflow-hidden flex flex-col items-center justify-center text-center"
     style={{
       background: "#F0EEE8",
-      minHeight: "100vh",
+      height: "calc(100dvh - 52px)",
       backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.055) 1px, transparent 1px)",
       backgroundSize: "28px 28px",
     }}
   >
     <div className="relative z-10 flex flex-col items-center px-5 sm:px-8" style={{ maxWidth: 700 }}>
-      {/* Mascot — large & vivid */}
+      {/* Mascot */}
       <motion.div
-        className="relative mb-6 cursor-pointer"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+        className="relative cursor-pointer"
+        style={{ marginBottom: 20 }}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         onClick={() => navigate("/chat")}
         whileTap={{ scale: 0.94 }}
         whileHover={{ scale: 1.06 }}
       >
-        <div className="hero-mascot-float" style={{ width: 200, height: 200 }}>
+        <div className="hero-mascot-float" style={{ width: "clamp(140px, 22vw, 200px)", height: "clamp(140px, 22vw, 200px)" }}>
           <img
             src={mascotImg}
             alt="Neeklo маскот"
             width={200}
             height={200}
             style={{
+              width: "100%", height: "100%",
               objectFit: "contain",
-              filter: "drop-shadow(0 20px 50px rgba(0,0,0,0.18)) saturate(1.15) contrast(1.05)",
+              filter: "drop-shadow(0 16px 40px rgba(0,0,0,0.18)) saturate(1.15) contrast(1.05)",
               pointerEvents: "none",
             }}
           />
         </div>
       </motion.div>
 
-      <motion.div
+      <motion.h1
+        className="font-heading"
+        style={{ fontWeight: 800, fontSize: "clamp(30px, 5.5vw, 56px)", lineHeight: 1.08, letterSpacing: "-0.03em", color: "#0D0D0B" }}
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1], delay: 0.12 }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
       >
-        <h1
-          className="font-heading"
-          style={{ fontWeight: 800, fontSize: "clamp(34px, 5.5vw, 60px)", lineHeight: 1.08, letterSpacing: "-0.03em", color: "#0D0D0B" }}
-        >
-          Сайты и AI-агенты
-          <br />
-          под ключ
-        </h1>
-      </motion.div>
+        Сайты и AI-агенты<br />под ключ
+      </motion.h1>
 
       <motion.p
         className="font-body"
-        style={{ fontSize: 17, color: "#807B72", lineHeight: 1.6, marginTop: 18, marginBottom: 40 }}
+        style={{ fontSize: 16, color: "#807B72", lineHeight: 1.6, marginTop: 14, marginBottom: 28 }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.4, delay: 0.22 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
       >
         Пиши задачу. Получай результат.
       </motion.p>
@@ -158,7 +155,7 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
         className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.3 }}
+        transition={{ duration: 0.4, delay: 0.28 }}
       >
         <button
           onClick={() => navigate("/chat")}
@@ -178,16 +175,17 @@ const HeroSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> })
     </div>
 
     <motion.div
-      className="absolute bottom-6 left-1/2 -translate-x-1/2"
-      animate={{ y: [0, 8, 0] }}
+      className="absolute bottom-4 left-1/2 -translate-x-1/2"
+      animate={{ y: [0, 6, 0] }}
       transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
     >
-      <ChevronDown size={22} color="#B0ADA8" />
+      <ChevronDown size={20} color="#B0ADA8" />
     </motion.div>
 
     <style>{`
-      .hero-mascot-float { animation: mascot-float 3.5s ease-in-out infinite; }
-      @keyframes mascot-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+      .hero-mascot-float { animation: mascot-float 3.5s ease-in-out infinite; will-change: transform; }
+      @keyframes mascot-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+      @media (min-width: 768px) { section:first-of-type { height: calc(100vh - 64px) !important; } }
     `}</style>
   </section>
 );
