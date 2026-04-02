@@ -1,7 +1,7 @@
 import { ArrowRight, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import mascotImg from "@/assets/mascot-new.webp";
+import mascotImg from "@/assets/mascot-nobg.webp";
 
 const Hero = () => {
   const navigate = useNavigate();
