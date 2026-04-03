@@ -12,7 +12,7 @@ import PageTransition from "@/components/PageTransition";
 import Onboarding from "@/components/Onboarding";
 import CookieBanner from "@/components/CookieBanner";
 import { LanguageProvider, useLanguage } from "@/hooks/useLanguage";
-import logoImg from "@/assets/logo.png";
+const LOGO_SRC = "/cms-static/logo.png";
 import Index from "./pages/Index";
 import { Menu, X, Home, MessageSquare, Sparkles, Image, FolderOpen, User, Settings, Bell } from "lucide-react";
 
@@ -32,6 +32,17 @@ const WorksPage = lazy(() => import("./pages/WorksPage"));
 const OrderPage = lazy(() => import("./pages/OrderPage"));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
+const AdminLoginPage = lazy(() => import("./pages/admin/AdminLoginPage"));
+const AdminAuthGuard = lazy(() => import("./pages/admin/AdminAuthGuard"));
+const AdminRoot = lazy(() => import("./pages/admin/AdminRoot"));
+const AdminCmsShell = lazy(() => import("./pages/admin/AdminCmsShell"));
+const AdminPagesList = lazy(() => import("./pages/admin/AdminPagesList"));
+const AdminPageEditor = lazy(() => import("./pages/admin/AdminPageEditor"));
+const AdminMediaPage = lazy(() => import("./pages/admin/AdminMediaPage"));
+const AdminAssistantsPage = lazy(() => import("./pages/admin/AdminAssistantsPage"));
+const AdminAssistantEditor = lazy(() => import("./pages/admin/AdminAssistantEditor"));
+const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
+const AdminSettingEditor = lazy(() => import("./pages/admin/AdminSettingEditor"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -92,7 +103,7 @@ const MobileHeader = () => {
       }}
     >
       <button onClick={() => navigate("/")} className="flex items-center">
-        <img src={logoImg} alt="neeklo" className="h-8 w-auto" />
+        <img src={LOGO_SRC} alt="neeklo" className="h-8 w-auto" />
       </button>
 
       <div className="flex items-center gap-2">
@@ -239,8 +250,103 @@ const AppContent = ({
             <Route path="/manager-chat" element={<ManagerChatPage />} />
             <Route path="/notifications" element={<P><NotificationsPage /></P>} />
             <Route path="/legal/:slug" element={<P><LegalPage /></P>} />
-            <Route path="/admin" element={<AdminPage />} />
-            <Route path="/admin/*" element={<AdminPage />} />
+            <Route
+              path="/admin/login"
+              element={
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <AdminLoginPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <AdminAuthGuard />
+                </Suspense>
+              }
+            >
+              <Route
+                element={
+                  <Suspense fallback={<RouteLoadingFallback />}>
+                    <AdminRoot />
+                  </Suspense>
+                }
+              >
+                <Route
+                  index
+                  element={
+                    <Suspense fallback={<RouteLoadingFallback />}>
+                      <AdminPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  element={
+                    <Suspense fallback={<RouteLoadingFallback />}>
+                      <AdminCmsShell />
+                    </Suspense>
+                  }
+                >
+                  <Route
+                    path="pages"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <AdminPagesList />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="pages/:id"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <AdminPageEditor />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="media"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <AdminMediaPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="assistants"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <AdminAssistantsPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="assistants/:id"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <AdminAssistantEditor />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="settings"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <AdminSettingsPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="settings/item/:settingKey"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <AdminSettingEditor />
+                      </Suspense>
+                    }
+                  />
+                </Route>
+              </Route>
+            </Route>
             <Route path="*" element={<P><NotFound /></P>} />
           </Routes>
         </Suspense>

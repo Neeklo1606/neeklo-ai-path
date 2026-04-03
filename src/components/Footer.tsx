@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { ArrowRight, Send, Globe } from "lucide-react";
-import logoWhite from "@/assets/logo-white.png";
+const LOGO_WHITE_SRC = "/cms-static/logo-white.png";
 import { useLanguage } from "@/hooks/useLanguage";
 
 const Footer = () => {
@@ -47,7 +47,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-12">
           <div className="md:col-span-5 flex flex-col gap-5">
             <div className="flex items-center">
-              <img src={logoWhite} alt="neeklo studio" className="h-12 w-auto opacity-90" />
+              <img src={LOGO_WHITE_SRC} alt="neeklo studio" className="h-12 w-auto opacity-90" />
             </div>
             <p className="font-body whitespace-pre-line" style={{ fontSize: 14, color: "rgba(255,255,255,0.55)", lineHeight: 1.65, maxWidth: 300 }}>
               {t("footer.desc")}

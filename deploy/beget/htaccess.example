@@ -1,0 +1,20 @@
+# BeGet / Apache: положите как .htaccess в корень public_html (рядом с index.html).
+# Нужны модули: mod_rewrite, mod_proxy, mod_proxy_http (в панели BeGet часто уже есть).
+# Если [P] запрещён — в панели включите прокси или используйте вариант с PHP (отдельная инструкция).
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Прокси API: /cms-api/* → Node на localhost (префикс снимается, как у Vite dev)
+  RewriteCond %{REQUEST_URI} ^/cms-api/
+  RewriteRule ^cms-api/(.*)$ http://127.0.0.1:8787/$1 [P,L]
+
+  # Уже есть файл или каталог — отдаём как есть
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # SPA (React Router): всё остальное → index.html
+  RewriteRule ^ index.html [L]
+</IfModule>

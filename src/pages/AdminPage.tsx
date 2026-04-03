@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { clearAuthToken } from "@/lib/auth-token";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
@@ -175,19 +176,6 @@ const AdminPage = () => {
   const isMobile = useIsMobile();
   usePageTitle('Admin – neeklo');
 
-  /* PIN */
-  const [adminUnlocked,setAdminUnlocked] = useState(()=>sessionStorage.getItem('nk_admin')==='1');
-  const pinRefs = useRef<(HTMLInputElement|null)[]>([]);
-  const [pinValues,setPinValues] = useState(['','','','']);
-  const [pinShake,setPinShake] = useState(false);
-  const handlePinInput = (idx:number,val:string) => {
-    const v = val.replace(/\D/g,'').slice(-1);
-    const next = [...pinValues]; next[idx]=v; setPinValues(next);
-    if(v&&idx<3) pinRefs.current[idx+1]?.focus();
-    const code = next.join('');
-    if(code.length===4){ if(code==='2626'){sessionStorage.setItem('nk_admin','1');setAdminUnlocked(true);} else {setPinShake(true);setTimeout(()=>{setPinShake(false);setPinValues(['','','','']);pinRefs.current[0]?.focus();},600);}}
-  };
-
   /* DATA */
   const [leads,setLeads] = useState<Lead[]>(initLeads);
   const [projects,setProjects] = useState<Project[]>(initProjects);
@@ -259,30 +247,6 @@ const AdminPage = () => {
   },[leads,messages]);
 
   useEffect(()=>{messagesEndRef.current?.scrollIntoView({behavior:'smooth'});},[messages,openChat]);
-
-  /* ═══════ PIN SCREEN ═══════ */
-  if(!adminUnlocked){
-    return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center" style={{background:'#0D0D0B'}}>
-        <div className="text-center">
-          <p className="text-white mb-2" style={{fontSize:28}}>✦</p>
-          <p className="text-white mb-8" style={{fontFamily:"'Unbounded',sans-serif",fontSize:20,fontWeight:700}}>neeklo admin</p>
-          <div className={`flex flex-row gap-3 justify-center ${pinShake?'animate-shake':''}`}>
-            {[0,1,2,3].map(i=>(
-              <input key={i} ref={el=>{pinRefs.current[i]=el;}} type="password" maxLength={1} value={pinValues[i]}
-                onChange={e=>handlePinInput(i,e.target.value)}
-                onKeyDown={e=>{if(e.key==='Backspace'&&!pinValues[i]&&i>0)pinRefs.current[i-1]?.focus();}}
-                className="text-center text-white outline-none"
-                style={{width:56,height:60,fontFamily:"'Unbounded',sans-serif",fontSize:22,background:'rgba(255,255,255,0.08)',border:pinShake?'1px solid #FF3B30':'1px solid rgba(255,255,255,0.15)',borderRadius:16}}
-                autoFocus={i===0} />
-            ))}
-          </div>
-        </div>
-        <p className="absolute bottom-6" style={{fontFamily:"'Onest',sans-serif",fontSize:11,color:'rgba(255,255,255,0.2)'}}>© 2026 neeklo</p>
-        <style>{`@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}.animate-shake{animation:shake 0.5s ease-in-out}`}</style>
-      </div>
-    );
-  }
 
   /* ═══════ TABS CONFIG ═══════ */
   const desktopTabs = [
@@ -1108,6 +1072,27 @@ const AdminPage = () => {
               );
             })}
           </nav>
+          <div className="px-3 pb-2 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/admin/pages")}
+              className="w-full cursor-pointer rounded-xl border border-[#E8E6E0] py-2.5 text-left px-3 transition-colors hover:bg-[#FAFAF8] active:scale-[0.99]"
+              style={{ fontFamily: "'Onest', sans-serif", fontSize: 13, fontWeight: 600, color: "#0052FF" }}
+            >
+              CMS: страницы, медиа, AI →
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                clearAuthToken();
+                navigate("/admin/login", { replace: true });
+              }}
+              className="w-full cursor-pointer rounded-xl border border-[#E8E6E0] py-2.5 text-left px-3 transition-colors hover:bg-[#FAFAF8] text-[#6A6860]"
+              style={{ fontFamily: "'Onest', sans-serif", fontSize: 13, fontWeight: 600 }}
+            >
+              Выйти
+            </button>
+          </div>
           <div style={{height:1,background:'#F0F0F0',margin:'0 20px'}} />
           <div className="px-5 py-4 flex items-center gap-3">
             <div className="w-9 h-9 rounded-full flex items-center justify-center text-white" style={{background:'linear-gradient(135deg,#0D0D0B,#333)',fontFamily:"'Onest',sans-serif",fontSize:11,fontWeight:700}}>НК</div>
@@ -1130,6 +1115,7 @@ const AdminPage = () => {
           </div>
           <div className="flex items-center gap-3">
             {totalUnread>0&&<span className="rounded-full text-white" style={{fontFamily:"'Onest',sans-serif",fontSize:11,background:'#FF3B30',padding:'2px 8px'}}>{totalUnread}</span>}
+            <button onClick={()=>{clearAuthToken();navigate('/admin/login',{replace:true});}} className="flex items-center gap-1 cursor-pointer active:scale-[0.96] transition-transform" style={{fontFamily:"'Onest',sans-serif",fontSize:12,color:'rgba(255,255,255,0.6)',border:'1px solid rgba(255,255,255,0.2)',borderRadius:8,padding:'6px 12px'}}>Выйти</button>
             <button onClick={()=>navigate('/')} className="flex items-center gap-1 cursor-pointer active:scale-[0.96] transition-transform" style={{fontFamily:"'Onest',sans-serif",fontSize:12,color:'rgba(255,255,255,0.6)',border:'1px solid rgba(255,255,255,0.2)',borderRadius:8,padding:'6px 12px'}}>← Сайт</button>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Home, MessageSquare, FolderOpen, User, Sparkles, Image, Search, Bell } from "lucide-react";
-import logoImg from "@/assets/logo.png";
+const LOGO_SRC = "/cms-static/logo.png";
 import { useLocation, useNavigate } from "react-router-dom";
 import SearchOverlay from "@/components/SearchOverlay";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -25,7 +25,7 @@ const DesktopNav = () => {
       <header className="hidden md:block sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-[1200px] mx-auto flex items-center justify-between h-[64px] px-8">
           <button onClick={() => navigate("/")} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-            <img src={logoImg} alt="neeklo studio" className="h-12 w-auto" />
+            <img src={LOGO_SRC} alt="neeklo studio" className="h-12 w-auto" />
           </button>
 
           <nav className="flex items-center gap-1">

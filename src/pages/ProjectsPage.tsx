@@ -1,10 +1,32 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, X, Check, Play, Eye } from "lucide-react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useLanguage } from "@/hooks/useLanguage";
 import { toast } from "sonner";
+import { cmsPageBySlug } from "@/lib/cms-api";
+import { parseProjectsCms, type ProjectCmsItem } from "@/lib/cms-parsers";
+
+function pick(v: unknown, lang: string): string {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "object" && v !== null) {
+    const o = v as Record<string, string>;
+    return o[lang] || o.ru || o.en || "";
+  }
+  return String(v);
+}
+
+function managerInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "?";
+}
 
 /* ─── types ─── */
 interface Task { title: string; done: boolean }
@@ -15,8 +37,25 @@ interface Project {
   brief: string; tasks: Task[]; timeline: string[]; currentStep: number;
 }
 
-/* ─── data ─── */
-const mockProjects: Project[] = [];
+function cmsItemToProject(p: ProjectCmsItem): Project {
+  return {
+    id: p.id,
+    emoji: p.emoji || "📁",
+    title: p.title,
+    service: p.service,
+    status: p.status,
+    price: p.price,
+    paid: p.paid,
+    deadline: p.deadline,
+    progress: p.progress,
+    manager: p.manager,
+    managerInitials: managerInitials(p.manager),
+    brief: p.brief || "",
+    tasks: p.tasks || [],
+    timeline: p.timeline || [],
+    currentStep: p.currentStep ?? 0,
+  };
+}
 
 const ease = [0.16, 1, 0.3, 1] as const;
 const fadeUp = (delay: number) => ({
@@ -34,6 +73,20 @@ const ProjectsPage = () => {
   const { t, lang } = useLanguage();
   usePageTitle(lang === "en" ? "Projects – neeklo" : "Проекты – neeklo");
   const navigate = useNavigate();
+  const locale = lang === "en" ? "en" : "ru";
+
+  const pageQ = useQuery({
+    queryKey: ["cms", "projects", locale],
+    queryFn: () => cmsPageBySlug("projects", locale),
+  });
+
+  const cmsParsed = pageQ.data ? parseProjectsCms(pageQ.data) : null;
+  const mockProjects = useMemo(() => (cmsParsed?.items || []).map(cmsItemToProject), [cmsParsed]);
+
+  const emptyTitle = pick(pageQ.data?.meta?.emptyTitle, lang) || t("proj.startFirst");
+  const emptyDesc = pick(pageQ.data?.meta?.emptyDesc, lang) || t("proj.startFirstDesc");
+  const emptyCta = pick(pageQ.data?.meta?.emptyCta, lang) || t("proj.startProject");
+
   const [activeTab, setActiveTab] = useState<"active" | "done">("active");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [activeDetailTab, setActiveDetailTab] = useState<"overview" | "tasks" | "chat">("overview");
@@ -61,6 +114,32 @@ const ProjectsPage = () => {
 
   useEffect(() => { document.body.style.overflow = selectedProject ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [selectedProject]);
   useEffect(() => { setActiveDetailTab("overview"); }, [selectedProject?.id]);
+
+  if (pageQ.isLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center bg-[#F5F5F5]">
+        <p className="font-body text-[14px] text-[#6A6860]">…</p>
+      </div>
+    );
+  }
+
+  if (pageQ.isError) {
+    return (
+      <div className="bg-[#F5F5F5] min-h-screen px-4 py-16 text-center">
+        <p className="font-body text-[14px] text-[#6A6860]">{(pageQ.error as Error).message}</p>
+      </div>
+    );
+  }
+
+  if (!pageQ.data) {
+    return (
+      <div className="bg-[#F5F5F5] min-h-screen px-4 py-16 text-center">
+        <p className="font-body text-[14px] text-[#6A6860]">
+          Создайте страницу CMS slug «projects» с блоком projects_data (см. server/seed-cms-content.mjs).
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#F5F5F5] min-h-screen pb-[100px] overflow-x-hidden">
@@ -107,10 +186,10 @@ const ProjectsPage = () => {
             <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5" style={{ background: "linear-gradient(135deg, #e0e8ff 0%, #f0e6ff 50%, #e8f4ff 100%)" }}>
               <div style={{ width: 44, height: 44, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #a8c0ff 0%, #7b8ddb 40%, #5c6bc0 100%)", boxShadow: "0 8px 24px rgba(92,107,192,0.35), inset 0 -4px 8px rgba(0,0,0,0.15), inset 0 4px 8px rgba(255,255,255,0.25)" }} />
             </div>
-            <p className="font-heading text-[20px] font-[800] text-[#0D0D0B]">{t("proj.startFirst")}</p>
-            <p className="font-body text-[14px] text-[#6A6860] mt-2 max-w-[280px] leading-relaxed">{t("proj.startFirstDesc")}</p>
+            <p className="font-heading text-[20px] font-[800] text-[#0D0D0B]">{emptyTitle}</p>
+            <p className="font-body text-[14px] text-[#6A6860] mt-2 max-w-[280px] leading-relaxed">{emptyDesc}</p>
             <button onClick={() => navigate("/chat")} className="mt-6 bg-[#0D0D0B] text-white rounded-2xl px-8 py-4 font-body text-[15px] font-bold cursor-pointer hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 flex items-center gap-2">
-              {t("proj.startProject")}
+              {emptyCta}
             </button>
           </div>
         ) : (
