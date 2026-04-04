@@ -11,7 +11,14 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { cmsPageBySlug, type CmsPage } from "@/lib/cms-api";
 import { getBlock, getBlockFirst, HOME_BLOCKS, pick } from "@/lib/cms-blocks";
 import { cn } from "@/lib/utils";
-import { mediaPublicUrlMap, resolveImageDetailed, mediaDebugClassName, displayImageUrl } from "@/lib/cms-media";
+import {
+  mediaPublicUrlMap,
+  resolveImageDetailed,
+  mediaDebugClassName,
+  displayImageUrl,
+  logBrokenBlock,
+  MEDIA_PLACEHOLDER_URL,
+} from "@/lib/cms-media";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 const fadeUp = (delay: number) => ({
@@ -104,6 +111,7 @@ export default function CmsHomePage() {
   });
 
   usePageTitle(q.data?.title ?? "");
+  const mediaById = useMemo(() => mediaPublicUrlMap(q.data ?? null), [q.data]);
 
   if (q.isLoading) {
     return (
@@ -122,34 +130,57 @@ export default function CmsHomePage() {
   }
 
   const page = q.data;
-  const mediaById = useMemo(() => mediaPublicUrlMap(page), [page]);
+  if (!Array.isArray(page.blocks)) {
+    logBrokenBlock("home page.blocks not array", page);
+  }
+
+  const defaultHero: HeroBlock = {
+    type: "hero",
+    title: { ru: "", en: "" },
+    subtitle: { ru: "", en: "" },
+    ctaLabel: { ru: "Чат", en: "Chat" },
+    secondaryLabel: { ru: "", en: "" },
+    showScrollChevron: false,
+  };
+
   /** Hero: `images.mascot` / legacy `imageId` → resolved via `page.media`. */
-  const hero = getBlock<HeroBlock>(page, HOME_BLOCKS.hero[0]);
+  const heroBlock = getBlock<HeroBlock>(page, HOME_BLOCKS.hero[0]);
+  if (!heroBlock) logBrokenBlock("missing hero", { slug: page.slug });
+  const hero = heroBlock ?? defaultHero;
   const heroBg = resolveImageDetailed(hero as Record<string, unknown>, "background", mediaById);
   const heroMascot = resolveImageDetailed(hero as Record<string, unknown>, "mascot", mediaById);
 
   const servicesRaw = getBlockFirst<ServicesPreviewBlock>(page, [...HOME_BLOCKS.services]);
-  const services = servicesRaw?.items?.length ? servicesRaw : null;
+  const serviceItems = Array.isArray(servicesRaw?.items) ? servicesRaw.items : [];
+  if (servicesRaw && !Array.isArray(servicesRaw.items)) logBrokenBlock("services.items", servicesRaw);
+  const services =
+    serviceItems.length && servicesRaw
+      ? { ...servicesRaw, items: serviceItems }
+      : null;
 
   const casesRaw = getBlockFirst<CasesPreviewBlock>(page, [...HOME_BLOCKS.cases]);
-  const casesPreview = casesRaw?.items?.length ? casesRaw : null;
+  const caseItems = Array.isArray(casesRaw?.items) ? casesRaw.items : [];
+  if (casesRaw && !Array.isArray(casesRaw.items)) logBrokenBlock("cases.items", casesRaw);
+  const casesPreview = caseItems.length && casesRaw ? { ...casesRaw, items: caseItems } : null;
 
   const reviews = getBlock<ReviewsBlock>(page, HOME_BLOCKS.reviews[0]);
+  const reviewItems = reviews && Array.isArray(reviews.items) ? reviews.items : [];
+  if (reviews && !Array.isArray(reviews.items)) logBrokenBlock("reviews.items", reviews);
+
   const how = getBlockFirst<HowBlock>(page, [...HOME_BLOCKS.steps]);
+  const howSteps = how && Array.isArray(how.steps) ? how.steps : [];
+  if (how && !Array.isArray(how.steps)) logBrokenBlock("how.steps", how);
+
   const cta = getBlockFirst<CtaBlock>(page, [...HOME_BLOCKS.cta]);
 
   const seeAllPath = casesPreview?.seeAllPath?.trim() ?? "";
   const itemNavPath = casesPreview?.itemNavigatePath?.trim() ?? "";
-  const casesPathsInvalid = !!casesPreview && (!seeAllPath || !itemNavPath);
-  const ctaInvalid = !!cta && !cta.buttonHref?.trim();
+  const casesPathsOk = !!(seeAllPath && itemNavPath);
+  if (casesPreview && !casesPathsOk) logBrokenBlock("cases paths missing", casesPreview);
 
-  if (!hero || casesPathsInvalid || ctaInvalid) {
-    return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center px-6 text-center">
-        <p className="font-body text-destructive">CMS</p>
-      </div>
-    );
-  }
+  const ctaHref = cta?.buttonHref?.trim() ?? "";
+  const ctaOk = !!(cta && ctaHref);
+  if (cta && !ctaHref) logBrokenBlock("cta missing buttonHref", cta);
 
   const servicesHeading = servicesRaw ? pick(servicesRaw.sectionTitle ?? servicesRaw.title, lang) : "";
   const casesHeading = casesPreview ? pick(casesPreview.sectionTitle ?? casesPreview.title, lang) : "";
@@ -157,8 +188,7 @@ export default function CmsHomePage() {
   return (
     <div className="flex-1 bg-background text-foreground pb-[100px] sm:pb-0 overflow-x-hidden">
       <TelegramManagerButton />
-      {hero ? (
-        <section
+      <section
           className="relative overflow-hidden flex flex-col items-center justify-center text-center"
           style={{
             backgroundColor: "#F0EEE8",
@@ -188,7 +218,7 @@ export default function CmsHomePage() {
             >
               <div className="hero-mascot-float" style={{ width: "clamp(140px, 22vw, 200px)", height: "clamp(140px, 22vw, 200px)" }}>
                 <img
-                  src={displayImageUrl(heroMascot)}
+                  src={displayImageUrl(heroMascot) || MEDIA_PLACEHOLDER_URL}
                   alt=""
                   width={400}
                   height={400}
@@ -242,8 +272,7 @@ export default function CmsHomePage() {
             </motion.div>
           ) : null}
           <style>{`.hero-mascot-float { animation: mascot-float 3.5s ease-in-out infinite; will-change: transform; } @keyframes mascot-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }`}</style>
-        </section>
-      ) : null}
+      </section>
       <Divider />
       {services ? (
         <section className="bg-white" style={{ padding: "48px 20px" }}>
@@ -264,7 +293,7 @@ export default function CmsHomePage() {
                 >
                   <div className="flex items-center justify-center rounded-2xl" style={{ width: 56, height: 56, background: "#EDECE8" }}>
                     <img
-                      src={displayImageUrl(prev)}
+                      src={displayImageUrl(prev) || MEDIA_PLACEHOLDER_URL}
                       alt=""
                       className={cn("w-7 h-7 object-contain", mediaDebugClassName(prev.missing))}
                       loading="lazy"
@@ -293,9 +322,10 @@ export default function CmsHomePage() {
               </motion.h2>
               <button
                 type="button"
-                onClick={() => navigate(seeAllPath)}
+                onClick={() => (casesPathsOk ? navigate(seeAllPath) : undefined)}
                 className="hidden sm:flex items-center gap-1.5 font-body text-[13px] font-semibold"
                 style={{ color: "#6A6860", background: "none", border: "none" }}
+                disabled={!casesPathsOk}
               >
                 {pick(casesPreview.seeAllLabel, lang)} <ArrowRight size={14} />
               </button>
@@ -306,18 +336,23 @@ export default function CmsHomePage() {
                 const caseLogo = resolveImageDetailed(item as Record<string, unknown>, "logo", mediaById);
                 return (
                 <motion.div key={i} className={item.featured ? "col-span-2" : ""} {...fadeUp(i * 0.07)}>
-                  <button type="button" className="block w-full border-none bg-transparent p-0 text-left cursor-pointer" onClick={() => navigate(itemNavPath)}>
+                  <button
+                    type="button"
+                    className="block w-full border-none bg-transparent p-0 text-left cursor-pointer"
+                    onClick={() => (casesPathsOk ? navigate(itemNavPath) : undefined)}
+                    disabled={!casesPathsOk}
+                  >
                     <HolographicCard className="rounded-2xl overflow-hidden relative">
                       <div className="relative w-full" style={{ height: item.featured ? 260 : 180, background: item.bg || "#1a1a2e" }}>
                         <img
-                          src={displayImageUrl(caseImg)}
+                          src={displayImageUrl(caseImg) || MEDIA_PLACEHOLDER_URL}
                           alt=""
                           className={cn("absolute inset-0 w-full h-full object-cover", mediaDebugClassName(caseImg.missing))}
                           loading="lazy"
                         />
                         {caseLogo.url ? (
                           <img
-                            src={displayImageUrl(caseLogo)}
+                            src={displayImageUrl(caseLogo) || MEDIA_PLACEHOLDER_URL}
                             alt=""
                             className={cn(
                               "absolute top-3 right-3 h-10 w-auto max-w-[28%] object-contain z-[2]",
@@ -351,9 +386,10 @@ export default function CmsHomePage() {
               <div className="flex justify-center mt-5 md:hidden">
                 <button
                   type="button"
-                  onClick={() => navigate(seeAllPath)}
+                  onClick={() => (casesPathsOk ? navigate(seeAllPath) : undefined)}
                   className="font-body text-[13px] font-semibold text-foreground py-2.5 px-5 rounded-xl transition-colors duration-150 hover:bg-muted/30 flex items-center gap-1.5"
                   style={{ border: "1px solid hsl(var(--border))" }}
+                  disabled={!casesPathsOk}
                 >
                   {pick(casesPreview.mobileSeeAllLabel, lang)}
                   <ArrowRight size={14} />
@@ -363,15 +399,17 @@ export default function CmsHomePage() {
           </div>
         </section>
       ) : null}
-      {reviews?.items?.length ? <ReviewsFromCms reviews={reviews} lang={lang} /> : null}
-      {how?.steps?.length ? (
+      {reviewItems.length > 0 && reviews ? (
+        <ReviewsFromCms reviews={{ ...reviews, items: reviewItems }} lang={lang} />
+      ) : null}
+      {how && howSteps.length ? (
         <section style={{ background: "#F0EEE8", padding: "72px 0" }}>
           <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
             <h2 className="font-heading mb-10" style={{ fontSize: "clamp(28px,3.5vw,36px)", fontWeight: 800, color: "#0D0D0B" }}>
               {pick(how.title, lang)}
             </h2>
             <div className="flex flex-col gap-6 md:flex-row md:justify-between">
-              {how.steps.map((s, i) => (
+              {howSteps.map((s, i) => (
                 <div key={i} className="flex-1 md:text-center cursor-pointer" onClick={() => navigate("/chat")}>
                   <span className="font-heading" style={{ fontSize: 48, fontWeight: 800, color: "#D0CCC4" }}>
                     {s.num}
@@ -393,7 +431,7 @@ export default function CmsHomePage() {
           </div>
         </section>
       ) : null}
-      {cta ? (
+      {ctaOk && cta ? (
         <section style={{ background: "#0D0D0B", padding: "56px 20px", textAlign: "center" }}>
           <h2 className="font-heading text-white" style={{ fontWeight: 800, fontSize: "clamp(22px,4vw,26px)", marginBottom: 8 }}>
             {pick(cta.title, lang)}
@@ -402,12 +440,12 @@ export default function CmsHomePage() {
             {pick(cta.subtitle, lang)}
           </p>
           <a
-            href={cta.buttonHref}
+            href={ctaHref}
             className="font-body inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3 text-[#0D0D0B] font-semibold"
             onClick={(e) => {
-              if (cta.buttonHref.startsWith("/")) {
+              if (ctaHref.startsWith("/")) {
                 e.preventDefault();
-                navigate(cta.buttonHref);
+                navigate(ctaHref);
               }
             }}
           >

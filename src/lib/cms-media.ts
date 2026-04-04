@@ -95,7 +95,12 @@ export function mediaDebugClassName(missing: boolean): string {
 
 /** Safe `<img src>` / background URL: never return empty string when a visual is required. */
 export function displayImageUrl(r: ResolveImageResult, fallback = MEDIA_PLACEHOLDER_URL): string {
-  const u = r.url?.trim();
+  const u = r?.url?.trim();
   if (u) return u;
-  return fallback;
+  return fallback || MEDIA_PLACEHOLDER_URL;
+}
+
+/** Log malformed CMS blocks (debug bad JSON without crashing). */
+export function logBrokenBlock(label: string, block: unknown): void {
+  console.log("BROKEN BLOCK:", label, block);
 }

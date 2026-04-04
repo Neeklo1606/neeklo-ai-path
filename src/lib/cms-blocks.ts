@@ -13,8 +13,9 @@ export function pick(v: unknown, lang: string): string {
 
 /** Returns the first block with the given `type`, or null. */
 export function getBlock<T extends { type?: string }>(page: CmsPage | null | undefined, type: string): T | null {
-  if (!page?.blocks) return null;
-  const b = page.blocks.find((x) => typeof x === "object" && x !== null && (x as { type?: string }).type === type);
+  const blocks = page?.blocks;
+  if (!blocks || !Array.isArray(blocks)) return null;
+  const b = blocks.find((x) => typeof x === "object" && x !== null && (x as { type?: string }).type === type);
   return (b as T) ?? null;
 }
 
