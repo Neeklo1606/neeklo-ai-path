@@ -14,7 +14,7 @@ import { GripVertical, Copy, Trash2, ChevronDown, ChevronUp } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { ADDABLE_BLOCK_TYPES, BLOCK_LABELS, defaultBlock, editorKeyForBlock } from "./block-registry";
+import { ADDABLE_BLOCK_TYPES, BLOCK_EDITOR_HELP, BLOCK_LABELS, defaultBlock, editorKeyForBlock } from "./block-registry";
 import { BlockEditorRouter } from "./BlockEditorRouter";
 
 export type WrappedBlock = { sid: string; block: unknown };
@@ -75,8 +75,15 @@ function SortableBlockRow({ row, index, onChange, onDuplicate, onRemove }: Sorta
         </Button>
       </div>
       {open ? (
-        <div className="p-4">
-          <BlockEditorRouter value={rec} onChange={(next) => onChange(index, next)} />
+        <div className="space-y-0">
+          {BLOCK_EDITOR_HELP[key] ? (
+            <p className="text-xs text-muted-foreground px-4 pt-1 pb-2 leading-relaxed border-b border-[#E8E6E0]/80">
+              {BLOCK_EDITOR_HELP[key]}
+            </p>
+          ) : null}
+          <div className="p-4">
+            <BlockEditorRouter value={rec} onChange={(next) => onChange(index, next)} />
+          </div>
         </div>
       ) : null}
     </div>

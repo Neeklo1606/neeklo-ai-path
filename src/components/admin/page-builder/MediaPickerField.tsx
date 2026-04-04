@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { adminApi } from "@/lib/admin-api";
 import type { CmsMedia } from "@/lib/cms-api";
@@ -16,13 +17,14 @@ type Props = {
 export function MediaPickerField({ imageId, onChange, label = "Изображение", imageSlot }: Props) {
   const [open, setOpen] = useState(false);
   const q = useQuery({
-    queryKey: ["cms", "media", "admin", "picker"],
+    queryKey: ["cms", "media", "admin"],
     queryFn: async () => {
       const { data } = await adminApi.get<CmsMedia[]>("/media");
-      return data;
+      return Array.isArray(data) ? data : [];
     },
   });
   const selected = q.data?.find((m) => m.id === imageId);
+  const noMediaYet = !q.isLoading && !q.isError && (q.data?.length ?? 0) === 0;
 
   return (
     <div className="space-y-2">
@@ -53,6 +55,14 @@ export function MediaPickerField({ imageId, onChange, label = "Изображе�
           ) : null}
         </div>
       </div>
+      {noMediaYet ? (
+        <p className="text-xs text-muted-foreground">
+          В библиотеке пока нет файлов.{" "}
+          <Link to="/admin/media" className="text-[#0052FF] underline underline-offset-2">
+            Открыть «Медиа»
+          </Link>
+        </p>
+      ) : null}
       <MediaPickerModal open={open} onOpenChange={setOpen} onSelect={(id) => onChange(id)} />
     </div>
   );

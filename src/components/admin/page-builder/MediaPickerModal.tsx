@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { adminApi } from "@/lib/admin-api";
 import type { CmsMedia } from "@/lib/cms-api";
@@ -13,10 +14,10 @@ type Props = {
 
 export function MediaPickerModal({ open, onOpenChange, onSelect, title = "Выберите изображение" }: Props) {
   const q = useQuery({
-    queryKey: ["cms", "media", "admin", "picker"],
+    queryKey: ["cms", "media", "admin"],
     queryFn: async () => {
       const { data } = await adminApi.get<CmsMedia[]>("/media");
-      return data;
+      return Array.isArray(data) ? data : [];
     },
     enabled: open,
   });
@@ -32,7 +33,14 @@ export function MediaPickerModal({ open, onOpenChange, onSelect, title = "Выб
         ) : q.isError ? (
           <p className="text-sm text-destructive">Не удалось загрузить медиа</p>
         ) : !q.data?.length ? (
-          <p className="text-sm text-muted-foreground">Нет файлов. Загрузите в разделе «Медиа».</p>
+          <div className="space-y-4 py-2 text-center">
+            <p className="text-sm text-muted-foreground">Сначала загрузите изображения в разделе «Медиа».</p>
+            <Button asChild className="rounded-xl bg-[#0D0D0B]" type="button">
+              <Link to="/admin/media" onClick={() => onOpenChange(false)}>
+                Перейти в Медиа
+              </Link>
+            </Button>
+          </div>
         ) : (
           <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
             {q.data.map((m) => (

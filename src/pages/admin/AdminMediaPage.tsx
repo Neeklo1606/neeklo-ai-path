@@ -148,7 +148,14 @@ export default function AdminMediaPage() {
           </div>
         ))}
       </div>
-      {items.length === 0 && <p className="text-center text-muted-foreground">Пока нет файлов.</p>}
+      {items.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-[#E0E0E0] bg-[#FAFAF8] px-6 py-10 text-center space-y-2">
+          <p className="text-sm font-medium text-[#0D0D0B]">Пока нет файлов</p>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">
+            Загрузите изображения сюда — они появятся в медиатеке и в выборе изображений в редакторе страниц.
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

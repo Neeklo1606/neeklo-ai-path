@@ -188,6 +188,15 @@ export default function AdminAssistantEditor() {
     <div className="space-y-8">
       <h1 className="font-heading text-2xl font-extrabold">{isNew ? "Новый ассистент" : name}</h1>
 
+      <div className="rounded-2xl border border-[#E8E6E0] bg-[#FAFAF8] p-4 text-sm space-y-2">
+        <p className="font-heading font-bold text-[#0D0D0B]">Как работает ассистент</p>
+        <ol className="list-decimal pl-5 space-y-1.5 text-muted-foreground leading-relaxed">
+          <li>Введите system prompt.</li>
+          <li>Подключите модель.</li>
+          <li>Добавьте знания (ниже — текст и файлы в индекс).</li>
+        </ol>
+      </div>
+
       {shownKey && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">
           <p className="font-semibold text-amber-900">Ключ API сайта (nk_…)</p>

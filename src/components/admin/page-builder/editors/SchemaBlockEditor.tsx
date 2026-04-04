@@ -1,9 +1,11 @@
 import { useMemo, useState, useEffect } from "react";
+import { ChevronDown } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { LocalePair } from "../LocalePair";
 import { MediaPickerField } from "../MediaPickerField";
 import { BLOCK_SCHEMAS, canonicalBlockType, collectBlockSchemaIssues, type FieldUiDef } from "@/lib/block-schemas";
@@ -50,6 +52,7 @@ function JsonField({
   def,
   fieldKey,
   hasErr,
+  showLabel = true,
 }: {
   label: string;
   value: unknown;
@@ -57,18 +60,21 @@ function JsonField({
   def: FieldUiDef;
   fieldKey: string;
   hasErr: boolean;
+  showLabel?: boolean;
 }) {
   const kind = def.jsonKind ?? (fieldKey === "entries" ? "object" : "array");
-  const fallback = kind === "object" ? {} : [];
-  const [text, setText] = useState(() => JSON.stringify(value ?? fallback, null, 2));
+  const initialJson =
+    value != null && typeof value === "object" ? value : kind === "object" ? {} : [];
+  const [text, setText] = useState(() => JSON.stringify(initialJson, null, 2));
 
   useEffect(() => {
-    setText(JSON.stringify(value ?? fallback, null, 2));
+    const v = value != null && typeof value === "object" ? value : kind === "object" ? {} : [];
+    setText(JSON.stringify(v, null, 2));
   }, [value, fieldKey, kind]);
 
   return (
     <div className={cn("space-y-2", hasErr && "rounded-xl ring-2 ring-destructive/60 p-2 -m-2")}>
-      <Label className="text-sm font-medium">{label}</Label>
+      {showLabel ? <Label className="text-sm font-medium">{label}</Label> : null}
       <Textarea
         className="font-mono text-xs min-h-[120px] rounded-xl"
         value={text}
@@ -140,32 +146,53 @@ function renderFieldControl(
       );
     case "json":
       return (
-        <JsonField
-          key={fieldKey}
-          label={def.label}
-          value={v}
-          onChange={(next) => patch({ [fieldKey]: next })}
-          def={def}
-          fieldKey={fieldKey}
-          hasErr={hasErr}
-        />
+        <Collapsible key={fieldKey} defaultOpen={false} className={cn("rounded-xl border border-border/70 bg-muted/15", hasErr && "ring-2 ring-destructive/60")}>
+          <CollapsibleTrigger className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium hover:bg-muted/40 rounded-xl [&[data-state=open]>svg]:rotate-180">
+            <ChevronDown className="h-4 w-4 shrink-0 transition-transform" />
+            <span>
+              Расширенное (JSON): {def.label}
+            </span>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="px-3 pb-3">
+            <JsonField
+              label={def.label}
+              value={v}
+              onChange={(next) => patch({ [fieldKey]: next })}
+              def={def}
+              fieldKey={fieldKey}
+              hasErr={hasErr}
+              showLabel={false}
+            />
+          </CollapsibleContent>
+        </Collapsible>
       );
     default:
       return null;
   }
 }
 
+function normalizeBlockValue(raw: Record<string, unknown> | undefined | null): Record<string, unknown> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { type: "unknown", images: {} };
+  }
+  const imgs = raw.images;
+  const images =
+    imgs && typeof imgs === "object" && !Array.isArray(imgs) ? { ...(imgs as Record<string, unknown>) } : {};
+  return { ...raw, images };
+}
+
 export function SchemaBlockEditor({ value, onChange }: Props) {
-  const rawType = String(value.type ?? "");
+  const safeValue = useMemo(() => normalizeBlockValue(value), [value]);
+  const rawType = String(safeValue.type ?? "");
   const t = canonicalBlockType(rawType);
   const sch = BLOCK_SCHEMAS[t];
 
-  const issues = useMemo(() => collectBlockSchemaIssues(value, rawType), [value, rawType]);
+  const issues = useMemo(() => collectBlockSchemaIssues(safeValue, rawType), [safeValue, rawType]);
   const issuePaths = new Set(issues.map((i) => i.path));
 
   const has = (path: string) => issuePaths.has(path);
 
-  const patch = (p: Partial<Record<string, unknown>>) => onChange({ ...value, ...p });
+  const patch = (p: Partial<Record<string, unknown>>) => onChange({ ...safeValue, ...p });
 
   if (!sch) {
     return (
@@ -177,7 +204,7 @@ export function SchemaBlockEditor({ value, onChange }: Props) {
     );
   }
 
-  const imgs = readImagesMap(value);
+  const imgs = readImagesMap(safeValue);
   const imageSlots = sch.imageSlots ?? [];
   const labels = sch.imageSlotLabels ?? {};
   const showTopLevelImages = imageSlots.length > 0 && !sch.imagesNestedIn;
@@ -189,7 +216,7 @@ export function SchemaBlockEditor({ value, onChange }: Props) {
   const nestedFields = nested?.fields ?? {};
 
   const itemsArrayKey = sch.imagesNestedIn ?? nestedKey;
-  const listForItems = itemsArrayKey ? (Array.isArray(value[itemsArrayKey]) ? (value[itemsArrayKey] as unknown[]) : []) : [];
+  const listForItems = itemsArrayKey ? (Array.isArray(safeValue[itemsArrayKey]) ? (safeValue[itemsArrayKey] as unknown[]) : []) : [];
   const itemFieldMap =
     Object.keys(itemFields).length > 0 ? itemFields : Object.keys(nestedFields).length > 0 ? nestedFields : null;
 
@@ -229,7 +256,7 @@ export function SchemaBlockEditor({ value, onChange }: Props) {
 
       <div className="space-y-4">
         {Object.entries(fields).map(([key, def]) =>
-          renderFieldControl(key, def, value[key], patch, has(key)),
+          renderFieldControl(key, def, safeValue[key], patch, has(key)),
         )}
       </div>
 
@@ -244,7 +271,7 @@ export function SchemaBlockEditor({ value, onChange }: Props) {
                   label={labels[slot] || slot}
                   imageSlot={slot}
                   imageId={id}
-                  onChange={(mid) => onChange(patchImages(value, { [slot]: mid }))}
+                  onChange={(mid) => onChange(patchImages(safeValue, { [slot]: mid }))}
                 />
               </div>
             );

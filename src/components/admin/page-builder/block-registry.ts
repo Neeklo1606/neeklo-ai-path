@@ -31,6 +31,13 @@ export const ADDABLE_BLOCK_TYPES: { type: string; label: string }[] = [
 
 export const BLOCK_LABELS: Record<string, string> = Object.fromEntries(ADDABLE_BLOCK_TYPES.map((x) => [x.type, x.label]));
 
+/** Short hints under the block title in the page editor (RU). */
+export const BLOCK_EDITOR_HELP: Record<string, string> = {
+  hero: "Это главный экран сайта (заголовок + кнопки).",
+  services: "Список ваших услуг или продуктов.",
+  cases: "Примеры работ / кейсы для главной.",
+};
+
 export function defaultBlock(type: string): Record<string, unknown> {
   switch (type) {
     case "hero":
