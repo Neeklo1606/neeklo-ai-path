@@ -25,3 +25,13 @@ export function getBlockFirst<T extends { type?: string }>(page: CmsPage | null 
   }
   return null;
 }
+
+/** Canonical home block types + legacy aliases (CMS-driven). */
+export const HOME_BLOCKS = {
+  hero: ["hero"],
+  services: ["services", "services_preview", "services_row"],
+  cases: ["cases", "cases_preview", "works_preview"],
+  reviews: ["reviews"],
+  steps: ["steps", "how_steps"],
+  cta: ["cta", "cta_simple"],
+} as const;

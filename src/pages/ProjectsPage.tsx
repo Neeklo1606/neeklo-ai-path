@@ -27,7 +27,7 @@ function managerInitials(name: string): string {
     .map((w) => w[0])
     .join("")
     .slice(0, 2)
-    .toUpperCase() || "?";
+    .toUpperCase();
 }
 
 /* ─── types ─── */
@@ -42,7 +42,7 @@ interface Project {
 function cmsItemToProject(p: ProjectCmsItem): Project {
   return {
     id: p.id,
-    emoji: p.emoji || "📁",
+    emoji: p.emoji ?? "",
     title: p.title,
     service: p.service,
     status: p.status,
@@ -73,7 +73,6 @@ const ProjectsPage = () => {
   const [barsAnimated, setBarsAnimated] = useState(false);
   useEffect(() => { const t = setTimeout(() => setBarsAnimated(true), 100); return () => clearTimeout(t); }, []);
   const { t, lang } = useLanguage();
-  usePageTitle(lang === "en" ? "Projects – neeklo" : "Проекты – neeklo");
   const navigate = useNavigate();
   const locale = lang === "en" ? "en" : "ru";
 
@@ -82,12 +81,17 @@ const ProjectsPage = () => {
     queryFn: () => cmsPageBySlug("projects", locale),
   });
 
-  const cmsParsed = pageQ.data ? parseProjectsCms(pageQ.data) : null;
-  const mockProjects = useMemo(() => (cmsParsed?.items || []).map(cmsItemToProject), [cmsParsed]);
+  usePageTitle(pageQ.data?.title ?? "");
 
-  const emptyTitle = pick(pageQ.data?.meta?.emptyTitle, lang) || t("proj.startFirst");
-  const emptyDesc = pick(pageQ.data?.meta?.emptyDesc, lang) || t("proj.startFirstDesc");
-  const emptyCta = pick(pageQ.data?.meta?.emptyCta, lang) || t("proj.startProject");
+  const cmsParsed = pageQ.data ? parseProjectsCms(pageQ.data) : null;
+  const mockProjects = useMemo(() => (cmsParsed?.items ?? []).map(cmsItemToProject), [cmsParsed]);
+
+  const pageTitle = (pageQ.data?.title ?? "").trim();
+  const emptyTitle = pick(pageQ.data?.meta?.emptyTitle, lang).trim();
+  const emptyDesc = pick(pageQ.data?.meta?.emptyDesc, lang).trim();
+  const emptyCta = pick(pageQ.data?.meta?.emptyCta, lang).trim();
+  const emptyStateIncomplete =
+    mockProjects.length === 0 && (!emptyTitle || !emptyDesc || !emptyCta);
 
   const [activeTab, setActiveTab] = useState<"active" | "done">("active");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -126,25 +130,17 @@ const ProjectsPage = () => {
 
   if (pageQ.isLoading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center bg-[#F5F5F5]">
-        <p className="font-body text-[14px] text-[#6A6860]">…</p>
+      <div className="flex min-h-[50vh] items-center justify-center bg-[#F5F5F5]" aria-busy="true">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E0E0E0] border-t-[#0D0D0B]" />
       </div>
     );
   }
 
-  if (pageQ.isError) {
+  if (pageQ.isError || !cmsParsed || !pageTitle || emptyStateIncomplete) {
     return (
       <div className="bg-[#F5F5F5] min-h-screen px-4 py-16 text-center">
-        <p className="font-body text-[14px] text-[#6A6860]">{(pageQ.error as Error).message}</p>
-      </div>
-    );
-  }
-
-  if (!pageQ.data) {
-    return (
-      <div className="bg-[#F5F5F5] min-h-screen px-4 py-16 text-center">
-        <p className="font-body text-[14px] text-[#6A6860]">
-          Создайте страницу CMS slug «projects» с блоком projects_data (см. server/seed-cms-content.mjs).
+        <p className="font-body text-[14px] text-destructive break-words max-w-lg mx-auto">
+          {pageQ.isError ? (pageQ.error as Error).message : "CMS"}
         </p>
       </div>
     );
@@ -155,7 +151,7 @@ const ProjectsPage = () => {
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
       <div className="bg-white px-5 md:px-10 pt-8 pb-6 border-b border-[#F0F0F0]">
         <div className="flex items-center justify-between">
-          <h1 className="font-heading text-[24px] font-[800] text-[#0D0D0B]">{t("proj.title")}</h1>
+          <h1 className="font-heading text-[24px] font-[800] text-[#0D0D0B]">{pageTitle}</h1>
           <button onClick={() => navigate("/chat")} className="w-10 h-10 border border-[#E0E0E0] bg-white rounded-xl flex items-center justify-center hover:bg-[#F5F5F5] transition-colors cursor-pointer">
             <Plus size={18} className="text-[#0D0D0B]" />
           </button>

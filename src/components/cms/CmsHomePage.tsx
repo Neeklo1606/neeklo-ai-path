@@ -2,14 +2,16 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import HolographicCard from "@/components/ui/holographic-card";
 import Footer from "@/components/Footer";
 import TelegramManagerButton from "@/components/TelegramManagerButton";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useLanguage } from "@/hooks/useLanguage";
 import { cmsPageBySlug, type CmsPage } from "@/lib/cms-api";
-import { getBlock, getBlockFirst, pick } from "@/lib/cms-blocks";
+import { getBlock, getBlockFirst, HOME_BLOCKS, pick } from "@/lib/cms-blocks";
+import { cn } from "@/lib/utils";
+import { mediaPublicUrlMap, resolveImageDetailed, mediaDebugClassName } from "@/lib/cms-media";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 const fadeUp = (delay: number) => ({
@@ -31,28 +33,27 @@ function titleLines(text: string): React.ReactNode {
 
 const Divider = () => <div className="w-full" style={{ height: 1, background: "#E8E6E0" }} />;
 
-const avatarColors = ["#D4C5B2", "#B8C9D4", "#C4D4B8", "#D4B8C9", "#C9C4D4", "#B8D4C5", "#D4D0B8"];
-
 type HeroBlock = {
   type: "hero";
   title?: unknown;
   subtitle?: unknown;
-  mascotUrl?: string;
+  images?: Record<string, string>;
+  imageId?: string;
   ctaLabel?: unknown;
   secondaryLabel?: unknown;
   showScrollChevron?: boolean;
 };
 
-type ServicePreviewItem = { iconUrl?: string; name?: unknown; priceLabel?: unknown };
+type ServicePreviewItem = { images?: Record<string, string>; imageId?: string; name?: unknown; priceLabel?: unknown };
 type ServicesPreviewBlock = {
   type: string;
-  title?: unknown;
   sectionTitle?: unknown;
   items?: ServicePreviewItem[];
 };
 
 type CasePreviewItem = {
-  imageUrl?: string;
+  images?: Record<string, string>;
+  imageId?: string;
   cat?: unknown;
   title?: unknown;
   result?: unknown;
@@ -79,14 +80,14 @@ type ReviewsBlock = {
 };
 
 type HowBlock = {
-  type: "how_steps";
+  type: string;
   title?: unknown;
   steps?: Array<{ num?: string; title?: unknown; desc?: unknown }>;
   footerNote?: unknown;
 };
 
 type CtaBlock = {
-  type: "cta_simple";
+  type: string;
   title?: unknown;
   subtitle?: unknown;
   buttonLabel?: unknown;
@@ -106,73 +107,52 @@ export default function CmsHomePage() {
 
   if (q.isLoading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="font-body text-muted-foreground">Загрузка…</p>
+      <div className="flex min-h-[50vh] items-center justify-center" aria-busy="true">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-foreground" />
       </div>
     );
   }
 
-  const fallbackPage: CmsPage = {
-    id: "fallback",
-    slug: "home",
-    title: "neeklo — digital-студия",
-    locale: "ru",
-    published: true,
-    meta: {},
-    created_at: "",
-    updated_at: "",
-    blocks: [
-      {
-        type: "hero",
-        title: { ru: "Делаем digital\nкоторый работает", en: "We build digital\nthat works" },
-        subtitle: { ru: "Сайты, приложения, AI-решения и видео — быстро и качественно", en: "Websites, apps, AI solutions & video — fast and professional" },
-        ctaLabel: { ru: "Обсудить проект", en: "Discuss project" },
-        secondaryLabel: { ru: "Смотреть работы", en: "See our work" },
-        showScrollChevron: true,
-      },
-      {
-        type: "how_steps",
-        title: { ru: "Как мы работаем", en: "How we work" },
-        steps: [
-          { num: "01", title: { ru: "Бриф", en: "Brief" }, desc: { ru: "Обсуждаем задачу и цели", en: "Discuss goals & objectives" } },
-          { num: "02", title: { ru: "Концепт", en: "Concept" }, desc: { ru: "Создаём прототип и дизайн", en: "Create prototype & design" } },
-          { num: "03", title: { ru: "Разработка", en: "Development" }, desc: { ru: "Реализуем решение", en: "Build the solution" } },
-          { num: "04", title: { ru: "Запуск", en: "Launch" }, desc: { ru: "Тестируем и запускаем", en: "Test & launch" } },
-        ],
-      },
-      {
-        type: "cta_simple",
-        title: { ru: "Готовы начать?", en: "Ready to start?" },
-        subtitle: { ru: "Расскажите о своём проекте — мы предложим решение", en: "Tell us about your project — we'll suggest a solution" },
-        buttonLabel: { ru: "Написать в чат", en: "Start chat" },
-        buttonHref: "/chat",
-      },
-    ],
-  };
+  if (q.isError || !q.data) {
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-2 px-6 text-center">
+        <p className="font-body text-destructive break-words">{q.isError ? (q.error as Error).message : "CMS"}</p>
+      </div>
+    );
+  }
 
-  const page = q.data || fallbackPage;
-  const hero = getBlock<HeroBlock>(page, "hero");
+  const page = q.data;
+  const mediaById = useMemo(() => mediaPublicUrlMap(page), [page]);
+  /** Hero: `images.mascot` / legacy `imageId` → resolved via `page.media`. */
+  const hero = getBlock<HeroBlock>(page, HOME_BLOCKS.hero[0]);
+  const heroBg = resolveImageDetailed(hero as Record<string, unknown>, "background", mediaById);
+  const heroMascot = resolveImageDetailed(hero as Record<string, unknown>, "mascot", mediaById);
 
-  const servicesRaw = getBlockFirst<ServicesPreviewBlock>(page, ["services_preview", "services_row"]);
-  const services =
-    servicesRaw?.items?.length && servicesRaw.items.every((s) => typeof s.iconUrl === "string" && s.iconUrl)
-      ? servicesRaw
-      : null;
+  const servicesRaw = getBlockFirst<ServicesPreviewBlock>(page, [...HOME_BLOCKS.services]);
+  const services = servicesRaw?.items?.length ? servicesRaw : null;
 
-  const casesRaw = getBlockFirst<CasesPreviewBlock>(page, ["cases_preview", "works_preview"]);
-  const casesPreview =
-    casesRaw?.items?.length && casesRaw.items.every((it) => typeof it.imageUrl === "string" && it.imageUrl)
-      ? casesRaw
-      : null;
+  const casesRaw = getBlockFirst<CasesPreviewBlock>(page, [...HOME_BLOCKS.cases]);
+  const casesPreview = casesRaw?.items?.length ? casesRaw : null;
 
-  const reviews = getBlock<ReviewsBlock>(page, "reviews");
-  const how = getBlock<HowBlock>(page, "how_steps");
-  const cta = getBlock<CtaBlock>(page, "cta_simple");
+  const reviews = getBlock<ReviewsBlock>(page, HOME_BLOCKS.reviews[0]);
+  const how = getBlockFirst<HowBlock>(page, [...HOME_BLOCKS.steps]);
+  const cta = getBlockFirst<CtaBlock>(page, [...HOME_BLOCKS.cta]);
+
+  const seeAllPath = casesPreview?.seeAllPath?.trim() ?? "";
+  const itemNavPath = casesPreview?.itemNavigatePath?.trim() ?? "";
+  const casesPathsInvalid = !!casesPreview && (!seeAllPath || !itemNavPath);
+  const ctaInvalid = !!cta && !cta.buttonHref?.trim();
+
+  if (!hero || casesPathsInvalid || ctaInvalid) {
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center px-6 text-center">
+        <p className="font-body text-destructive">CMS</p>
+      </div>
+    );
+  }
 
   const servicesHeading = servicesRaw ? pick(servicesRaw.sectionTitle ?? servicesRaw.title, lang) : "";
   const casesHeading = casesPreview ? pick(casesPreview.sectionTitle ?? casesPreview.title, lang) : "";
-  const seeAllPath = casesPreview?.seeAllPath ?? "/works";
-  const itemNavPath = casesPreview?.itemNavigatePath ?? "/cases";
 
   return (
     <div className="flex-1 bg-background text-foreground pb-[100px] sm:pb-0 overflow-x-hidden">
@@ -187,8 +167,19 @@ export default function CmsHomePage() {
             backgroundSize: "28px 28px",
           }}
         >
+          {heroBg.url ? (
+            <div
+              className="pointer-events-none absolute inset-0 z-0 opacity-[0.18]"
+              style={{
+                backgroundImage: `url(${heroBg.url})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+              aria-hidden
+            />
+          ) : null}
           <div className="relative z-10 flex flex-col items-center px-5 sm:px-8" style={{ maxWidth: 700 }}>
-            {hero.mascotUrl ? (
+            {heroMascot.url ? (
               <motion.div
                 className="relative cursor-pointer"
                 style={{ marginBottom: 20 }}
@@ -198,13 +189,16 @@ export default function CmsHomePage() {
               >
                 <div className="hero-mascot-float" style={{ width: "clamp(140px, 22vw, 200px)", height: "clamp(140px, 22vw, 200px)" }}>
                   <img
-                    src={hero.mascotUrl}
+                    src={heroMascot.url}
                     alt=""
                     width={400}
                     height={400}
                     decoding="async"
                     fetchPriority="high"
-                    className="pointer-events-none h-full w-full object-contain"
+                    className={cn(
+                      "pointer-events-none h-full w-full object-contain",
+                      mediaDebugClassName(heroMascot.missing),
+                    )}
                     style={{ filter: "drop-shadow(0 12px 32px rgba(0,0,0,0.15))" }}
                   />
                 </div>
@@ -260,7 +254,9 @@ export default function CmsHomePage() {
               {servicesHeading}
             </motion.h2>
             <div className="grid grid-cols-3 md:grid-cols-6 mt-6" style={{ gap: 10 }}>
-              {services.items.map((s, i) => (
+              {services.items.map((s, i) => {
+                const prev = resolveImageDetailed(s as Record<string, unknown>, "icon", mediaById);
+                return (
                 <motion.div
                   key={i}
                   className="relative flex flex-col items-center text-center cursor-pointer hover:-translate-y-[3px] transition-all"
@@ -269,7 +265,14 @@ export default function CmsHomePage() {
                   {...fadeUp(i * 0.05)}
                 >
                   <div className="flex items-center justify-center rounded-2xl" style={{ width: 56, height: 56, background: "#EDECE8" }}>
-                    <img src={s.iconUrl} alt="" className="w-7 h-7 object-contain" loading="lazy" />
+                    {prev.url ? (
+                      <img
+                        src={prev.url}
+                        alt=""
+                        className={cn("w-7 h-7 object-contain", mediaDebugClassName(prev.missing))}
+                        loading="lazy"
+                      />
+                    ) : null}
                   </div>
                   <p className="font-heading mt-3" style={{ fontSize: 13, fontWeight: 700, color: "#0D0D0B" }}>
                     {pick(s.name, lang)}
@@ -278,7 +281,8 @@ export default function CmsHomePage() {
                     {pick(s.priceLabel, lang)}
                   </p>
                 </motion.div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
@@ -301,12 +305,31 @@ export default function CmsHomePage() {
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2 md:gap-3">
-              {casesPreview.items.map((item, i) => (
+              {casesPreview.items.map((item, i) => {
+                const caseImg = resolveImageDetailed(item as Record<string, unknown>, "cover", mediaById);
+                const caseLogo = resolveImageDetailed(item as Record<string, unknown>, "logo", mediaById);
+                return (
                 <motion.div key={i} className={item.featured ? "col-span-2" : ""} {...fadeUp(i * 0.07)}>
                   <button type="button" className="block w-full border-none bg-transparent p-0 text-left cursor-pointer" onClick={() => navigate(itemNavPath)}>
                     <HolographicCard className="rounded-2xl overflow-hidden relative">
                       <div className="relative w-full" style={{ height: item.featured ? 260 : 180, background: item.bg || "#1a1a2e" }}>
-                        <img src={item.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+                        <img
+                          src={caseImg.url}
+                          alt=""
+                          className={cn("absolute inset-0 w-full h-full object-cover", mediaDebugClassName(caseImg.missing))}
+                          loading="lazy"
+                        />
+                        {caseLogo.url ? (
+                          <img
+                            src={caseLogo.url}
+                            alt=""
+                            className={cn(
+                              "absolute top-3 right-3 h-10 w-auto max-w-[28%] object-contain z-[2]",
+                              mediaDebugClassName(caseLogo.missing),
+                            )}
+                            loading="lazy"
+                          />
+                        ) : null}
                         <div className="absolute inset-x-0 bottom-0 p-4" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.75), transparent)" }}>
                           <span className="font-body rounded-full inline-block" style={{ fontSize: 11, fontWeight: 600, padding: "4px 12px", background: "rgba(255,255,255,0.15)", color: "#fff" }}>
                             {pick(item.cat, lang)}
@@ -325,7 +348,8 @@ export default function CmsHomePage() {
                     </HolographicCard>
                   </button>
                 </motion.div>
-              ))}
+                );
+              })}
             </div>
             {casesPreview.mobileSeeAllLabel ? (
               <div className="flex justify-center mt-5 md:hidden">
@@ -382,10 +406,10 @@ export default function CmsHomePage() {
             {pick(cta.subtitle, lang)}
           </p>
           <a
-            href={cta.buttonHref || "/chat"}
+            href={cta.buttonHref}
             className="font-body inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3 text-[#0D0D0B] font-semibold"
             onClick={(e) => {
-              if (cta.buttonHref?.startsWith("/")) {
+              if (cta.buttonHref.startsWith("/")) {
                 e.preventDefault();
                 navigate(cta.buttonHref);
               }
@@ -443,8 +467,11 @@ function ReviewsFromCms({
           {items.map((r, i) => (
             <div key={i} className="bg-white flex-shrink-0" style={{ borderRadius: 16, padding: 14, width: 220 }}>
               <div className="flex items-center gap-2 mb-2">
-                <div className="rounded-full flex items-center justify-center font-heading flex-shrink-0" style={{ width: 30, height: 30, background: avatarColors[i % avatarColors.length], fontSize: 12, fontWeight: 700 }}>
-                  {(r.name || "?").charAt(0)}
+                <div
+                  className="rounded-full flex items-center justify-center font-heading flex-shrink-0 bg-muted text-muted-foreground"
+                  style={{ width: 30, height: 30, fontSize: 12, fontWeight: 700 }}
+                >
+                  {(r.name ?? "").toString().charAt(0)}
                 </div>
                 <div>
                   <p className="font-body font-semibold text-[13px]">{r.name}</p>

@@ -1,8 +1,6 @@
 /**
- * PM2: из корня проекта на сервере:
- *   pm2 start deploy/beget/ecosystem.config.cjs
- *   pm2 save
- *   pm2 startup
+ * PM2: из корня проекта:
+ *   pm2 start deploy/beget/ecosystem.config.cjs && pm2 save
  */
 const path = require("path");
 
@@ -13,6 +11,7 @@ module.exports = {
       script: "server/cms-server.mjs",
       interpreter: "node",
       cwd: path.resolve(__dirname, "../.."),
+      exec_mode: "fork",
       instances: 1,
       autorestart: true,
       max_memory_restart: "400M",

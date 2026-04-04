@@ -6,6 +6,8 @@ import { useLanguage } from "@/hooks/useLanguage";
 import HolographicCard from "@/components/ui/holographic-card";
 import { cmsPageBySlug } from "@/lib/cms-api";
 import { parseWorksGrid, type WorkItem } from "@/lib/cms-parsers";
+import { mediaDebugClassName } from "@/lib/cms-media";
+import { cn } from "@/lib/utils";
 
 function pick(v: unknown, lang: string): string {
   if (v == null) return "";
@@ -17,15 +19,8 @@ function pick(v: unknown, lang: string): string {
   return String(v);
 }
 
-function metaPick(meta: Record<string, unknown> | undefined, key: string, lang: string, fallback: string): string {
-  const raw = meta?.[key];
-  const s = pick(raw, lang);
-  return s || fallback;
-}
-
 const WorksPage = () => {
-  const { t, lang } = useLanguage();
-  usePageTitle(lang === "en" ? "Our Work – neeklo" : "Работы – neeklo");
+  const { lang } = useLanguage();
   const navigate = useNavigate();
   const locale = lang === "en" ? "en" : "ru";
   const [activeFilter, setActiveFilter] = useState("all");
@@ -36,57 +31,48 @@ const WorksPage = () => {
   });
 
   const grid = q.data ? parseWorksGrid(q.data) : null;
-  const works: WorkItem[] = grid?.items || [];
+  const works: WorkItem[] = grid?.items ?? [];
   const filterTabs = grid?.filterTabs?.length
     ? grid.filterTabs.map((f) => ({ key: f.key, label: pick(f.label, lang) }))
-    : [
-        { key: "all", label: t("wp.all") },
-        { key: "sites", label: t("wp.sites") },
-        { key: "videos", label: t("wp.videos") },
-        { key: "mini-app", label: t("wp.miniApp") },
-        { key: "ai", label: t("wp.ai") },
-        { key: "platforms", label: t("wp.platforms") },
-      ];
+    : [];
+
+  const meta = q.data?.meta ?? {};
+  const pageTitle = (q.data?.title ?? "").trim();
+  const subtitle = pick(meta.subtitle, lang).trim();
+  const badge = pick(meta.projectCount, lang).trim();
+  const ctaTitle = pick(meta.ctaTitle, lang).trim();
+  const ctaSubtitle = pick(meta.ctaSubtitle, lang).trim();
+  const ctaButton = pick(meta.ctaButton, lang).trim();
+
+  const cmsIncomplete =
+    !!q.data &&
+    !!grid &&
+    (!pageTitle ||
+      !subtitle ||
+      !badge ||
+      !ctaTitle ||
+      !ctaSubtitle ||
+      !ctaButton ||
+      !filterTabs.length);
+
+  usePageTitle(q.data?.title ?? "");
 
   const filtered =
-    activeFilter === "all"
-      ? works
-      : works.filter((w) => {
-          const fk = w.filterKey;
-          if (fk) return fk === activeFilter;
-          const cat = pick(w.cat, lang);
-          const catMap: Record<string, string> = {
-            sites: lang === "en" ? "Websites" : "Сайты",
-            videos: lang === "en" ? "Videos" : "Ролики",
-            "mini-app": "Mini App",
-            ai: "AI",
-            platforms: lang === "en" ? "Platforms" : "Платформы",
-          };
-          return cat === catMap[activeFilter];
-        });
-
-  const pageTitle = q.data?.title ? q.data.title : t("wp.title");
-  const subtitle = metaPick(q.data?.meta, "subtitle", lang, t("wp.subtitle"));
-  const badge = metaPick(q.data?.meta, "projectCount", lang, t("wp.projectCount"));
-  const ctaTitle = metaPick(q.data?.meta, "ctaTitle", lang, t("wp.ctaTitle"));
-  const ctaSubtitle = metaPick(q.data?.meta, "ctaSubtitle", lang, t("wp.ctaSubtitle"));
-  const ctaButton = metaPick(q.data?.meta, "ctaButton", lang, t("wp.ctaButton"));
+    activeFilter === "all" ? works : works.filter((w) => w.filterKey === activeFilter);
 
   if (q.isLoading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center bg-white">
-        <p className="font-body text-[15px]" style={{ color: "#6A6860" }}>
-          …
-        </p>
+      <div className="flex min-h-[50vh] items-center justify-center bg-white" aria-busy="true">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E0E0E0] border-t-[#0D0D0B]" />
       </div>
     );
   }
 
-  if (q.isError || !grid) {
+  if (q.isError || !grid || cmsIncomplete) {
     return (
       <div className="bg-white min-h-screen px-4 py-16 text-center" style={{ paddingBottom: 100 }}>
-        <p className="font-body text-[15px]" style={{ color: "#6A6860" }}>
-          {q.isError ? (q.error as Error).message : "Создайте страницу CMS со slug «works» и блоком works_grid (node server/seed-cms-content.mjs)."}
+        <p className="font-body text-[15px] text-destructive break-words max-w-lg mx-auto">
+          {q.isError ? (q.error as Error).message : "CMS"}
         </p>
       </div>
     );
@@ -121,6 +107,7 @@ const WorksPage = () => {
           {filterTabs.map((f) => (
             <button
               key={f.key}
+              type="button"
               onClick={() => setActiveFilter(f.key)}
               className="whitespace-nowrap rounded-full font-body text-[13px] font-semibold px-4 py-1.5 transition-colors cursor-pointer flex-shrink-0"
               style={{
@@ -137,52 +124,65 @@ const WorksPage = () => {
 
       <div className="px-1 md:px-10 pt-1 max-w-[1200px] mx-auto">
         <div className="grid grid-cols-3 gap-[2px] md:gap-1">
-          {filtered.map((w) => (
-            <HolographicCard key={w.id ?? `${pick(w.title, lang)}-${pick(w.cat, lang)}`} className="rounded-none md:rounded-lg overflow-hidden">
-              <div className="relative cursor-pointer group" style={{ aspectRatio: "1/1" }} onClick={() => navigate("/chat")}>
-                <div
-                  className="absolute inset-0 flex items-center justify-center"
-                  style={{ background: w.bg || "linear-gradient(135deg,#0a0a1a,#1a1035)" }}
-                >
-                  <span className="text-[36px] md:text-[48px] select-none opacity-70 group-hover:opacity-90 group-hover:scale-110 transition-all duration-300">
-                    {w.emoji || "✦"}
-                  </span>
-                </div>
-                <div
-                  className="absolute inset-x-0 bottom-0 z-[1]"
-                  style={{
-                    height: "65%",
-                    background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)",
-                  }}
-                />
-                <div className="absolute bottom-0 left-0 right-0 z-[2] p-2 md:p-3">
-                  <p className="font-body text-white leading-tight" style={{ fontSize: "clamp(11px, 2.5vw, 14px)", fontWeight: 700 }}>
-                    {pick(w.title, lang)}
-                  </p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <span style={{ color: "#4dff91", fontSize: 10 }}>↑</span>
-                    <span className="font-body" style={{ fontSize: "clamp(9px, 2vw, 11px)", fontWeight: 600, color: "#4dff91" }}>
-                      {pick(w.result, lang)}
+          {filtered.map((w) => {
+            const mediaUrl = w.coverUrl;
+            return (
+              <HolographicCard key={w.id ?? `${pick(w.title, lang)}-${pick(w.cat, lang)}`} className="rounded-none md:rounded-lg overflow-hidden">
+                <div className="relative cursor-pointer group" style={{ aspectRatio: "1/1" }} onClick={() => navigate("/chat")}>
+                  <div
+                    className="absolute inset-0 flex items-center justify-center overflow-hidden bg-neutral-950"
+                    style={w.bg ? { background: w.bg } : undefined}
+                  >
+                    {mediaUrl ? (
+                      <img
+                        src={mediaUrl}
+                        alt=""
+                        className={cn("absolute inset-0 h-full w-full object-cover", mediaDebugClassName(!!w.coverMissing))}
+                        loading="lazy"
+                      />
+                    ) : null}
+                    {!mediaUrl && w.emoji ? (
+                      <span className="relative z-[1] text-[36px] md:text-[48px] select-none opacity-70 group-hover:opacity-90 group-hover:scale-110 transition-all duration-300">
+                        {w.emoji}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div
+                    className="absolute inset-x-0 bottom-0 z-[1]"
+                    style={{
+                      height: "65%",
+                      background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)",
+                    }}
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 z-[2] p-2 md:p-3">
+                    <p className="font-body text-white leading-tight" style={{ fontSize: "clamp(11px, 2.5vw, 14px)", fontWeight: 700 }}>
+                      {pick(w.title, lang)}
+                    </p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span style={{ color: "#4dff91", fontSize: 10 }}>↑</span>
+                      <span className="font-body" style={{ fontSize: "clamp(9px, 2vw, 11px)", fontWeight: 600, color: "#4dff91" }}>
+                        {pick(w.result, lang)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="absolute top-2 left-2 z-[2]">
+                    <span
+                      className="font-body text-white rounded-full"
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 600,
+                        padding: "2px 7px",
+                        background: "rgba(255,255,255,0.2)",
+                        backdropFilter: "blur(6px)",
+                      }}
+                    >
+                      {pick(w.cat, lang)}
                     </span>
                   </div>
                 </div>
-                <div className="absolute top-2 left-2 z-[2]">
-                  <span
-                    className="font-body text-white rounded-full"
-                    style={{
-                      fontSize: 9,
-                      fontWeight: 600,
-                      padding: "2px 7px",
-                      background: "rgba(255,255,255,0.2)",
-                      backdropFilter: "blur(6px)",
-                    }}
-                  >
-                    {pick(w.cat, lang)}
-                  </span>
-                </div>
-              </div>
-            </HolographicCard>
-          ))}
+              </HolographicCard>
+            );
+          })}
         </div>
       </div>
 
@@ -194,6 +194,7 @@ const WorksPage = () => {
           {ctaSubtitle}
         </p>
         <button
+          type="button"
           onClick={() => navigate("/chat")}
           className="font-body text-[15px] font-bold rounded-2xl px-8 py-4 cursor-pointer hover:-translate-y-[1px] active:scale-[0.97] transition-all duration-200"
           style={{ background: "#fff", color: "#0D0D0B" }}

@@ -2,6 +2,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Production: PostgreSQL. Set DATABASE_URL in .env.
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -13,12 +14,177 @@ enum Role {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  name         String?
-  role         Role     @default(MANAGER)
-  createdAt    DateTime @default(now()) @map("created_at")
+  id             String  @id @default(cuid())
+  email          String  @unique
+  passwordHash   String  @map("password_hash")
+  name           String?
+  role           Role    @default(MANAGER)
+  createdAt      DateTime @default(now()) @map("created_at")
+  uploadedMedia  Media[]
 
   @@map("app_users")
+}
+
+/// CMS page (JSON blocks)
+model Page {
+  id        String   @id @default(uuid())
+  slug      String
+  title     String   @default("")
+  locale    String   @default("ru")
+  blocks    Json
+  meta      Json
+  published Boolean  @default(false)
+  isDraft   Boolean  @default(false) @map("is_draft")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+  mediaUsages MediaUsage[]
+  versions  PageVersion[]
+
+  @@unique([slug, locale], name: "slug_locale")
+  @@map("cms_pages")
+}
+
+/// Immutable snapshot before each content update (rollback / audit).
+model PageVersion {
+  id        String   @id @default(uuid())
+  pageId    String   @map("page_id")
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  blocks    Json
+  meta      Json
+  /** true = interval autosave snapshot; false = manual save / restore safety snapshot */
+  isAuto    Boolean  @default(false) @map("is_auto")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([pageId, createdAt])
+  @@map("cms_page_versions")
+}
+
+model Media {
+  id            String    @id @default(uuid())
+  storagePath   String    @unique @map("storage_path")
+  publicUrl     String    @map("public_url")
+  thumbnailPath String?   @map("thumbnail_path")
+  thumbnailUrl  String?   @map("thumbnail_url")
+  mime          String?
+  alt           String?
+  width         Int?
+  height        Int?
+  thumbWidth    Int?      @map("thumb_width")
+  thumbHeight   Int?      @map("thumb_height")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+  sizeBytes        Int?      @map("size_bytes")
+  uploadedByUserId String?   @map("uploaded_by_user_id")
+  uploadedBy       User?     @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  usages           MediaUsage[]
+
+  @@index([deletedAt])
+  @@index([createdAt])
+  @@index([uploadedByUserId])
+  @@map("cms_media")
+}
+
+/// Indexed reference: which pages embed which media (`imageId` in blocks/meta).
+model MediaUsage {
+  id      String @id @default(cuid())
+  mediaId String @map("media_id")
+  pageId  String @map("page_id")
+  media   Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  page    Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, pageId])
+  @@index([mediaId])
+  @@index([pageId])
+  @@map("cms_media_usage")
+}
+
+model CmsSetting {
+  key       String   @id
+  value     Json?
+  isPublic  Boolean  @default(false) @map("is_public")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("cms_settings")
+}
+
+model Assistant {
+  id             String   @id @default(uuid())
+  name           String
+  apiKeyHash     String   @map("api_key_hash")
+  apiKeyPrefix   String   @default("") @map("api_key_prefix")
+  provider       String   @default("ollama")
+  baseUrl        String?  @map("base_url")
+  model          String   @default("qwen2.5:7b")
+  embedModel     String   @default("nomic-embed-text") @map("embed_model")
+  systemPrompt   String?  @map("system_prompt")
+  /** Ollama `options.temperature` */
+  temperature    Float    @default(0.7)
+  providerApiKey String?  @map("provider_api_key")
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  chats          Chat[]
+  billingKey     ApiKey?
+
+  @@map("cms_assistants")
+}
+
+/// Billing wallet per assistant (1:1). `key` = assistant id (opaque public ref).
+model ApiKey {
+  id          String    @id @default(uuid())
+  key         String    @unique
+  balance     Float     @default(0)
+  isActive    Boolean   @default(true) @map("is_active")
+  assistantId String    @unique @map("assistant_id")
+  assistant   Assistant @relation(fields: [assistantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  usageLogs   UsageLog[]
+
+  @@map("billing_api_keys")
+}
+
+model UsageLog {
+  id            String   @id @default(uuid())
+  apiKeyId      String   @map("api_key_id")
+  apiKey        ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  tokensApprox  Int      @default(0) @map("tokens_approx")
+  messagesCount Int      @default(1) @map("messages_count")
+  cost          Float    @default(0)
+  path          String   @default("chat")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([apiKeyId, createdAt])
+  @@map("billing_usage_logs")
+}
+
+/// CRM: site visitors / contacts
+model Lead {
+  id        String   @id @default(uuid())
+  name      String?
+  phone     String?
+  status    String   @default("new")
+  createdAt DateTime @default(now()) @map("created_at")
+  chats     Chat[]
+
+  @@map("crm_leads")
+}
+
+/// CRM: one chat thread; messages stored as JSON array
+model Chat {
+  id          String     @id @default(uuid())
+  leadId      String?    @map("lead_id")
+  lead        Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  assistantId String?    @map("assistant_id")
+  assistant   Assistant? @relation(fields: [assistantId], references: [id], onDelete: SetNull)
+  messages    Json       @default("[]")
+  status      String     @default("active")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  @@index([leadId])
+  @@index([assistantId])
+  @@index([updatedAt])
+  @@map("crm_chats")
 }

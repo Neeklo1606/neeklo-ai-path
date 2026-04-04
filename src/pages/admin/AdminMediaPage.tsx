@@ -134,6 +134,9 @@ export default function AdminMediaPage() {
               )}
             </div>
             <p className="truncate font-mono text-xs text-muted-foreground">{m.public_url}</p>
+            <p className="text-xs text-muted-foreground">
+              Используется на страницах: <span className="font-semibold text-foreground">{m.usage_count ?? 0}</span>
+            </p>
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" className="rounded-lg" onClick={() => copy(m.public_url)}>
                 Копировать URL

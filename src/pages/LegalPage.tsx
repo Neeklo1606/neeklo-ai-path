@@ -33,8 +33,8 @@ const LegalPage = () => {
   if (q.isLoading) {
     return (
       <div className="page-container">
-        <div className="page-content flex min-h-[40vh] items-center justify-center">
-          <p className="text-muted-foreground">Загрузка…</p>
+        <div className="page-content flex min-h-[40vh] items-center justify-center" aria-busy="true">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-foreground" />
         </div>
       </div>
     );
@@ -44,9 +44,9 @@ const LegalPage = () => {
     return (
       <div className="page-container">
         <div className="page-content flex flex-col items-center justify-center pt-28">
-          <p className="mb-4 text-[15px] text-muted-foreground">Документ не найден (CMS slug «legal», блок legal_docs)</p>
+          <p className="mb-4 text-[15px] text-destructive break-words text-center max-w-md">{q.isError ? (q.error as Error).message : "CMS"}</p>
           <button type="button" onClick={() => navigate("/")} className="btn-primary max-w-[200px]">
-            На главную
+            ←
           </button>
         </div>
       </div>

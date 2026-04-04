@@ -4,7 +4,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Send } from "lucide-react";
 import { motion } from "framer-motion";
-import { fetchChatBootstrap, chatComplete } from "@/lib/cms-api";
+import { fetchChatBootstrap, chatComplete, createCrmChatSession } from "@/lib/cms-api";
 import { useLanguage } from "@/hooks/useLanguage";
 
 interface Message {
@@ -19,13 +19,10 @@ const nextId = () => ++msgId;
 
 const AIAvatar = ({ size = 28 }: { size?: number }) => (
   <div
-    className="flex-shrink-0 rounded-full flex items-center justify-center"
-    style={{ width: size, height: size, background: "#0D0D0B" }}
-  >
-    <span className="text-white font-body" style={{ fontSize: size * 0.43, lineHeight: 1 }}>
-      ✦
-    </span>
-  </div>
+    className="flex-shrink-0 rounded-full bg-[#0D0D0B]"
+    style={{ width: size, height: size }}
+    aria-hidden
+  />
 );
 
 const TypingDots = () => (
@@ -56,7 +53,6 @@ const TypingDots = () => (
 const ChatPage = () => {
   const { lang } = useLanguage();
   const locale = lang === "en" ? "en" : "ru";
-  usePageTitle(locale === "en" ? "AI chat – neeklo" : "Чат с AI – neeklo");
   const navigate = useNavigate();
 
   const boot = useQuery({
@@ -65,20 +61,54 @@ const ChatPage = () => {
     staleTime: 60_000,
   });
 
+  usePageTitle(boot.data?.pageTitle ?? "");
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [crmChatId, setCrmChatId] = useState<string | null>(null);
+  const [crmSessionReady, setCrmSessionReady] = useState(false);
   const initialized = useRef(false);
+  const siteKey = boot.data?.siteApiKey?.trim() || null;
 
   useEffect(() => {
-    if (!boot.data || initialized.current) return;
+    initialized.current = false;
+    setMessages([]);
+    setCrmChatId(null);
+    setCrmSessionReady(false);
+  }, [locale]);
+
+  useEffect(() => {
+    if (!boot.data || !siteKey) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const existing = localStorage.getItem("neeklo_crm_chat_id");
+        const r = await createCrmChatSession(existing);
+        if (!cancelled) {
+          localStorage.setItem("neeklo_crm_chat_id", r.chatId);
+          setCrmChatId(r.chatId);
+        }
+      } catch {
+        /* CRM session optional; chat still works */
+      } finally {
+        if (!cancelled) setCrmSessionReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [boot.data, siteKey]);
+
+  useEffect(() => {
+    const w = boot.data?.welcomeMessage?.trim();
+    if (!w || initialized.current) return;
     initialized.current = true;
-    setMessages([{ id: nextId(), role: "ai", text: boot.data.welcomeMessage, timestamp: new Date() }]);
+    setMessages([{ id: nextId(), role: "ai", text: w, timestamp: new Date() }]);
   }, [boot.data]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const siteKey = boot.data?.siteApiKey?.trim() || null;
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -96,7 +126,7 @@ const ChatPage = () => {
   const hasText = inputValue.trim().length > 0;
 
   const sendMessage = useCallback(() => {
-    if (!hasText || !siteKey) return;
+    if (!hasText || !siteKey || !crmSessionReady) return;
     const text = inputValue.trim();
     setInputValue("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
@@ -109,54 +139,48 @@ const ChatPage = () => {
         content: m.text,
       }));
       setIsTyping(true);
-      chatComplete({ apiKey: siteKey, messages: apiMsgs })
+      chatComplete({ apiKey: siteKey, messages: apiMsgs, chatId: crmChatId ?? undefined })
         .then((r) => {
           setIsTyping(false);
           setMessages((p) => [...p, { id: nextId(), role: "ai", text: r.reply, timestamp: new Date() }]);
         })
         .catch((err: unknown) => {
           setIsTyping(false);
-          const detail = err instanceof Error ? err.message : "ошибка сети";
-          setMessages((p) => [
-            ...p,
-            {
-              id: nextId(),
-              role: "ai",
-              text:
-                locale === "en"
-                  ? `Could not load a reply (${detail}). Try again.`
-                  : `Не удалось получить ответ (${detail}). Повторите попытку.`,
-              timestamp: new Date(),
-            },
-          ]);
+          const detail = err instanceof Error ? err.message : String(err);
+          setMessages((p) => [...p, { id: nextId(), role: "ai", text: detail, timestamp: new Date() }]);
         });
       return combined;
     });
-  }, [hasText, inputValue, siteKey, locale]);
+  }, [hasText, inputValue, siteKey, crmChatId, crmSessionReady]);
+
+  const bootInvalid =
+    boot.data &&
+    (!boot.data.welcomeMessage?.trim() ||
+      !boot.data.headerTitle?.trim() ||
+      !boot.data.statusLabel?.trim() ||
+      !boot.data.inputPlaceholder?.trim() ||
+      !boot.data.siteApiKey?.trim());
 
   if (boot.isLoading) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-white">
-        <p className="font-body text-muted-foreground">Загрузка чата…</p>
+      <div className="flex min-h-[100dvh] items-center justify-center bg-white" aria-busy="true">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-foreground" />
       </div>
     );
   }
 
-  if (boot.isError || !siteKey) {
+  if (boot.isError || bootInvalid || !siteKey) {
     return (
       <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-white px-6 text-center">
-        <p className="font-body text-[#0D0D0B]">Чат не настроен.</p>
-        <p className="font-body text-sm text-muted-foreground max-w-md">
-          В админке создайте ассистента, затем в настройках CMS задайте публичный ключ{" "}
-          <code className="rounded bg-muted px-1">public.chat.site_api_key</code> (значение — ключ сайта{" "}
-          <code className="rounded bg-muted px-1">nk_…</code>).
+        <p className="font-body text-destructive break-words max-w-md">
+          {boot.isError ? (boot.error as Error).message : "CMS"}
         </p>
         <button
           type="button"
           onClick={() => navigate(-1)}
           className="rounded-xl bg-[#0D0D0B] px-6 py-3 font-body text-sm font-semibold text-white"
         >
-          Назад
+          ←
         </button>
       </div>
     );
@@ -200,7 +224,7 @@ const ChatPage = () => {
         <AIAvatar size={36} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <p className="font-body" style={{ fontSize: 15, fontWeight: 600, color: "#0D0D0B", lineHeight: 1, marginBottom: 3 }}>
-            neeklo AI
+            {boot.data!.headerTitle}
           </p>
           <div className="flex items-center gap-1.5">
             <span
@@ -214,7 +238,7 @@ const ChatPage = () => {
               }}
             />
             <span className="font-body" style={{ fontSize: 12, color: "#00B341", lineHeight: 1 }}>
-              онлайн
+              {boot.data!.statusLabel}
             </span>
           </div>
         </div>
@@ -300,7 +324,7 @@ const ChatPage = () => {
             ref={textareaRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Напишите сообщение..."
+            placeholder={boot.data!.inputPlaceholder}
             rows={1}
             className="font-body"
             style={{

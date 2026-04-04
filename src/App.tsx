@@ -11,8 +11,8 @@ import ScrollToTop from "@/components/ScrollToTop";
 import PageTransition from "@/components/PageTransition";
 import Onboarding from "@/components/Onboarding";
 import CookieBanner from "@/components/CookieBanner";
+import BrandLogo from "@/components/BrandLogo";
 import { LanguageProvider, useLanguage } from "@/hooks/useLanguage";
-const LOGO_SRC = "/cms-static/logo.png";
 import Index from "./pages/Index";
 import { Menu, X, Home, MessageSquare, Sparkles, Image, FolderOpen, User, Settings, Bell } from "lucide-react";
 
@@ -43,6 +43,10 @@ const AdminAssistantsPage = lazy(() => import("./pages/admin/AdminAssistantsPage
 const AdminAssistantEditor = lazy(() => import("./pages/admin/AdminAssistantEditor"));
 const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
 const AdminSettingEditor = lazy(() => import("./pages/admin/AdminSettingEditor"));
+const AdminBrandingPage = lazy(() => import("./pages/admin/AdminBrandingPage"));
+const AdminCrmPage = lazy(() => import("./pages/admin/AdminCrmPage"));
+const AdminAiAnalyticsPage = lazy(() => import("./pages/admin/AdminAiAnalyticsPage"));
+const AdminBillingPage = lazy(() => import("./pages/admin/AdminBillingPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -103,7 +107,7 @@ const MobileHeader = () => {
       }}
     >
       <button onClick={() => navigate("/")} className="flex items-center">
-        <img src={LOGO_SRC} alt="neeklo" className="h-8 w-auto" />
+        <BrandLogo variant="header" className="h-8 w-auto" />
       </button>
 
       <div className="flex items-center gap-2">
@@ -289,6 +293,14 @@ const AppContent = ({
                   }
                 >
                   <Route
+                    path="crm"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <AdminCrmPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
                     path="pages"
                     element={
                       <Suspense fallback={<RouteLoadingFallback />}>
@@ -313,6 +325,14 @@ const AppContent = ({
                     }
                   />
                   <Route
+                    path="branding"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <AdminBrandingPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
                     path="assistants"
                     element={
                       <Suspense fallback={<RouteLoadingFallback />}>
@@ -325,6 +345,22 @@ const AppContent = ({
                     element={
                       <Suspense fallback={<RouteLoadingFallback />}>
                         <AdminAssistantEditor />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="ai-analytics"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <AdminAiAnalyticsPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="billing"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <AdminBillingPage />
                       </Suspense>
                     }
                   />

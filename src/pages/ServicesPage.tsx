@@ -3,65 +3,69 @@ import { useQuery } from "@tanstack/react-query";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { ArrowRight } from "lucide-react";
 import { cmsPageBySlug } from "@/lib/cms-api";
-import { parseServicesGrid, type ServiceItem } from "@/lib/cms-parsers";
-import iconVideo from "@/assets/icon-video.png";
-import iconWeb from "@/assets/icon-web.png";
-import iconApp from "@/assets/icon-app.png";
-import iconAi from "@/assets/icon-ai.png";
-import iconDesign from "@/assets/icon-design.png";
-import iconAnalytics from "@/assets/icon-analytics.png";
-
-const ICON_MAP: Record<string, string> = {
-  "icon-video": iconVideo,
-  "icon-web": iconWeb,
-  "icon-app": iconApp,
-  "icon-ai": iconAi,
-  "icon-design": iconDesign,
-  "icon-analytics": iconAnalytics,
-};
-
-function resolveIcon(asset: string): string {
-  return ICON_MAP[asset] || iconWeb;
-}
-
-function mapItems(items: ServiceItem[]) {
-  return items.map((s) => ({
-    ...s,
-    icon: resolveIcon(s.iconAsset),
-  }));
-}
+import { parseServicesGrid } from "@/lib/cms-parsers";
+import { useLanguage } from "@/hooks/useLanguage";
+import { pick } from "@/lib/cms-blocks";
+import { mediaDebugClassName } from "@/lib/cms-media";
+import { cn } from "@/lib/utils";
 
 const ServicesPage = () => {
   const navigate = useNavigate();
+  const { lang } = useLanguage();
+  const locale = lang === "en" ? "en" : "ru";
+
   const q = useQuery({
-    queryKey: ["cms", "page", "services", "ru"],
-    queryFn: () => cmsPageBySlug("services", "ru"),
+    queryKey: ["cms", "page", "services", locale],
+    queryFn: () => cmsPageBySlug("services", locale),
   });
 
   const grid = q.data ? parseServicesGrid(q.data) : null;
-  const services = grid?.length ? mapItems(grid) : null;
-  const pageTitle = q.data?.title || "Услуги";
-  const pageSubtitle =
-    (q.data?.meta?.subtitle as string) || "Выберите подходящее решение";
+  const services = grid?.length ? grid : null;
+  const meta = q.data?.meta ?? {};
+  const pageTitle = (q.data?.title ?? "").trim();
+  const pageSubtitle = pick(meta.subtitle, lang).trim();
+  const footerTitle = pick(meta.footerTitle, lang).trim();
+  const footerSubtitle = pick(meta.footerSubtitle, lang).trim();
+  const footerButton = pick(meta.footerButton, lang).trim();
+  const orderLabel = pick(meta.orderLabel, lang).trim();
 
-  usePageTitle(`${pageTitle} – neeklo`);
+  const rowInvalid =
+    services?.some((s) => {
+      const iconSrc = s.iconSrc;
+      return (
+        !iconSrc ||
+        !pick(s.name, lang).trim() ||
+        !pick(s.shortDesc, lang).trim() ||
+        !pick(s.priceLine, lang).trim() ||
+        !pick(s.durationLine, lang).trim()
+      );
+    }) ?? true;
+
+  const cmsIncomplete =
+    !!q.data &&
+    !!services?.length &&
+    (!pageTitle ||
+      !pageSubtitle ||
+      !footerTitle ||
+      !footerSubtitle ||
+      !footerButton ||
+      !orderLabel ||
+      rowInvalid);
+
+  usePageTitle(q.data?.title ?? "");
 
   if (q.isLoading) {
     return (
-      <div className="min-h-screen bg-white px-5 pt-12 pb-[100px] md:px-10">
-        <p className="font-body text-[#6A6860]">Загрузка услуг…</p>
+      <div className="min-h-screen bg-white px-5 pt-12 pb-[100px] md:px-10 flex items-center justify-center" aria-busy="true">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E0E0E0] border-t-[#0D0D0B]" />
       </div>
     );
   }
 
-  if (q.isError || !services?.length) {
+  if (q.isError || !services?.length || cmsIncomplete) {
     return (
       <div className="min-h-screen bg-white px-5 pt-12 pb-[100px] md:px-10">
-        <p className="font-body text-red-600">
-          Не удалось загрузить услуги из CMS. Запустите{" "}
-          <code className="rounded bg-muted px-1">npm run dev:full</code> и примените миграции Supabase.
-        </p>
-        <p className="mt-2 font-mono text-xs text-muted-foreground">{(q.error as Error)?.message}</p>
+        <p className="font-body text-destructive break-words">{q.isError ? (q.error as Error).message : "CMS"}</p>
       </div>
     );
   }
@@ -79,92 +83,105 @@ const ServicesPage = () => {
 
       <div className="px-5 mt-6 max-w-[1280px] mx-auto md:px-10">
         <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
-          {services.map((s) => (
-            <div
-              key={s.id}
-              className="relative rounded-2xl cursor-pointer hover:-translate-y-[2px] active:scale-[0.98] transition-all duration-200"
-              style={{ background: "#F7F6F3", padding: "20px", border: "1px solid #EDECE8" }}
-              onClick={() => navigate("/chat")}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="flex items-center justify-center rounded-2xl flex-shrink-0"
-                    style={{ width: 52, height: 52, background: "#EDECE8" }}
-                  >
-                    <img src={s.icon} alt={s.name} className="w-7 h-7 object-contain" loading="lazy" />
-                  </div>
-                  <div>
-                    <p className="font-heading" style={{ fontSize: 16, fontWeight: 700, color: "#0D0D0B" }}>
-                      {s.name}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="font-body" style={{ fontSize: 14, fontWeight: 600, color: "#0052FF" }}>
-                        от {s.priceFrom.toLocaleString("ru")} ₽
-                      </span>
-                      <span className="font-body" style={{ fontSize: 12, color: "#8A8880" }}>
-                        · {s.days} дн
-                      </span>
+          {services.map((s) => {
+            const iconSrc = s.iconSrc;
+            return (
+              <div
+                key={s.id}
+                className="relative rounded-2xl cursor-pointer hover:-translate-y-[2px] active:scale-[0.98] transition-all duration-200"
+                style={{ background: "#F7F6F3", padding: "20px", border: "1px solid #EDECE8" }}
+                onClick={() => navigate("/chat")}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") navigate("/chat");
+                }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="flex items-center justify-center rounded-2xl flex-shrink-0 overflow-hidden"
+                      style={{ width: 52, height: 52, background: "#EDECE8" }}
+                    >
+                      <img
+                        src={iconSrc}
+                        alt=""
+                        className={cn("w-7 h-7 object-contain", mediaDebugClassName(!!s.iconMissing))}
+                        loading="lazy"
+                      />
+                    </div>
+                    <div>
+                      <p className="font-heading" style={{ fontSize: 16, fontWeight: 700, color: "#0D0D0B" }}>
+                        {pick(s.name, lang)}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="font-body" style={{ fontSize: 14, fontWeight: 600, color: "#0052FF" }}>
+                          {pick(s.priceLine, lang)}
+                        </span>
+                        <span className="font-body" style={{ fontSize: 12, color: "#8A8880" }}>
+                          · {pick(s.durationLine, lang)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                {s.badge && (
-                  <span
-                    className="font-body text-white flex-shrink-0"
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      padding: "3px 8px",
-                      borderRadius: 9999,
-                      background: s.badgeColor,
-                    }}
-                  >
-                    {s.badge}
-                  </span>
-                )}
-              </div>
-
-              <p className="font-body mt-3" style={{ fontSize: 13, color: "#6A6860", lineHeight: 1.5 }}>
-                {s.shortDesc}
-              </p>
-
-              <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3">
-                {s.includes.slice(0, 4).map((item) => (
-                  <span key={item} className="font-body flex items-center gap-1" style={{ fontSize: 11, color: "#6A6860" }}>
-                    <span style={{ color: "#00B341", fontSize: 10 }}>✓</span> {item}
-                  </span>
-                ))}
-                {s.includes.length > 4 && (
-                  <span className="font-body" style={{ fontSize: 11, color: "#8A8880" }}>
-                    +{s.includes.length - 4}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex gap-1.5">
-                  {s.tags.map((tag) => (
+                  {s.badge && (
                     <span
-                      key={tag}
-                      className="font-body rounded-full"
+                      className="font-body text-white flex-shrink-0"
                       style={{
-                        background: "#E8E6E0",
                         fontSize: 10,
-                        fontWeight: 600,
-                        color: "#6A6860",
+                        fontWeight: 700,
                         padding: "3px 8px",
+                        borderRadius: 9999,
+                        background: s.badgeColor,
                       }}
                     >
-                      {tag}
+                      {s.badge}
+                    </span>
+                  )}
+                </div>
+
+                <p className="font-body mt-3" style={{ fontSize: 13, color: "#6A6860", lineHeight: 1.5 }}>
+                  {pick(s.shortDesc, lang)}
+                </p>
+
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3">
+                  {s.includes.slice(0, 4).map((item) => (
+                    <span key={item} className="font-body flex items-center gap-1" style={{ fontSize: 11, color: "#6A6860" }}>
+                      <span style={{ color: "#00B341", fontSize: 10 }}>✓</span> {item}
                     </span>
                   ))}
+                  {s.includes.length > 4 && (
+                    <span className="font-body" style={{ fontSize: 11, color: "#8A8880" }}>
+                      +{s.includes.length - 4}
+                    </span>
+                  )}
                 </div>
-                <span className="font-body flex items-center gap-1" style={{ fontSize: 13, fontWeight: 600, color: "#0D0D0B" }}>
-                  Заказать <ArrowRight size={13} />
-                </span>
+
+                <div className="flex items-center justify-between mt-4">
+                  <div className="flex gap-1.5">
+                    {s.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="font-body rounded-full"
+                        style={{
+                          background: "#E8E6E0",
+                          fontSize: 10,
+                          fontWeight: 600,
+                          color: "#6A6860",
+                          padding: "3px 8px",
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <span className="font-body flex items-center gap-1" style={{ fontSize: 13, fontWeight: 600, color: "#0D0D0B" }}>
+                    {orderLabel} <ArrowRight size={13} />
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -173,17 +190,18 @@ const ServicesPage = () => {
         style={{ background: "#0D0D0B" }}
       >
         <h2 className="font-heading text-white" style={{ fontSize: 22, fontWeight: 800 }}>
-          Не нашли нужное?
+          {footerTitle}
         </h2>
         <p className="font-body mt-2 mb-6" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)" }}>
-          Опишите задачу — предложим решение
+          {footerSubtitle}
         </p>
         <button
+          type="button"
           onClick={() => navigate("/chat")}
           className="font-body rounded-2xl px-8 py-4 active:scale-[0.97] hover:-translate-y-[1px] transition-all duration-150 cursor-pointer"
           style={{ background: "#fff", color: "#0D0D0B", fontSize: 15, fontWeight: 700 }}
         >
-          Написать в чат →
+          {footerButton}
         </button>
       </div>
     </div>
