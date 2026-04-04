@@ -10,9 +10,14 @@ const require = createRequire(import.meta.url);
 
 let _qdrant = null;
 
+export function getQdrantUrl() {
+  return (process.env.QDRANT_URL || "http://127.0.0.1:6333").replace(/\/$/, "");
+}
+
 export function getQdrantClient() {
   if (!_qdrant) {
-    const url = (process.env.QDRANT_URL || "http://127.0.0.1:6333").replace(/\/$/, "");
+    const url = getQdrantUrl();
+    console.log("QDRANT URL:", url);
     _qdrant = new QdrantClient({
       url,
       apiKey: process.env.QDRANT_API_KEY || undefined,
@@ -21,9 +26,9 @@ export function getQdrantClient() {
   return _qdrant;
 }
 
-/** Ollama HTTP API base — only `OLLAMA_URL` (no DB/UI overrides). */
+/** Ollama HTTP API base — only `OLLAMA_URL` (aligned with ecosystem.config.cjs default). */
 export function getOllamaBase(_assistant) {
-  return (process.env.OLLAMA_URL || "http://127.0.0.1:11434").replace(/\/$/, "");
+  return (process.env.OLLAMA_URL || "http://188.124.55.89:11434").replace(/\/$/, "");
 }
 
 export function collectionNameForAssistant(assistantId) {
@@ -210,31 +215,42 @@ export async function extractTextFromFile(buffer, mime, originalname = "") {
 export async function upsertChunks({ client, collectionName, ollamaBase, embedModel, assistantId, chunks, source }) {
   console.log("RAG CHUNKS:", chunks.length);
   if (!chunks.length) return { upserted: 0 };
-  const firstEmb = await createEmbedding(ollamaBase, embedModel, chunks[0]);
-  await ensureCollection(client, collectionName, firstEmb);
+  try {
+    const firstEmb = await createEmbedding(ollamaBase, embedModel, chunks[0]);
+    await ensureCollection(client, collectionName, firstEmb);
 
-  const points = [];
-  for (let i = 0; i < chunks.length; i++) {
-    const text = chunks[i];
-    const vector = i === 0 ? firstEmb : await createEmbedding(ollamaBase, embedModel, text);
-    const id = crypto.randomUUID();
-    points.push({
-      id,
-      vector,
-      payload: {
-        assistant_id: assistantId,
-        chunk_index: i,
-        text,
-        source: source || "manual",
-      },
+    const points = [];
+    for (let i = 0; i < chunks.length; i++) {
+      const text = chunks[i];
+      const vector = i === 0 ? firstEmb : await createEmbedding(ollamaBase, embedModel, text);
+      const id = crypto.randomUUID();
+      points.push({
+        id,
+        vector,
+        payload: {
+          assistant_id: assistantId,
+          chunk_index: i,
+          text,
+          source: source || "manual",
+        },
+      });
+    }
+
+    await client.upsert(collectionName, {
+      wait: true,
+      points,
     });
+    return { upserted: points.length };
+  } catch (e) {
+    const c = e?.cause;
+    console.error("QDRANT UPSERT ERROR:", c ?? e);
+    if (c && (c.code === "ECONNREFUSED" || c.code === "ENOTFOUND")) {
+      throw new Error(
+        `Qdrant unavailable at ${getQdrantUrl()} (${c.code} ${c.syscall || ""} ${c.address || ""}:${c.port ?? ""})`.trim(),
+      );
+    }
+    throw e;
   }
-
-  await client.upsert(collectionName, {
-    wait: true,
-    points,
-  });
-  return { upserted: points.length };
 }
 
 function formatHistoryTranscript(apiMessages) {
