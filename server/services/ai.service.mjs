@@ -21,10 +21,9 @@ export function getQdrantClient() {
   return _qdrant;
 }
 
-/** Public Ollama base (GPU or local). Assistant.baseUrl overrides. */
-export function getOllamaBase(assistant) {
-  const fallback = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
-  return ((assistant?.baseUrl || fallback) + "").replace(/\/$/, "");
+/** Ollama HTTP API base — only `OLLAMA_URL` (no DB/UI overrides). */
+export function getOllamaBase(_assistant) {
+  return (process.env.OLLAMA_URL || "http://127.0.0.1:11434").replace(/\/$/, "");
 }
 
 export function collectionNameForAssistant(assistantId) {

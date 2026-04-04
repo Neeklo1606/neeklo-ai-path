@@ -26,7 +26,8 @@ export default function AdminAssistantEditor() {
 
   const [name, setName] = useState("Site chat");
   const [provider, setProvider] = useState("ollama");
-  const [baseUrl, setBaseUrl] = useState("");
+  /** OpenAI-compatible endpoint only; Ollama uses OLLAMA_URL on the server. */
+  const [openaiBaseUrl, setOpenaiBaseUrl] = useState("");
   const [model, setModel] = useState("qwen2.5:7b");
   const [embedModel, setEmbedModel] = useState("nomic-embed-text");
   const [temperature, setTemperature] = useState(0.7);
@@ -57,7 +58,7 @@ export default function AdminAssistantEditor() {
         if (cancelled || !row) return;
         setName(row.name);
         setProvider(row.provider || "ollama");
-        setBaseUrl(row.base_url || "");
+        setOpenaiBaseUrl(row.provider === "openai" ? row.base_url || "" : "");
         setModel(row.model || "qwen2.5:7b");
         setEmbedModel(row.embed_model || "nomic-embed-text");
         setTemperature(typeof row.temperature === "number" ? row.temperature : 0.7);
@@ -85,7 +86,7 @@ export default function AdminAssistantEditor() {
         const { data: created } = await adminApi.post<AssistantRow & { api_key?: string }>("/assistants", {
           name,
           provider,
-          base_url: baseUrl || null,
+          base_url: provider === "openai" ? openaiBaseUrl || null : null,
           model,
           embed_model: embedModel,
           temperature,
@@ -102,7 +103,7 @@ export default function AdminAssistantEditor() {
         await adminApi.patch(`/assistants/${id}`, {
           name,
           provider,
-          base_url: baseUrl || null,
+          base_url: provider === "openai" ? openaiBaseUrl || null : null,
           model,
           embed_model: embedModel,
           temperature,
@@ -262,21 +263,6 @@ export default function AdminAssistantEditor() {
             />
           </div>
         )}
-        <div className="space-y-2">
-          <Label htmlFor="bu">Ollama / API base URL</Label>
-          <Input
-            id="bu"
-            value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
-            className="rounded-xl"
-            placeholder={ollamaMode ? "http://188.124.55.89:11434" : "https://api.openai.com/v1"}
-          />
-          <p className="text-xs text-muted-foreground">
-            {ollamaMode
-              ? "Пусто = OLLAMA_URL из .env сервера. Укажите GPU-хост с Ollama."
-              : "Для OpenAI оставьте пусто или укажите совместимый endpoint."}
-          </p>
-        </div>
         {!ollamaMode && (
           <div className="space-y-2">
             <Label htmlFor="pk">Ключ провайдера</Label>

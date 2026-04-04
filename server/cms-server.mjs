@@ -36,6 +36,7 @@ import {
 import { optimizeRasterUpload } from "./services/media-process.mjs";
 import { validateUploadFileSignature, ALLOWED_UPLOAD_MIMES } from "./services/file-signature.mjs";
 import { validatePageBlocksSchema } from "./block-schemas.mjs";
+import { getChatQueue, getChatQueueEvents } from "./chat-queue.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
@@ -52,6 +53,27 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const OPENAI_FALLBACK = process.env.OPENAI_API_KEY || "";
 
 const prisma = new PrismaClient();
+
+/** Ollama path: enqueue BullMQ job (worker calls Ollama) or sync when CHAT_QUEUE_SYNC=1 */
+async function runOllamaChatTurn(asst, messages) {
+  if (process.env.CHAT_QUEUE_SYNC === "1") {
+    return chatWithRag({ assistant: asst, messages });
+  }
+  try {
+    const queueEvents = getChatQueueEvents();
+    await queueEvents.waitUntilReady();
+    const queue = getChatQueue();
+    const job = await queue.add("turn", { assistantId: asst.id, messages });
+    return job.waitUntilFinished(queueEvents);
+  } catch (e) {
+    console.error("[chat] queue error", e?.message || e);
+    throw new Error(
+      e?.code === "ECONNREFUSED" || String(e?.message || "").includes("Redis")
+        ? "Chat queue unavailable (check REDIS_URL and chat-worker process)"
+        : e?.message || "Chat queue failed",
+    );
+  }
+}
 
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
   console.warn("[cms-server] Set JWT_SECRET (min 32 chars) for production.");
@@ -1006,6 +1028,7 @@ app.post("/assistants", requireAuth, async (req, res) => {
   const apiKeyPrefix = plain.slice(0, 10);
   try {
     const cfg = getBillingConfig();
+    const prov = (req.body.provider || "ollama").toLowerCase();
     const data = await prisma.$transaction(async (tx) => {
       const a = await tx.assistant.create({
         data: {
@@ -1013,7 +1036,7 @@ app.post("/assistants", requireAuth, async (req, res) => {
           apiKeyHash,
           apiKeyPrefix,
           provider: req.body.provider || "ollama",
-          baseUrl: req.body.base_url || null,
+          baseUrl: prov === "ollama" || prov === "local" ? null : req.body.base_url || null,
           model: req.body.model || "qwen2.5:7b",
           embedModel: req.body.embed_model || "nomic-embed-text",
           temperature: req.body.temperature != null ? Number(req.body.temperature) : 0.7,
@@ -1074,10 +1097,22 @@ app.patch("/assistants/:id", requireAuth, async (req, res) => {
   delete patch.id;
   delete patch.api_key_hash;
   delete patch.api_key_prefix;
+  let effectiveProvider = "ollama";
+  try {
+    const cur = await prisma.assistant.findUnique({
+      where: { id: req.params.id },
+      select: { provider: true },
+    });
+    effectiveProvider = (patch.provider != null ? String(patch.provider) : cur?.provider || "ollama").toLowerCase();
+  } catch {
+    effectiveProvider = (patch.provider != null ? String(patch.provider) : "ollama").toLowerCase();
+  }
   const data = {
     ...(patch.name != null && { name: patch.name }),
     ...(patch.provider != null && { provider: patch.provider }),
-    ...(patch.base_url !== undefined && { baseUrl: patch.base_url }),
+    ...(patch.base_url !== undefined && {
+      baseUrl: effectiveProvider === "ollama" || effectiveProvider === "local" ? null : patch.base_url || null,
+    }),
     ...(patch.model != null && { model: patch.model }),
     ...(patch.embed_model !== undefined && { embedModel: patch.embed_model }),
     ...(patch.temperature !== undefined && { temperature: Number(patch.temperature) }),
@@ -1353,10 +1388,7 @@ app.post("/chat", async (req, res) => {
     const useOllama = (asst.provider || "").toLowerCase() === "ollama" || (asst.provider || "").toLowerCase() === "local";
 
     if (useOllama) {
-      const { reply, usedContext, promptTokens, completionTokens } = await chatWithRag({
-        assistant: asst,
-        messages,
-      });
+      const { reply, usedContext, promptTokens, completionTokens } = await runOllamaChatTurn(asst, messages);
       if (crmChatId && isUuid(crmChatId)) {
         try {
           await persistCrmAssistantReply(crmChatId, reply);
