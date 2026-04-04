@@ -1,0 +1,163 @@
+{
+  "hero": {
+    "imageSlots": ["background", "mascot"],
+    "requiredImageSlots": ["mascot"],
+    "imageSlotLabels": {
+      "background": "Фон (опционально)",
+      "mascot": "Маскот"
+    },
+    "fields": {
+      "title": { "type": "localeText", "label": "Заголовок", "required": true, "multiline": true },
+      "subtitle": { "type": "localeText", "label": "Подзаголовок", "required": true, "multiline": true },
+      "ctaLabel": { "type": "localeText", "label": "Кнопка (основная)" },
+      "secondaryLabel": { "type": "localeText", "label": "Вторичная ссылка" },
+      "showScrollChevron": { "type": "boolean", "label": "Показать стрелку прокрутки" }
+    }
+  },
+  "services": {
+    "imageSlots": ["icon", "cover"],
+    "requiredItemImageSlots": ["icon"],
+    "imagesNestedIn": "items",
+    "imageSlotLabels": { "icon": "Иконка", "cover": "Обложка (опционально)" },
+    "fields": {
+      "sectionTitle": { "type": "localeText", "label": "Заголовок секции", "required": true }
+    },
+    "itemFields": {
+      "name": { "type": "localeText", "label": "Название", "required": true },
+      "priceLabel": { "type": "localeText", "label": "Цена (подпись)", "required": true }
+    }
+  },
+  "cases": {
+    "imageSlots": ["cover", "logo"],
+    "requiredFields": ["seeAllPath", "itemNavigatePath"],
+    "requiredItemImageSlots": ["cover"],
+    "imagesNestedIn": "items",
+    "imageSlotLabels": { "cover": "Обложка", "logo": "Логотип (опционально)" },
+    "fields": {
+      "sectionTitle": { "type": "localeText", "label": "Заголовок секции", "required": true },
+      "seeAllPath": { "type": "text", "label": "Ссылка «Все работы»", "required": true },
+      "itemNavigatePath": { "type": "text", "label": "Переход по карточке", "required": true },
+      "seeAllLabel": { "type": "localeText", "label": "Кнопка «Все работы»" },
+      "mobileSeeAllLabel": { "type": "localeText", "label": "Моб. кнопка" }
+    },
+    "itemFields": {
+      "cat": { "type": "localeText", "label": "Категория", "required": true },
+      "title": { "type": "localeText", "label": "Заголовок", "required": true },
+      "result": { "type": "localeText", "label": "Результат", "required": true },
+      "featured": { "type": "boolean", "label": "Крупная карточка" }
+    }
+  },
+  "reviews": {
+    "imageSlots": [],
+    "fields": {
+      "title": { "type": "localeText", "label": "Заголовок секции", "required": true },
+      "avitoUrl": { "type": "text", "label": "Ссылка Авито (URL)" },
+      "avitoLabel": { "type": "localeText", "label": "Подпись к Авито" }
+    },
+    "nestedList": {
+      "arrayKey": "items",
+      "itemLabel": "Отзыв",
+      "addButtonLabel": "+ Добавить отзыв",
+      "fields": {
+        "name": { "type": "text", "label": "Имя" },
+        "date": { "type": "localeText", "label": "Дата" },
+        "text": { "type": "localeText", "label": "Текст", "multiline": true }
+      }
+    }
+  },
+  "steps": {
+    "imageSlots": [],
+    "fields": {
+      "title": { "type": "localeText", "label": "Заголовок", "required": true },
+      "footerNote": { "type": "localeText", "label": "Подпись внизу" }
+    },
+    "nestedList": {
+      "arrayKey": "steps",
+      "itemLabel": "Шаг",
+      "addButtonLabel": "+ Добавить шаг",
+      "fields": {
+        "num": { "type": "text", "label": "Номер" },
+        "title": { "type": "localeText", "label": "Заголовок шага" },
+        "desc": { "type": "localeText", "label": "Описание", "multiline": true }
+      }
+    }
+  },
+  "cta": {
+    "imageSlots": [],
+    "fields": {
+      "title": { "type": "localeText", "label": "Заголовок" },
+      "subtitle": { "type": "localeText", "label": "Подзаголовок", "multiline": true },
+      "buttonLabel": { "type": "localeText", "label": "Текст кнопки" },
+      "buttonHref": { "type": "text", "label": "Ссылка кнопки", "required": true }
+    }
+  },
+  "legal_docs": {
+    "imageSlots": [],
+    "fields": {
+      "entries": { "type": "json", "label": "Документы (JSON объект)", "jsonKind": "object" }
+    }
+  },
+  "works_grid": {
+    "imageSlots": ["cover"],
+    "imagesNestedIn": "items",
+    "imageSlotLabels": { "cover": "Обложка" },
+    "fields": {
+      "filterTabs": { "type": "json", "label": "Вкладки фильтра (JSON массив)", "jsonKind": "array" }
+    },
+    "itemFields": {
+      "id": { "type": "number", "label": "ID" },
+      "filterKey": { "type": "text", "label": "Ключ фильтра" },
+      "cat": { "type": "localeText", "label": "Категория" },
+      "title": { "type": "localeText", "label": "Заголовок" },
+      "result": { "type": "localeText", "label": "Результат" },
+      "tags": { "type": "json", "label": "Теги (JSON массив строк)" },
+      "bg": { "type": "text", "label": "Фон (CSS)" },
+      "emoji": { "type": "text", "label": "Emoji" }
+    }
+  },
+  "cases_list": {
+    "imageSlots": ["cover", "logo"],
+    "imagesNestedIn": "items",
+    "imageSlotLabels": { "cover": "Обложка", "logo": "Логотип" },
+    "fields": {
+      "filters": { "type": "json", "label": "Фильтры (JSON)", "jsonKind": "array" }
+    },
+    "itemFields": {
+      "name": { "type": "localeText", "label": "Название", "required": true },
+      "tag": { "type": "text", "label": "Тег (ключ)", "required": true },
+      "tagLabel": { "type": "localeText", "label": "Подпись тега" },
+      "result": { "type": "localeText", "label": "Результат", "required": true }
+    }
+  },
+  "services_grid": {
+    "imageSlots": ["icon", "cover"],
+    "requiredItemImageSlots": ["icon"],
+    "imagesNestedIn": "items",
+    "imageSlotLabels": { "icon": "Иконка", "cover": "Обложка" },
+    "itemFields": {
+      "id": { "type": "text", "label": "ID" },
+      "name": { "type": "text", "label": "Название", "required": true },
+      "badge": { "type": "text", "label": "Бейдж" },
+      "badgeColor": { "type": "text", "label": "Цвет бейджа" },
+      "priceFrom": { "type": "number", "label": "Цена от" },
+      "days": { "type": "number", "label": "Дней" },
+      "priceLine": { "type": "localeText", "label": "Цена (строка)", "required": true },
+      "durationLine": { "type": "localeText", "label": "Срок (строка)", "required": true },
+      "shortDesc": { "type": "text", "label": "Краткое описание", "required": true },
+      "includes": { "type": "json", "label": "Включено (JSON массив)" },
+      "tags": { "type": "json", "label": "Теги (JSON массив)" }
+    }
+  },
+  "chat_config": {
+    "imageSlots": [],
+    "fields": {
+      "welcomeMessage": { "type": "text", "label": "Приветствие (welcomeMessage)" }
+    }
+  },
+  "projects_data": {
+    "imageSlots": [],
+    "fields": {
+      "items": { "type": "json", "label": "Проекты (JSON массив)", "jsonKind": "array" }
+    }
+  }
+}
