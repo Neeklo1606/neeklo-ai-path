@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,6 +8,8 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { toast } from "sonner";
 import { cmsPageBySlug } from "@/lib/cms-api";
 import { parseProjectsCms, type ProjectCmsItem } from "@/lib/cms-parsers";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
 
 function pick(v: unknown, lang: string): string {
   if (v == null) return "";
@@ -115,6 +117,13 @@ const ProjectsPage = () => {
   useEffect(() => { document.body.style.overflow = selectedProject ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [selectedProject]);
   useEffect(() => { setActiveDetailTab("overview"); }, [selectedProject?.id]);
 
+  const handleRefresh = useCallback(async () => {
+    await pageQ.refetch();
+    toast.success(lang === "en" ? "Updated" : "Обновлено");
+  }, [pageQ, lang]);
+
+  const { containerRef, pullDistance, isRefreshing, onTouchStart, onTouchMove, onTouchEnd } = usePullToRefresh({ onRefresh: handleRefresh });
+
   if (pageQ.isLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center bg-[#F5F5F5]">
@@ -142,7 +151,8 @@ const ProjectsPage = () => {
   }
 
   return (
-    <div className="bg-[#F5F5F5] min-h-screen pb-[100px] overflow-x-hidden">
+    <div ref={containerRef} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} className="bg-[#F5F5F5] min-h-screen pb-[100px] overflow-x-hidden">
+      <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
       <div className="bg-white px-5 md:px-10 pt-8 pb-6 border-b border-[#F0F0F0]">
         <div className="flex items-center justify-between">
           <h1 className="font-heading text-[24px] font-[800] text-[#0D0D0B]">{t("proj.title")}</h1>
