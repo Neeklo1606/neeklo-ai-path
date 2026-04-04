@@ -1,5 +1,9 @@
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle, MessageSquare, ArrowRight, Briefcase } from "lucide-react";
+import { toast } from "sonner";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
 
 interface Notification {
   id: string;
@@ -48,8 +52,16 @@ const notifications: Notification[] = [
 const NotificationsPage = () => {
   const navigate = useNavigate();
 
+  const handleRefresh = useCallback(async () => {
+    await new Promise((r) => setTimeout(r, 800));
+    toast.success("Обновлено");
+  }, []);
+
+  const { containerRef, pullDistance, isRefreshing, onTouchStart, onTouchMove, onTouchEnd } = usePullToRefresh({ onRefresh: handleRefresh });
+
   return (
-    <div className="page-container">
+    <div ref={containerRef} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} className="page-container">
+      <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
       <div className="page-content">
         <h1 className="page-title">Уведомления</h1>
 
