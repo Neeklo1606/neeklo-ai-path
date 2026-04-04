@@ -107,11 +107,13 @@ export async function generateResponse(ollamaBase, chatModel, messages, opts = {
   if (opts.temperature != null && Number.isFinite(opts.temperature)) {
     body.options = { temperature: opts.temperature };
   }
+  const start = Date.now();
   const r = await fetch(`${ollamaBase}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+  console.log("OLLAMA TIME:", Date.now() - start);
   const json = await r.json().catch(() => ({}));
   if (!r.ok) {
     throw new Error(typeof json.error === "string" ? json.error : json.error?.message || r.statusText || "Ollama chat failed");

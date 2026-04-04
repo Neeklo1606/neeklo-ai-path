@@ -1381,6 +1381,7 @@ async function persistCrmAssistantReply(crmChatId, replyText) {
 
 // ─── Chat ───
 app.post("/chat", async (req, res) => {
+  console.log("CHAT REQUEST START", Date.now());
   const { messages, chatId: crmChatId } = req.body || {};
   if (!Array.isArray(messages)) {
     return res.status(400).json({ error: "messages[] required" });
@@ -1415,7 +1416,32 @@ app.post("/chat", async (req, res) => {
     const useOllama = (asst.provider || "").toLowerCase() === "ollama" || (asst.provider || "").toLowerCase() === "local";
 
     if (useOllama) {
-      const { reply, usedContext, promptTokens, completionTokens } = await runOllamaChatTurn(asst, messages);
+      const ollamaStarted = Date.now();
+      let reply;
+      let usedContext;
+      let promptTokens;
+      let completionTokens;
+      try {
+        const result = await Promise.race([
+          runOllamaChatTurn(asst, messages),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("ollama-timeout")), 30_000),
+          ),
+        ]);
+        console.log("OLLAMA TOTAL TIME:", Date.now() - ollamaStarted);
+        ({ reply, usedContext, promptTokens, completionTokens } = result);
+      } catch (e) {
+        if (String(e?.message || e) === "ollama-timeout") {
+          return res.json({
+            reply: "Сервер перегружен, попробуйте снова",
+            used_context: false,
+            provider: "ollama",
+            billing: null,
+            timeout: true,
+          });
+        }
+        throw e;
+      }
       if (crmChatId && isUuid(crmChatId)) {
         try {
           await persistCrmAssistantReply(crmChatId, reply);
