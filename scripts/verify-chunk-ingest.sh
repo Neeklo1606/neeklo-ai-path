@@ -5,8 +5,9 @@ PID=$(pm2 pid neeklo-api)
 while IFS= read -r line; do
   case "$line" in
     JWT_SECRET=*) export JWT_SECRET="${line#JWT_SECRET=}" ;;
+    DATABASE_URL=*) export DATABASE_URL="${line#DATABASE_URL=}" ;;
   esac
-done < <(tr '\0' '\n' < "/proc/$PID/environ" | grep -aE '^JWT_SECRET=')
+done < <(tr '\0' '\n' < "/proc/$PID/environ" | grep -aE '^JWT_SECRET=|^DATABASE_URL=')
 cd /var/www/neeklo.ru
 AID=$(node --input-type=module <<'N'
 import { PrismaClient } from "@prisma/client";
