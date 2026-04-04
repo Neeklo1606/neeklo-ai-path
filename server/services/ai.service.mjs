@@ -157,26 +157,137 @@ export async function generateResponse(ollamaBase, chatModel, messages, opts = {
   };
 }
 
-/** Split long text into overlapping chunks for RAG. */
-export function chunkText(text, chunkSize = 900, overlap = 120) {
+/** Default RAG chunking: ~800 chars, ~80 overlap (tunable 500–1000 / 50–100). */
+const RAG_MAX_CHUNK = 800;
+const RAG_OVERLAP = 80;
+
+/** Split on sentence boundaries (Latin + Cyrillic punctuation). */
+function splitIntoSentences(block) {
+  const s = block.trim();
+  if (!s) return [];
+  const parts = s.split(/(?<=[.!?…])\s+/u).filter((p) => p.trim());
+  return parts.length ? parts : [s];
+}
+
+/**
+ * Length-based split with overlap. Stops correctly when the last slice reaches EOF
+ * (avoids advancing by ~1 char when the whole text fits in one window — the old bug).
+ */
+function splitLongByLength(text, maxSize, overlap) {
   const t = text.replace(/\r\n/g, "\n").trim();
   if (!t) return [];
+  if (t.length <= maxSize) return [t];
   const chunks = [];
-  let i = 0;
-  while (i < t.length) {
-    const end = Math.min(i + chunkSize, t.length);
-    let slice = t.slice(i, end);
+  let start = 0;
+  while (start < t.length) {
+    let end = Math.min(start + maxSize, t.length);
     if (end < t.length) {
-      const lastBreak = Math.max(slice.lastIndexOf("\n\n"), slice.lastIndexOf(". "), slice.lastIndexOf(" "));
-      if (lastBreak > chunkSize * 0.4) {
-        slice = slice.slice(0, lastBreak + 1);
+      const window = t.slice(start, end);
+      const relBreak = Math.max(
+        window.lastIndexOf("\n\n"),
+        window.lastIndexOf(". "),
+        window.lastIndexOf(" "),
+      );
+      if (relBreak > maxSize * 0.35) {
+        end = start + relBreak + 1;
       }
     }
-    chunks.push(slice.trim());
-    i += Math.max(1, slice.length - overlap);
-    if (i >= t.length) break;
+    const piece = t.slice(start, end).trim();
+    if (piece) chunks.push(piece);
+    if (end >= t.length) break;
+    const nextStart = end - overlap;
+    start = nextStart > start ? nextStart : start + 1;
   }
-  return chunks.filter(Boolean);
+  return chunks;
+}
+
+/** Merge consecutive short strings until each is at most maxSize (separator within paragraph). */
+function mergeListUpTo(items, maxSize, sep, overlap) {
+  const out = [];
+  let buf = "";
+  for (const raw of items) {
+    const it = raw.trim();
+    if (!it) continue;
+    if (it.length > maxSize) {
+      if (buf) {
+        out.push(buf);
+        buf = "";
+      }
+      out.push(...splitLongByLength(it, maxSize, overlap));
+      continue;
+    }
+    if (!buf) {
+      buf = it;
+    } else if (buf.length + sep.length + it.length <= maxSize) {
+      buf += sep + it;
+    } else {
+      out.push(buf);
+      buf = it;
+    }
+  }
+  if (buf) out.push(buf);
+  return out;
+}
+
+/** Merge paragraph-level chunks with blank line between blocks without exceeding maxSize. */
+function mergeParagraphChunks(chunks, maxSize) {
+  const out = [];
+  let buf = "";
+  const sep = "\n\n";
+  for (const c of chunks) {
+    const cc = c.trim();
+    if (!cc) continue;
+    if (!buf) {
+      buf = cc;
+    } else if (buf.length + sep.length + cc.length <= maxSize) {
+      buf += sep + cc;
+    } else {
+      out.push(buf);
+      buf = cc;
+    }
+  }
+  if (buf) out.push(buf);
+  return out;
+}
+
+/**
+ * Split text for RAG: paragraphs → sentences → length fallback.
+ * Logs input size and resulting chunk count.
+ */
+export function chunkText(text, maxChunkSize = RAG_MAX_CHUNK, overlap = RAG_OVERLAP) {
+  console.log("TEXT LENGTH:", (text ?? "").length);
+  const normalized = (text ?? "").replace(/\r\n/g, "\n").trim();
+  if (!normalized) {
+    console.log("CHUNKS:", 0);
+    return [];
+  }
+
+  const paragraphs = normalized.split(/\n\s*\n+/u).map((p) => p.trim()).filter(Boolean);
+  const perParagraph = [];
+
+  for (const para of paragraphs) {
+    if (para.length <= maxChunkSize) {
+      perParagraph.push(para);
+      continue;
+    }
+    const sentences = splitIntoSentences(para);
+    if (sentences.length <= 1) {
+      perParagraph.push(...splitLongByLength(para, maxChunkSize, overlap));
+      continue;
+    }
+    const mergedSentences = mergeListUpTo(sentences, maxChunkSize, " ", overlap);
+    for (const m of mergedSentences) {
+      if (m.length <= maxChunkSize) {
+        perParagraph.push(m);
+      } else {
+        perParagraph.push(...splitLongByLength(m, maxChunkSize, overlap));
+      }
+    }
+  }
+
+  const merged = mergeParagraphChunks(perParagraph, maxChunkSize);
+  console.log("CHUNKS:", merged.length);
+  return merged;
 }
 
 async function pdfToText(buffer) {
