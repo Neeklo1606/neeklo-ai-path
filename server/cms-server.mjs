@@ -37,6 +37,7 @@ import { optimizeRasterUpload } from "./services/media-process.mjs";
 import { validateUploadFileSignature, ALLOWED_UPLOAD_MIMES } from "./services/file-signature.mjs";
 import { validatePageBlocksSchema } from "./block-schemas.mjs";
 import { getChatQueue, getChatQueueEvents } from "./chat-queue.mjs";
+import { getDeployStatus } from "./deploy-status.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
@@ -414,6 +415,10 @@ function signToken(user) {
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ ok: true, service: "cms-api" });
+});
+
+app.get("/deploy/status", (_req, res) => {
+  res.json(getDeployStatus());
 });
 
 // ─── Auth ───
