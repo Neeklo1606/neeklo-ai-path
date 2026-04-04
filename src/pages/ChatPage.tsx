@@ -50,10 +50,30 @@ const TypingDots = () => (
   </div>
 );
 
+const copy = {
+  ru: {
+    noAssistantBanner: "Нет ассистента: в админке не задан публичный ключ API (public.chat.site_api_key).",
+    noAssistantSend: "Настройте ключ API в CMS, чтобы отправлять сообщения.",
+    defaultWelcome: "Здравствуйте! Чем могу помочь?",
+    defaultHeader: "neeklo AI",
+    defaultStatus: "онлайн",
+    defaultPlaceholder: "Напишите сообщение…",
+  },
+  en: {
+    noAssistantBanner: "No assistant: set the public site API key (public.chat.site_api_key) in admin.",
+    noAssistantSend: "Configure the API key in CMS to send messages.",
+    defaultWelcome: "Hi! How can I help?",
+    defaultHeader: "neeklo AI",
+    defaultStatus: "online",
+    defaultPlaceholder: "Type a message…",
+  },
+} as const;
+
 const ChatPage = () => {
   const { lang } = useLanguage();
   const locale = lang === "en" ? "en" : "ru";
   const navigate = useNavigate();
+  const c = copy[locale];
 
   const boot = useQuery({
     queryKey: ["chat", "bootstrap", locale],
@@ -63,6 +83,12 @@ const ChatPage = () => {
 
   usePageTitle(boot.data?.pageTitle ?? "");
 
+  useEffect(() => {
+    if (boot.data !== undefined) {
+      console.log("CHAT DATA:", boot.data);
+    }
+  }, [boot.data]);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -70,6 +96,13 @@ const ChatPage = () => {
   const [crmSessionReady, setCrmSessionReady] = useState(false);
   const initialized = useRef(false);
   const siteKey = boot.data?.siteApiKey?.trim() || null;
+  const hasAssistant = !!siteKey;
+
+  const headerTitle = boot.data?.headerTitle?.trim() || c.defaultHeader;
+  const statusLabel = boot.data?.statusLabel?.trim() || c.defaultStatus;
+  const inputPlaceholder = boot.data?.inputPlaceholder?.trim() || c.defaultPlaceholder;
+  const welcomeText =
+    boot.data?.welcomeMessage?.trim() || c.defaultWelcome;
 
   useEffect(() => {
     initialized.current = false;
@@ -79,7 +112,11 @@ const ChatPage = () => {
   }, [locale]);
 
   useEffect(() => {
-    if (!boot.data || !siteKey) return;
+    if (!boot.data) return;
+    if (!siteKey) {
+      setCrmSessionReady(true);
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
@@ -101,11 +138,12 @@ const ChatPage = () => {
   }, [boot.data, siteKey]);
 
   useEffect(() => {
-    const w = boot.data?.welcomeMessage?.trim();
-    if (!w || initialized.current) return;
+    if (!boot.data || initialized.current) return;
+    const w = welcomeText;
+    if (!w) return;
     initialized.current = true;
     setMessages([{ id: nextId(), role: "ai", text: w, timestamp: new Date() }]);
-  }, [boot.data]);
+  }, [boot.data, welcomeText]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -126,7 +164,17 @@ const ChatPage = () => {
   const hasText = inputValue.trim().length > 0;
 
   const sendMessage = useCallback(() => {
-    if (!hasText || !siteKey || !crmSessionReady) return;
+    if (!hasText || !crmSessionReady) return;
+    if (!siteKey) {
+      setMessages((prev) => [
+        ...prev,
+        { id: nextId(), role: "user", text: inputValue.trim(), timestamp: new Date() },
+        { id: nextId(), role: "ai", text: c.noAssistantSend, timestamp: new Date() },
+      ]);
+      setInputValue("");
+      if (textareaRef.current) textareaRef.current.style.height = "auto";
+      return;
+    }
     const text = inputValue.trim();
     setInputValue("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
@@ -151,15 +199,7 @@ const ChatPage = () => {
         });
       return combined;
     });
-  }, [hasText, inputValue, siteKey, crmChatId, crmSessionReady]);
-
-  const bootInvalid =
-    boot.data &&
-    (!boot.data.welcomeMessage?.trim() ||
-      !boot.data.headerTitle?.trim() ||
-      !boot.data.statusLabel?.trim() ||
-      !boot.data.inputPlaceholder?.trim() ||
-      !boot.data.siteApiKey?.trim());
+  }, [hasText, inputValue, siteKey, crmChatId, crmSessionReady, c.noAssistantSend]);
 
   if (boot.isLoading) {
     return (
@@ -169,12 +209,27 @@ const ChatPage = () => {
     );
   }
 
-  if (boot.isError || bootInvalid || !siteKey) {
+  if (boot.isError) {
     return (
       <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-white px-6 text-center">
         <p className="font-body text-destructive break-words max-w-md">
-          {boot.isError ? (boot.error as Error).message : "CMS"}
+          {(boot.error as Error).message}
         </p>
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="rounded-xl bg-[#0D0D0B] px-6 py-3 font-body text-sm font-semibold text-white"
+        >
+          ←
+        </button>
+      </div>
+    );
+  }
+
+  if (!boot.data) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-white px-6 text-center">
+        <p className="font-body text-muted-foreground max-w-md">{c.noAssistantBanner}</p>
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -224,7 +279,7 @@ const ChatPage = () => {
         <AIAvatar size={36} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <p className="font-body" style={{ fontSize: 15, fontWeight: 600, color: "#0D0D0B", lineHeight: 1, marginBottom: 3 }}>
-            {boot.data!.headerTitle}
+            {headerTitle}
           </p>
           <div className="flex items-center gap-1.5">
             <span
@@ -232,17 +287,26 @@ const ChatPage = () => {
               style={{
                 width: 6,
                 height: 6,
-                background: "#00C853",
-                boxShadow: "0 0 0 3px rgba(0,200,83,0.2)",
-                animation: "pulse 2s infinite",
+                background: hasAssistant ? "#00C853" : "#B0B0B0",
+                boxShadow: hasAssistant ? "0 0 0 3px rgba(0,200,83,0.2)" : "none",
+                animation: hasAssistant ? "pulse 2s infinite" : undefined,
               }}
             />
-            <span className="font-body" style={{ fontSize: 12, color: "#00B341", lineHeight: 1 }}>
-              {boot.data!.statusLabel}
+            <span className="font-body" style={{ fontSize: 12, color: hasAssistant ? "#00B341" : "#8A8880", lineHeight: 1 }}>
+              {hasAssistant ? statusLabel : locale === "en" ? "offline" : "нет ключа"}
             </span>
           </div>
         </div>
       </div>
+
+      {!hasAssistant ? (
+        <div
+          className="font-body shrink-0 px-4 py-2.5 text-center text-[13px]"
+          style={{ background: "#FFF8E6", color: "#5C4A00", borderBottom: "1px solid #F5E6C0" }}
+        >
+          {c.noAssistantBanner}
+        </div>
+      ) : null}
 
       <div
         style={{
@@ -324,7 +388,7 @@ const ChatPage = () => {
             ref={textareaRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder={boot.data!.inputPlaceholder}
+            placeholder={inputPlaceholder}
             rows={1}
             className="font-body"
             style={{
@@ -356,16 +420,16 @@ const ChatPage = () => {
           <button
             type="button"
             onClick={sendMessage}
-            disabled={!hasText}
+            disabled={!hasText || !crmSessionReady}
             className="flex items-center justify-center flex-shrink-0 transition-all duration-150"
             style={{
               width: 44,
               height: 44,
               borderRadius: 12,
-              background: hasText ? "#0D0D0B" : "#F0F0F0",
-              color: hasText ? "white" : "#B0B0B0",
+              background: hasText && crmSessionReady ? "#0D0D0B" : "#F0F0F0",
+              color: hasText && crmSessionReady ? "white" : "#B0B0B0",
               border: "none",
-              cursor: hasText ? "pointer" : "default",
+              cursor: hasText && crmSessionReady ? "pointer" : "default",
             }}
           >
             <Send size={18} />
