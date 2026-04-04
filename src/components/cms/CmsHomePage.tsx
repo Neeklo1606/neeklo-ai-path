@@ -11,7 +11,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { cmsPageBySlug, type CmsPage } from "@/lib/cms-api";
 import { getBlock, getBlockFirst, HOME_BLOCKS, pick } from "@/lib/cms-blocks";
 import { cn } from "@/lib/utils";
-import { mediaPublicUrlMap, resolveImageDetailed, mediaDebugClassName } from "@/lib/cms-media";
+import { mediaPublicUrlMap, resolveImageDetailed, mediaDebugClassName, displayImageUrl } from "@/lib/cms-media";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 const fadeUp = (delay: number) => ({
@@ -179,31 +179,29 @@ export default function CmsHomePage() {
             />
           ) : null}
           <div className="relative z-10 flex flex-col items-center px-5 sm:px-8" style={{ maxWidth: 700 }}>
-            {heroMascot.url ? (
-              <motion.div
-                className="relative cursor-pointer"
-                style={{ marginBottom: 20 }}
-                onClick={() => navigate("/chat")}
-                whileTap={{ scale: 0.94 }}
-                whileHover={{ scale: 1.06 }}
-              >
-                <div className="hero-mascot-float" style={{ width: "clamp(140px, 22vw, 200px)", height: "clamp(140px, 22vw, 200px)" }}>
-                  <img
-                    src={heroMascot.url}
-                    alt=""
-                    width={400}
-                    height={400}
-                    decoding="async"
-                    fetchPriority="high"
-                    className={cn(
-                      "pointer-events-none h-full w-full object-contain",
-                      mediaDebugClassName(heroMascot.missing),
-                    )}
-                    style={{ filter: "drop-shadow(0 12px 32px rgba(0,0,0,0.15))" }}
-                  />
-                </div>
-              </motion.div>
-            ) : null}
+            <motion.div
+              className="relative cursor-pointer"
+              style={{ marginBottom: 20 }}
+              onClick={() => navigate("/chat")}
+              whileTap={{ scale: 0.94 }}
+              whileHover={{ scale: 1.06 }}
+            >
+              <div className="hero-mascot-float" style={{ width: "clamp(140px, 22vw, 200px)", height: "clamp(140px, 22vw, 200px)" }}>
+                <img
+                  src={displayImageUrl(heroMascot)}
+                  alt=""
+                  width={400}
+                  height={400}
+                  decoding="async"
+                  fetchPriority="high"
+                  className={cn(
+                    "pointer-events-none h-full w-full object-contain",
+                    mediaDebugClassName(heroMascot.missing),
+                  )}
+                  style={{ filter: "drop-shadow(0 12px 32px rgba(0,0,0,0.15))" }}
+                />
+              </div>
+            </motion.div>
             <motion.h1
               className="font-heading"
               style={{ fontWeight: 800, fontSize: "clamp(30px, 5.5vw, 56px)", lineHeight: 1.08, letterSpacing: "-0.03em", color: "#0D0D0B" }}
@@ -265,14 +263,12 @@ export default function CmsHomePage() {
                   {...fadeUp(i * 0.05)}
                 >
                   <div className="flex items-center justify-center rounded-2xl" style={{ width: 56, height: 56, background: "#EDECE8" }}>
-                    {prev.url ? (
-                      <img
-                        src={prev.url}
-                        alt=""
-                        className={cn("w-7 h-7 object-contain", mediaDebugClassName(prev.missing))}
-                        loading="lazy"
-                      />
-                    ) : null}
+                    <img
+                      src={displayImageUrl(prev)}
+                      alt=""
+                      className={cn("w-7 h-7 object-contain", mediaDebugClassName(prev.missing))}
+                      loading="lazy"
+                    />
                   </div>
                   <p className="font-heading mt-3" style={{ fontSize: 13, fontWeight: 700, color: "#0D0D0B" }}>
                     {pick(s.name, lang)}
@@ -314,14 +310,14 @@ export default function CmsHomePage() {
                     <HolographicCard className="rounded-2xl overflow-hidden relative">
                       <div className="relative w-full" style={{ height: item.featured ? 260 : 180, background: item.bg || "#1a1a2e" }}>
                         <img
-                          src={caseImg.url}
+                          src={displayImageUrl(caseImg)}
                           alt=""
                           className={cn("absolute inset-0 w-full h-full object-cover", mediaDebugClassName(caseImg.missing))}
                           loading="lazy"
                         />
                         {caseLogo.url ? (
                           <img
-                            src={caseLogo.url}
+                            src={displayImageUrl(caseLogo)}
                             alt=""
                             className={cn(
                               "absolute top-3 right-3 h-10 w-auto max-w-[28%] object-contain z-[2]",

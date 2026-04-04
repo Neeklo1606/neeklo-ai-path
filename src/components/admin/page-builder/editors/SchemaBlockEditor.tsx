@@ -171,14 +171,29 @@ function renderFieldControl(
   }
 }
 
-function normalizeBlockValue(raw: Record<string, unknown> | undefined | null): Record<string, unknown> {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return { type: "unknown", images: {} };
+/** Always a plain object; never use raw `value.images.*` without this. */
+function normalizeImagesObject(raw: unknown): Record<string, unknown> {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    return { ...(raw as Record<string, unknown>) };
   }
-  const imgs = raw.images;
-  const images =
-    imgs && typeof imgs === "object" && !Array.isArray(imgs) ? { ...(imgs as Record<string, unknown>) } : {};
-  return { ...raw, images };
+  return {};
+}
+
+/**
+ * Safe block root: never read `value.images.mascot` etc. on raw CMS JSON — use `safeValue` only.
+ * Equivalent to: `value = value || {}`, `value.images = value.images || {}` (plus type default).
+ */
+function normalizeBlockValue(raw: Record<string, unknown> | undefined | null): Record<string, unknown> {
+  const v = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  const images = normalizeImagesObject(v.images);
+  const typeRaw = v.type;
+  const type = typeof typeRaw === "string" && typeRaw.length > 0 ? typeRaw : "unknown";
+  return { ...v, type, images };
+}
+
+/** Nested list rows (services/cases items): ensure `images` is an object map. */
+function normalizeNestedRow(row: Record<string, unknown>): Record<string, unknown> {
+  return { ...row, images: normalizeImagesObject(row.images) };
 }
 
 export function SchemaBlockEditor({ value, onChange }: Props) {
@@ -264,7 +279,8 @@ export function SchemaBlockEditor({ value, onChange }: Props) {
         <div className="space-y-4 border-t border-border pt-4">
           <p className="text-sm font-medium">Изображения</p>
           {imageSlots.map((slot) => {
-            const id = slot === "mascot" ? imgs.mascot || imgs.main : imgs[slot];
+            const id =
+              slot === "mascot" ? imgs["mascot"] || imgs["main"] : imgs[slot];
             return (
               <div key={slot} className={cn(has(`images.${slot}`) && "rounded-xl ring-2 ring-destructive/60 p-2 -m-2")}>
                 <MediaPickerField
@@ -283,7 +299,7 @@ export function SchemaBlockEditor({ value, onChange }: Props) {
         <div className="space-y-3 border-t border-border pt-4">
           <p className="text-sm font-medium">{nested?.itemLabel || "Элементы"}</p>
           {listForItems.map((row, idx) => {
-            const rec = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
+            const rec = normalizeNestedRow((row && typeof row === "object" ? row : {}) as Record<string, unknown>);
             const rowPrefix = `${itemsArrayKey}[${idx}].`;
             const rowHas = (sub: string) => issuePaths.has(rowPrefix + sub);
 
@@ -301,7 +317,8 @@ export function SchemaBlockEditor({ value, onChange }: Props) {
                 {sch.imagesNestedIn
                   ? imageSlots.map((slot) => {
                       const rim = readImagesMap(rec);
-                      const id = slot === "mascot" ? rim.mascot || rim.main : rim[slot];
+                      const id =
+                        slot === "mascot" ? rim["mascot"] || rim["main"] : rim[slot];
                       return (
                         <div
                           key={slot}

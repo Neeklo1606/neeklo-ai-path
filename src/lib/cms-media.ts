@@ -2,7 +2,8 @@ import type { CmsPage } from "@/lib/cms-api";
 import { getMediaCacheMap, hydrateMediaCacheFromPage, isMediaDebugEnabled } from "@/lib/media-cache";
 import { getBlockImageId } from "@/lib/cms-block-images";
 
-export const MEDIA_PLACEHOLDER_URL = "/uploads/placeholder.png";
+/** Exists in `public/` — use when media id is missing or not hydrated (avoid empty `src` / broken layout). */
+export const MEDIA_PLACEHOLDER_URL = "/placeholder.svg";
 
 /** Build id → public_url from API `page.media` and sync global cache (one source per page load). */
 export function mediaPublicUrlMap(page: CmsPage | null | undefined): Map<string, string> {
@@ -90,4 +91,11 @@ export function resolveImageUrl(
 export function mediaDebugClassName(missing: boolean): string {
   if (!missing || !isMediaDebugEnabled()) return "";
   return "ring-2 ring-red-500 ring-offset-2";
+}
+
+/** Safe `<img src>` / background URL: never return empty string when a visual is required. */
+export function displayImageUrl(r: ResolveImageResult, fallback = MEDIA_PLACEHOLDER_URL): string {
+  const u = r.url?.trim();
+  if (u) return u;
+  return fallback;
 }

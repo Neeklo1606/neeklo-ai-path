@@ -1,0 +1,3 @@
+# Install: crontab -e
+# Ensures all deploy output is appended to deploy.log (create with: touch /var/www/neeklo.ru/deploy.log)
+* * * * * cd /var/www/neeklo.ru && bash deploy.sh >> deploy.log 2>&1

@@ -1,23 +1,34 @@
 #!/bin/bash
+set -e
+
+echo "=== DEPLOY START $(date) ==="
+
 cd /var/www/neeklo.ru
 
-echo "=== GIT PULL ==="
-git pull origin main
+echo "=== GIT SYNC ==="
+git fetch origin
+git reset --hard origin/main
 
 echo "=== INSTALL ==="
 npm install
 
 echo "=== BUILD FRONTEND ==="
+rm -rf dist
 npm run build
 
-echo "=== PRISMA ==="
+echo "=== LOAD ENV ==="
 set -a
 [ -f .env ] && . ./.env
 set +a
+
+echo "=== PRISMA ==="
 npx prisma generate
 npx prisma db push
 
 echo "=== PM2 RESTART ==="
 pm2 restart neeklo-api --update-env
 
-echo "=== DONE ==="
+echo "=== NGINX CHECK ==="
+nginx -t
+
+echo "=== DEPLOY SUCCESS $(date) ==="

@@ -1,6 +1,7 @@
 /**
  * PM2 ecosystem for neeklo-api. Must use `.cjs` because package.json has "type": "module".
  * Loads project root `.env` and passes every key to the process (Prisma DATABASE_URL, Supabase keys, etc.).
+ * Auto-deploy uses cron + deploy.sh (see deploy/crontab.example), not a webhook.
  *
  *   pm2 delete neeklo-api
  *   pm2 start ecosystem.config.cjs
