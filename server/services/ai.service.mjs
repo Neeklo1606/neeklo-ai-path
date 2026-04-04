@@ -31,6 +31,16 @@ export function collectionNameForAssistant(assistantId) {
   return `kb_${safe}`.slice(0, 200);
 }
 
+/** 10s timeout for Ollama /api/embeddings (undici AbortSignal.timeout in Node 18+). */
+function embeddingFetchSignal() {
+  if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+    return AbortSignal.timeout(10_000);
+  }
+  const c = new AbortController();
+  setTimeout(() => c.abort(), 10_000);
+  return c.signal;
+}
+
 /**
  * @param {string} ollamaBase
  * @param {string} embedModel e.g. nomic-embed-text
@@ -38,23 +48,34 @@ export function collectionNameForAssistant(assistantId) {
  * @returns {Promise<number[]>}
  */
 export async function createEmbedding(ollamaBase, embedModel, text) {
-  const r = await fetch(`${ollamaBase}/api/embeddings`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: embedModel,
-      prompt: text.slice(0, 8000),
-    }),
-  });
-  const json = await r.json().catch(() => ({}));
-  if (!r.ok) {
-    throw new Error(typeof json.error === "string" ? json.error : json.error?.message || r.statusText || "Embedding failed");
+  console.log("OLLAMA BASE:", ollamaBase);
+  try {
+    const r = await fetch(`${ollamaBase}/api/embeddings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: embedModel,
+        prompt: text.slice(0, 8000),
+      }),
+      signal: embeddingFetchSignal(),
+    });
+    const json = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const msg =
+        typeof json.error === "string"
+          ? json.error
+          : json.error?.message || r.statusText || "Embedding failed";
+      throw new Error(`Embedding HTTP ${r.status}: ${msg}`);
+    }
+    const embedding = json.embedding;
+    if (!Array.isArray(embedding) || !embedding.length) {
+      throw new Error(`Invalid embedding response from Ollama (keys: ${Object.keys(json).join(",")})`);
+    }
+    return embedding;
+  } catch (e) {
+    console.error("EMBED ERROR:", e?.cause ?? e);
+    throw e;
   }
-  const embedding = json.embedding;
-  if (!Array.isArray(embedding) || !embedding.length) {
-    throw new Error("Invalid embedding response from Ollama");
-  }
-  return embedding;
 }
 
 /**
