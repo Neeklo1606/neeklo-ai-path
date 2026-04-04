@@ -107,6 +107,8 @@ export async function generateResponse(ollamaBase, chatModel, messages, opts = {
   if (opts.temperature != null && Number.isFinite(opts.temperature)) {
     body.options = { temperature: opts.temperature };
   }
+  const fullPrompt = JSON.stringify({ model: chatModel, messages });
+  console.log("FINAL PROMPT:", fullPrompt.length > 12000 ? `${fullPrompt.slice(0, 12000)}…[truncated]` : fullPrompt);
   const start = Date.now();
   const r = await fetch(`${ollamaBase}/api/chat`, {
     method: "POST",
@@ -185,6 +187,7 @@ export async function extractTextFromFile(buffer, mime, originalname = "") {
  * @param {string} opts.source
  */
 export async function upsertChunks({ client, collectionName, ollamaBase, embedModel, assistantId, chunks, source }) {
+  console.log("RAG CHUNKS:", chunks.length);
   if (!chunks.length) return { upserted: 0 };
   const firstEmb = await createEmbedding(ollamaBase, embedModel, chunks[0]);
   await ensureCollection(client, collectionName, firstEmb);
@@ -245,6 +248,8 @@ export async function chatWithRag({
     throw new Error("No user message");
   }
 
+  console.log("RAG START");
+
   let contextBlock = "";
   try {
     const loadRagContext = async () => {
@@ -260,6 +265,8 @@ export async function chatWithRag({
   } catch (e) {
     console.warn("[ai-rag] context search skipped:", e.message);
   }
+
+  console.log("RAG CONTEXT:", contextBlock.trim() ? contextBlock.slice(0, 4000) : "(empty)");
 
   const baseSystem =
     assistant.systemPrompt ||
