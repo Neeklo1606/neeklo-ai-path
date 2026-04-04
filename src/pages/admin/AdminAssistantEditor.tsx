@@ -202,7 +202,9 @@ export default function AdminAssistantEditor() {
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">
           <p className="font-semibold text-amber-900">Ключ API сайта (nk_…)</p>
           <code className="mt-2 block break-all rounded bg-white p-2 text-xs">{shownKey}</code>
-          <p className="mt-2 text-amber-800">Добавьте в настройки CMS ключ public.chat.site_api_key (публичная настройка) для чата на сайте.</p>
+          <p className="mt-2 text-amber-800">
+            Публичный чат на сайте использует активного ассистента (включите «Активен»); отдельный ключ в настройках CMS не нужен.
+          </p>
         </div>
       )}
 

@@ -30,7 +30,7 @@ export async function searchContext(
 
 /** Full generation is only via public POST /chat; kept for typing. */
 export async function generateResponse(_assistantId: string, _messages: { role: string; content: string }[]): Promise<never> {
-  throw new Error("Use chatComplete() from @/lib/cms-api with site API key");
+  throw new Error("Use chatComplete() from @/lib/cms-api (public /chat, active assistant)");
 }
 
 export async function ingestKnowledgeText(assistantId: string, text: string): Promise<{ ok: boolean; upserted: number }> {

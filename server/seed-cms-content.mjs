@@ -604,15 +604,6 @@ async function main() {
 
   try {
     await prisma.cmsSetting.upsert({
-      where: { key: "public.chat.site_api_key" },
-      create: {
-        key: "public.chat.site_api_key",
-        value: Prisma.JsonNull,
-        isPublic: true,
-      },
-      update: { isPublic: true },
-    });
-    await prisma.cmsSetting.upsert({
       where: { key: "public.chat.default_assistant_id" },
       create: {
         key: "public.chat.default_assistant_id",
@@ -628,7 +619,7 @@ async function main() {
         update: { isPublic: true },
       });
     }
-    console.log("[seed-cms] settings ok (set site_api_key in admin after creating assistant)");
+    console.log("[seed-cms] settings ok");
   } catch (e) {
     console.error("[seed-cms] setting", e.message);
     process.exitCode = 1;

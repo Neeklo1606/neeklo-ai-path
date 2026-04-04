@@ -52,16 +52,16 @@ const TypingDots = () => (
 
 const copy = {
   ru: {
-    noAssistantBanner: "Нет ассистента: в админке не задан публичный ключ API (public.chat.site_api_key).",
-    noAssistantSend: "Настройте ключ API в CMS, чтобы отправлять сообщения.",
+    noAssistantBanner: "Нет активного ассистента: создайте и включите ассистента в админке.",
+    noAssistantSend: "Создайте активного ассистента в админке, чтобы отправлять сообщения.",
     defaultWelcome: "Здравствуйте! Чем могу помочь?",
     defaultHeader: "neeklo AI",
     defaultStatus: "онлайн",
     defaultPlaceholder: "Напишите сообщение…",
   },
   en: {
-    noAssistantBanner: "No assistant: set the public site API key (public.chat.site_api_key) in admin.",
-    noAssistantSend: "Configure the API key in CMS to send messages.",
+    noAssistantBanner: "No active assistant: create and enable one in admin.",
+    noAssistantSend: "Enable an active assistant in admin to send messages.",
     defaultWelcome: "Hi! How can I help?",
     defaultHeader: "neeklo AI",
     defaultStatus: "online",
@@ -95,8 +95,7 @@ const ChatPage = () => {
   const [crmChatId, setCrmChatId] = useState<string | null>(null);
   const [crmSessionReady, setCrmSessionReady] = useState(false);
   const initialized = useRef(false);
-  const siteKey = boot.data?.siteApiKey?.trim() || null;
-  const hasAssistant = !!siteKey;
+  const hasAssistant = boot.data?.hasAssistant === true;
 
   const headerTitle = boot.data?.headerTitle?.trim() || c.defaultHeader;
   const statusLabel = boot.data?.statusLabel?.trim() || c.defaultStatus;
@@ -113,10 +112,6 @@ const ChatPage = () => {
 
   useEffect(() => {
     if (!boot.data) return;
-    if (!siteKey) {
-      setCrmSessionReady(true);
-      return;
-    }
     let cancelled = false;
     (async () => {
       try {
@@ -135,7 +130,7 @@ const ChatPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [boot.data, siteKey]);
+  }, [boot.data]);
 
   useEffect(() => {
     if (!boot.data || initialized.current) return;
@@ -165,7 +160,7 @@ const ChatPage = () => {
 
   const sendMessage = useCallback(() => {
     if (!hasText || !crmSessionReady) return;
-    if (!siteKey) {
+    if (!hasAssistant) {
       setMessages((prev) => [
         ...prev,
         { id: nextId(), role: "user", text: inputValue.trim(), timestamp: new Date() },
@@ -187,7 +182,7 @@ const ChatPage = () => {
         content: m.text,
       }));
       setIsTyping(true);
-      chatComplete({ apiKey: siteKey, messages: apiMsgs, chatId: crmChatId ?? undefined })
+      chatComplete({ messages: apiMsgs, chatId: crmChatId ?? undefined })
         .then((r) => {
           setIsTyping(false);
           setMessages((p) => [...p, { id: nextId(), role: "ai", text: r.reply, timestamp: new Date() }]);
@@ -199,7 +194,7 @@ const ChatPage = () => {
         });
       return combined;
     });
-  }, [hasText, inputValue, siteKey, crmChatId, crmSessionReady, c.noAssistantSend]);
+  }, [hasText, inputValue, hasAssistant, crmChatId, crmSessionReady, c.noAssistantSend]);
 
   if (boot.isLoading) {
     return (
@@ -215,21 +210,6 @@ const ChatPage = () => {
         <p className="font-body text-destructive break-words max-w-md">
           {(boot.error as Error).message}
         </p>
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="rounded-xl bg-[#0D0D0B] px-6 py-3 font-body text-sm font-semibold text-white"
-        >
-          ←
-        </button>
-      </div>
-    );
-  }
-
-  if (!boot.data) {
-    return (
-      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-white px-6 text-center">
-        <p className="font-body text-muted-foreground max-w-md">{c.noAssistantBanner}</p>
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -293,7 +273,7 @@ const ChatPage = () => {
               }}
             />
             <span className="font-body" style={{ fontSize: 12, color: hasAssistant ? "#00B341" : "#8A8880", lineHeight: 1 }}>
-              {hasAssistant ? statusLabel : locale === "en" ? "offline" : "нет ключа"}
+              {hasAssistant ? statusLabel : locale === "en" ? "no assistant" : "нет ассистента"}
             </span>
           </div>
         </div>

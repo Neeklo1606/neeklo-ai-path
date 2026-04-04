@@ -87,14 +87,13 @@ export type CmsSetting = {
 };
 
 export async function chatComplete(body: {
-  apiKey: string;
   messages: { role: string; content: string }[];
-  assistantId?: string;
   /** Persist transcript to CRM when set */
   chatId?: string;
 }): Promise<{ reply: string }> {
   return cmsJson("/chat", {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 }
@@ -137,7 +136,8 @@ export type ChatBootstrap = {
   statusLabel: string | null;
   /** From CMS `chat` page meta `chatInputPlaceholder`. */
   inputPlaceholder: string | null;
-  siteApiKey: string | null;
+  /** Server: exists an active assistant (single-assistant mode). */
+  hasAssistant: boolean;
 };
 
 export async function fetchChatBootstrap(locale = "ru"): Promise<ChatBootstrap> {

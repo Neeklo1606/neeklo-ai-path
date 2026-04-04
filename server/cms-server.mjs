@@ -524,6 +524,20 @@ function pickLocale(val, loc) {
   return null;
 }
 
+function clientIp(req) {
+  const x = req.headers["x-forwarded-for"];
+  if (typeof x === "string" && x.trim()) return x.split(",")[0].trim().slice(0, 128);
+  return String(req.socket?.remoteAddress || "unknown").slice(0, 128);
+}
+
+/** Single public chat assistant: newest active row. */
+async function getActiveAssistant() {
+  return prisma.assistant.findFirst({
+    where: { active: true },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 app.get("/chat/bootstrap", async (req, res) => {
   const locale = (req.query.locale || "ru").toString();
   let welcomeMessage = null;
@@ -531,7 +545,6 @@ app.get("/chat/bootstrap", async (req, res) => {
   let headerTitle = null;
   let statusLabel = null;
   let inputPlaceholder = null;
-  let siteApiKeyHint = null;
   try {
     const page = await prisma.page.findFirst({
       where: { slug: "chat", locale, published: true },
@@ -552,13 +565,15 @@ app.get("/chat/bootstrap", async (req, res) => {
     if (meta?.welcomeMessage != null && String(meta.welcomeMessage).trim()) {
       welcomeMessage = String(meta.welcomeMessage);
     }
-    const settings = await prisma.cmsSetting.findMany({ where: { isPublic: true } });
-    for (const row of settings) {
-      if (row.key === "public.chat.site_api_key" && row.value != null) {
-        siteApiKeyHint = typeof row.value === "string" ? row.value : row.value;
-      }
-    }
-    res.json({ welcomeMessage, pageTitle, headerTitle, statusLabel, inputPlaceholder, siteApiKey: siteApiKeyHint });
+    const asst = await getActiveAssistant();
+    res.json({
+      welcomeMessage,
+      pageTitle,
+      headerTitle,
+      statusLabel,
+      inputPlaceholder,
+      hasAssistant: !!asst,
+    });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Bootstrap failed" });
@@ -1348,24 +1363,18 @@ async function persistCrmAssistantReply(crmChatId, replyText) {
 
 // ─── Chat ───
 app.post("/chat", async (req, res) => {
-  const { apiKey, messages, assistantId, chatId: crmChatId } = req.body || {};
-  if (!apiKey || !Array.isArray(messages)) {
-    return res.status(400).json({ error: "apiKey and messages[] required" });
+  const { messages, chatId: crmChatId } = req.body || {};
+  if (!Array.isArray(messages)) {
+    return res.status(400).json({ error: "messages[] required" });
   }
-  const h = hashKey(apiKey);
   const billCfg = getBillingConfig();
-  if (!rateLimitByKeyHash(h, billCfg.rateLimitPerMin)) {
+  const ipKey = `chat:${clientIp(req)}`;
+  if (!rateLimitByKeyHash(ipKey, billCfg.rateLimitPerMin)) {
     return res.status(429).json({ error: "Rate limit exceeded", retry_after_seconds: 60 });
   }
   try {
-    const asst = await prisma.assistant.findFirst({
-      where: {
-        apiKeyHash: h,
-        active: true,
-        ...(assistantId ? { id: assistantId } : {}),
-      },
-    });
-    if (!asst) return res.status(401).json({ error: "Invalid api key" });
+    const asst = await getActiveAssistant();
+    if (!asst) return res.status(503).json({ error: "No active assistant configured" });
 
     const bKey = await ensureApiKeyForAssistant(prisma, asst.id);
     if (!bKey.isActive) return res.status(403).json({ error: "API key disabled" });
