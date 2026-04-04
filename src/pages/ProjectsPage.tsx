@@ -151,7 +151,8 @@ const ProjectsPage = () => {
   }
 
   return (
-    <div className="bg-[#F5F5F5] min-h-screen pb-[100px] overflow-x-hidden">
+    <div ref={containerRef} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} className="bg-[#F5F5F5] min-h-screen pb-[100px] overflow-x-hidden">
+      <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
       <div className="bg-white px-5 md:px-10 pt-8 pb-6 border-b border-[#F0F0F0]">
         <div className="flex items-center justify-between">
           <h1 className="font-heading text-[24px] font-[800] text-[#0D0D0B]">{t("proj.title")}</h1>
