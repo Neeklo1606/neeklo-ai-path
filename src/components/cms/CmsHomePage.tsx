@@ -112,16 +112,45 @@ export default function CmsHomePage() {
     );
   }
 
-  if (q.isError || !q.data) {
-    return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-2 px-6 text-center">
-        <p className="font-body text-destructive">Страница «home» не найдена в CMS.</p>
-        <p className="text-sm text-muted-foreground">Выполните seed: node server/seed-cms-content.mjs</p>
-      </div>
-    );
-  }
+  const fallbackPage: CmsPage = {
+    id: "fallback",
+    slug: "home",
+    title: "neeklo — digital-студия",
+    locale: "ru",
+    published: true,
+    meta: {},
+    created_at: "",
+    updated_at: "",
+    blocks: [
+      {
+        type: "hero",
+        title: { ru: "Делаем digital\nкоторый работает", en: "We build digital\nthat works" },
+        subtitle: { ru: "Сайты, приложения, AI-решения и видео — быстро и качественно", en: "Websites, apps, AI solutions & video — fast and professional" },
+        ctaLabel: { ru: "Обсудить проект", en: "Discuss project" },
+        secondaryLabel: { ru: "Смотреть работы", en: "See our work" },
+        showScrollChevron: true,
+      },
+      {
+        type: "how_steps",
+        title: { ru: "Как мы работаем", en: "How we work" },
+        steps: [
+          { num: "01", title: { ru: "Бриф", en: "Brief" }, desc: { ru: "Обсуждаем задачу и цели", en: "Discuss goals & objectives" } },
+          { num: "02", title: { ru: "Концепт", en: "Concept" }, desc: { ru: "Создаём прототип и дизайн", en: "Create prototype & design" } },
+          { num: "03", title: { ru: "Разработка", en: "Development" }, desc: { ru: "Реализуем решение", en: "Build the solution" } },
+          { num: "04", title: { ru: "Запуск", en: "Launch" }, desc: { ru: "Тестируем и запускаем", en: "Test & launch" } },
+        ],
+      },
+      {
+        type: "cta_simple",
+        title: { ru: "Готовы начать?", en: "Ready to start?" },
+        subtitle: { ru: "Расскажите о своём проекте — мы предложим решение", en: "Tell us about your project — we'll suggest a solution" },
+        buttonLabel: { ru: "Написать в чат", en: "Start chat" },
+        buttonHref: "/chat",
+      },
+    ],
+  };
 
-  const page = q.data;
+  const page = q.data || fallbackPage;
   const hero = getBlock<HeroBlock>(page, "hero");
 
   const servicesRaw = getBlockFirst<ServicesPreviewBlock>(page, ["services_preview", "services_row"]);
