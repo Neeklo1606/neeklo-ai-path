@@ -52,10 +52,17 @@ function normalizeService(raw: RawService, idx: number, mediaById: Map<string, s
   };
 }
 
+function blocksArray(page: CmsPage | null | undefined): unknown[] | null {
+  const b = page?.blocks;
+  if (!b || !Array.isArray(b)) return null;
+  return b;
+}
+
 export function parseServicesGrid(page: CmsPage | null | undefined): ServiceItem[] | null {
-  if (!page?.blocks?.length) return null;
+  const blocks = blocksArray(page);
+  if (!blocks?.length) return null;
   const mediaById = mediaPublicUrlMap(page);
-  for (const b of page.blocks) {
+  for (const b of blocks) {
     if (typeof b !== "object" || b === null) continue;
     const type = (b as { type?: string }).type;
     if (type !== "services_grid" && type !== "services") continue;
@@ -77,8 +84,9 @@ export type ChatScriptsBlock = {
 };
 
 export function parseChatScripts(page: CmsPage | null | undefined): ChatScriptsBlock | null {
-  if (!page?.blocks?.length) return null;
-  for (const b of page.blocks) {
+  const blocks = blocksArray(page);
+  if (!blocks?.length) return null;
+  for (const b of blocks) {
     if (typeof b === "object" && b !== null && (b as ChatScriptsBlock).type === "chat_scripts") {
       return b as ChatScriptsBlock;
     }
@@ -109,7 +117,9 @@ export type CaseItem = {
 };
 
 export function parseCasesList(page: CmsPage | null | undefined): { filters?: Array<{ key: string; label: unknown }>; items?: CaseItem[] } | null {
-  const b = page?.blocks?.find(
+  const blocks = blocksArray(page);
+  if (!blocks?.length) return null;
+  const b = blocks.find(
     (x) => typeof x === "object" && x !== null && ["cases_list", "cases"].includes((x as { type?: string }).type || ""),
   ) as { filters?: Array<{ key: string; label: unknown }>; items?: Record<string, unknown>[] } | undefined;
   if (!b?.items?.length) return null;
@@ -147,7 +157,9 @@ export type WorkItem = {
 };
 
 export function parseWorksGrid(page: CmsPage | null | undefined): { items?: WorkItem[]; filterTabs?: Array<{ key: string; label: unknown }> } | null {
-  const b = page?.blocks?.find(
+  const blocks = blocksArray(page);
+  if (!blocks?.length) return null;
+  const b = blocks.find(
     (x) => typeof x === "object" && x !== null && ["works_grid", "works"].includes((x as { type?: string }).type || ""),
   ) as { items?: Record<string, unknown>[]; filterTabs?: Array<{ key: string; label: unknown }> } | undefined;
   if (!b?.items?.length) return null;
@@ -191,7 +203,9 @@ export type ProjectCmsItem = {
 };
 
 export function parseProjectsCms(page: CmsPage | null | undefined): { items: ProjectCmsItem[] } | null {
-  const b = page?.blocks?.find((x) => typeof x === "object" && x !== null && (x as { type?: string }).type === "projects_data") as
+  const blocks = blocksArray(page);
+  if (!blocks?.length) return null;
+  const b = blocks.find((x) => typeof x === "object" && x !== null && (x as { type?: string }).type === "projects_data") as
     | { items?: ProjectCmsItem[] }
     | undefined;
   if (!b || !Array.isArray(b.items)) return null;

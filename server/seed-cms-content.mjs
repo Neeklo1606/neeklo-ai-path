@@ -23,6 +23,8 @@ const STATIC_ASSETS = [
   { k: "workVision", sp: "cms-static/work-vision.webp", pu: "/cms-static/work-vision.webp", mime: "image/webp" },
   { k: "workEcommerce", sp: "cms-static/work-ecommerce.webp", pu: "/cms-static/work-ecommerce.webp", mime: "image/webp" },
   { k: "workAssistant", sp: "cms-static/work-assistant.webp", pu: "/cms-static/work-assistant.webp", mime: "image/webp" },
+  { k: "logo", sp: "cms-static/logo.png", pu: "/cms-static/logo.png", mime: "image/png" },
+  { k: "logoWhite", sp: "cms-static/logo-white.png", pu: "/cms-static/logo-white.png", mime: "image/png" },
 ];
 
 async function ensureStaticMediaIds() {
