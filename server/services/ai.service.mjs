@@ -247,10 +247,16 @@ export async function chatWithRag({
 
   let contextBlock = "";
   try {
-    const qv = await createEmbedding(ollamaBase, embedModel, queryText);
-    const hits = await searchContext(client, coll, qv, 5);
-    const texts = hits.map((h) => h.text).filter(Boolean);
-    contextBlock = texts.join("\n---\n");
+    const loadRagContext = async () => {
+      const qv = await createEmbedding(ollamaBase, embedModel, queryText);
+      const hits = await searchContext(client, coll, qv, 5);
+      const texts = hits.map((h) => h.text).filter(Boolean);
+      return texts.join("\n---\n");
+    };
+    contextBlock = await Promise.race([
+      loadRagContext(),
+      new Promise((resolve) => setTimeout(() => resolve(""), 2000)),
+    ]);
   } catch (e) {
     console.warn("[ai-rag] context search skipped:", e.message);
   }

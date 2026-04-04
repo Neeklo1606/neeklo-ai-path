@@ -37,7 +37,6 @@ import {
 import { optimizeRasterUpload } from "./services/media-process.mjs";
 import { validateUploadFileSignature, ALLOWED_UPLOAD_MIMES } from "./services/file-signature.mjs";
 import { validatePageBlocksSchema } from "./block-schemas.mjs";
-import { getChatQueue, getChatQueueEvents } from "./chat-queue.mjs";
 import { getDeployStatus } from "./deploy-status.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -55,27 +54,6 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const OPENAI_FALLBACK = process.env.OPENAI_API_KEY || "";
 
 const prisma = new PrismaClient();
-
-/** Ollama path: enqueue BullMQ job (worker calls Ollama) or sync when CHAT_QUEUE_SYNC=1 */
-async function runOllamaChatTurn(asst, messages) {
-  if (process.env.CHAT_QUEUE_SYNC === "1") {
-    return chatWithRag({ assistant: asst, messages });
-  }
-  try {
-    const queueEvents = getChatQueueEvents();
-    await queueEvents.waitUntilReady();
-    const queue = getChatQueue();
-    const job = await queue.add("turn", { assistantId: asst.id, messages });
-    return job.waitUntilFinished(queueEvents);
-  } catch (e) {
-    console.error("[chat] queue error", e?.message || e);
-    throw new Error(
-      e?.code === "ECONNREFUSED" || String(e?.message || "").includes("Redis")
-        ? "Chat queue unavailable (check REDIS_URL and chat-worker process)"
-        : e?.message || "Chat queue failed",
-    );
-  }
-}
 
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
   console.warn("[cms-server] Set JWT_SECRET (min 32 chars) for production.");
@@ -1417,31 +1395,11 @@ app.post("/chat", async (req, res) => {
 
     if (useOllama) {
       const ollamaStarted = Date.now();
-      let reply;
-      let usedContext;
-      let promptTokens;
-      let completionTokens;
-      try {
-        const result = await Promise.race([
-          runOllamaChatTurn(asst, messages),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("ollama-timeout")), 30_000),
-          ),
-        ]);
-        console.log("OLLAMA TOTAL TIME:", Date.now() - ollamaStarted);
-        ({ reply, usedContext, promptTokens, completionTokens } = result);
-      } catch (e) {
-        if (String(e?.message || e) === "ollama-timeout") {
-          return res.json({
-            reply: "Сервер перегружен, попробуйте снова",
-            used_context: false,
-            provider: "ollama",
-            billing: null,
-            timeout: true,
-          });
-        }
-        throw e;
-      }
+      console.log("BEFORE QUEUE");
+      const result = await chatWithRag({ assistant: asst, messages });
+      console.log("AFTER QUEUE");
+      console.log("OLLAMA DIRECT TIME:", Date.now() - ollamaStarted);
+      const { reply, usedContext, promptTokens, completionTokens } = result;
       if (crmChatId && isUuid(crmChatId)) {
         try {
           await persistCrmAssistantReply(crmChatId, reply);
