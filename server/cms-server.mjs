@@ -1,6 +1,6 @@
 /**
- * CMS API + JWT auth (Prisma). Run: node server/cms-server.mjs
- * Env: DATABASE_URL, JWT_SECRET, SUPABASE_*, OPENAI_API_KEY (optional)
+ * CMS API + JWT auth (Prisma + PostgreSQL only). Run: node server/cms-server.mjs
+ * Env: DATABASE_URL, JWT_SECRET (>=32 in prod), PORT, OPENAI_API_KEY (optional)
  */
 import "dotenv/config";
 import express from "express";
@@ -9,54 +9,346 @@ import multer from "multer";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { createClient } from "@supabase/supabase-js";
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
 import { PrismaClient } from "@prisma/client";
+import {
+  getQdrantClient,
+  getOllamaBase,
+  collectionNameForAssistant,
+  createEmbedding,
+  chunkText,
+  extractTextFromFile,
+  upsertChunks,
+  chatWithRag,
+  chatOpenAiCompatible,
+  searchContext,
+} from "./services/ai.service.mjs";
+import {
+  getBillingConfig,
+  computeUsageCost,
+  rateLimitByKeyHash,
+  ensureApiKeyForAssistant,
+  deductBalanceAndLog,
+  estimateTokensFromText,
+} from "./services/billing.service.mjs";
+import { optimizeRasterUpload } from "./services/media-process.mjs";
+import { validateUploadFileSignature, ALLOWED_UPLOAD_MIMES } from "./services/file-signature.mjs";
+import { validatePageBlocksSchema } from "./block-schemas.mjs";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.join(__dirname, "..");
+const UPLOAD_DIR = path.join(ROOT, "public", "uploads");
+
+const MAX_UPLOAD_CAP = 100 * 1024 * 1024;
+const MAX_FILE_BYTES = Math.min(
+  Number(process.env.CMS_MEDIA_MAX_FILE_BYTES || 25 * 1024 * 1024),
+  MAX_UPLOAD_CAP,
+);
 
 const PORT = Number(process.env.PORT || process.env.CMS_SERVER_PORT || 8787);
 const JWT_SECRET = process.env.JWT_SECRET;
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const OPENAI_FALLBACK = process.env.OPENAI_API_KEY || "";
 
 const prisma = new PrismaClient();
 
-if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) {
-  console.warn("[cms-server] Missing SUPABASE_URL, SERVICE_ROLE or ANON key.");
-}
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
   console.warn("[cms-server] Set JWT_SECRET (min 32 chars) for production.");
 }
 
-const supabaseAdmin = createClient(SUPABASE_URL || "", SERVICE_KEY || "", {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
-const supabasePublic = createClient(SUPABASE_URL || "", ANON_KEY || "", {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
-
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.static(path.join(ROOT, "public")));
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
+await fs.mkdir(UPLOAD_DIR, { recursive: true });
 
-function supabaseConfigHint() {
-  if (!SUPABASE_URL || !ANON_KEY) {
-    return "Укажите в .env SUPABASE_URL и SUPABASE_ANON_KEY (или VITE_SUPABASE_URL и VITE_SUPABASE_PUBLISHABLE_KEY).";
-  }
-  return null;
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
+  filename: (_req, file, cb) => {
+    const ext = (file.originalname.split(".").pop() || "bin").toLowerCase().slice(0, 8);
+    cb(null, `${crypto.randomUUID()}.${ext}`);
+  },
+});
+const MAX_UPLOAD = 100 * 1024 * 1024; // assistant knowledge uploads (larger than CMS media)
+const uploadMedia = multer({
+  storage,
+  limits: { fileSize: MAX_FILE_BYTES },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_UPLOAD_MIMES.has(file.mimetype)) cb(null, true);
+    else cb(new Error(`File type not allowed: ${file.mimetype}`));
+  },
+});
+const uploadKb = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_UPLOAD } });
+
+function pageOut(p) {
+  if (!p) return p;
+  return {
+    id: p.id,
+    slug: p.slug,
+    title: p.title,
+    locale: p.locale,
+    blocks: p.blocks,
+    published: p.published,
+    is_draft: !!p.isDraft,
+    meta: p.meta,
+    created_at: p.createdAt instanceof Date ? p.createdAt.toISOString() : p.createdAt,
+    updated_at: p.updatedAt instanceof Date ? p.updatedAt.toISOString() : p.updatedAt,
+  };
 }
 
-function supabaseFailureHint(message) {
-  const m = (message || "").toLowerCase();
-  if (m.includes("relation") && m.includes("does not exist")) {
-    return "Таблица не создана. В Supabase: SQL Editor → выполните файл supabase/migrations/20260403120000_cms_core.sql.";
+function pageVersionOut(v) {
+  if (!v) return v;
+  return {
+    id: v.id,
+    page_id: v.pageId,
+    created_at: v.createdAt instanceof Date ? v.createdAt.toISOString() : v.createdAt,
+    is_auto: !!v.isAuto,
+  };
+}
+
+/** Recursively collect media UUIDs: legacy `imageId` + all values under `images` maps. */
+function collectMediaIdsFromPageJson(value, acc) {
+  if (value == null) return;
+  if (Array.isArray(value)) {
+    value.forEach((v) => collectMediaIdsFromPageJson(v, acc));
+    return;
   }
-  if (m.includes("jwt") || m.includes("invalid api key") || m.includes("api key")) {
-    return "Проверьте anon key (public), не service_role, в SUPABASE_ANON_KEY.";
+  if (typeof value === "object") {
+    for (const [k, v] of Object.entries(value)) {
+      if (k === "imageId" && typeof v === "string" && v.trim()) {
+        const t = v.trim();
+        if (isUuid(t)) acc.add(t);
+      } else if (k === "images" && v != null && typeof v === "object" && !Array.isArray(v)) {
+        for (const id of Object.values(v)) {
+          if (typeof id === "string" && id.trim()) {
+            const t = id.trim();
+            if (isUuid(t)) acc.add(t);
+          }
+        }
+      } else {
+        collectMediaIdsFromPageJson(v, acc);
+      }
+    }
   }
-  return "После миграций выполните: node server/seed-cms-content.mjs (нужен SUPABASE_SERVICE_ROLE_KEY).";
+}
+
+/** Keys that must never appear in page JSON (use imageId + Media only). */
+const FORBIDDEN_IMAGE_URL_KEYS = new Set([
+  "imageUrl",
+  "iconUrl",
+  "src",
+  "coverUrl",
+  "avatarUrl",
+  "posterUrl",
+  "thumbnailUrl",
+  "thumbUrl",
+  "logoUrl",
+  "backgroundUrl",
+  "publicUrl",
+]);
+
+/** String values starting with http(s) allowed only for these keys (links, not image files). */
+const ALLOWED_HTTP_VALUE_KEYS = new Set(["avitoUrl", "buttonHref", "seeAllPath", "itemNavigatePath", "href"]);
+
+/**
+ * Reject external/raw image fields and raw http(s) strings (except whitelisted link keys).
+ * @returns {{ ok: true } | { ok: false; error: string }}
+ */
+function validateNoExternalImageFields(blocks, meta) {
+  function walk(value) {
+    if (value == null) return { ok: true };
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const r = walk(item);
+        if (!r.ok) return r;
+      }
+      return { ok: true };
+    }
+    if (typeof value === "object") {
+      for (const [k, v] of Object.entries(value)) {
+        if (FORBIDDEN_IMAGE_URL_KEYS.has(k)) {
+          return { ok: false, error: "Only imageId is allowed. Use Media Manager." };
+        }
+        if (typeof v === "string" && /^https?:\/\//i.test(v.trim()) && !ALLOWED_HTTP_VALUE_KEYS.has(k)) {
+          return { ok: false, error: "Only imageId is allowed. Use Media Manager." };
+        }
+        const r = walk(v);
+        if (!r.ok) return r;
+      }
+      return { ok: true };
+    }
+    return { ok: true };
+  }
+  const a = walk(blocks);
+  if (!a.ok) return a;
+  return walk(meta);
+}
+
+/** Ensure every referenced media id in blocks+meta exists in DB (`Media` / cms_media). */
+async function validateMediaIdsForPage(blocks, meta) {
+  const acc = new Set();
+  collectMediaIdsFromPageJson(blocks, acc);
+  collectMediaIdsFromPageJson(meta, acc);
+  if (acc.size === 0) return { ok: true };
+  const ids = [...acc];
+  const rows = await prisma.media.findMany({
+    where: { id: { in: ids }, deletedAt: null },
+    select: { id: true },
+  });
+  const have = new Set(rows.map((r) => r.id));
+  for (const id of ids) {
+    if (!have.has(id)) {
+      return { ok: false, error: `Media not found: ${id}` };
+    }
+  }
+  return { ok: true };
+}
+
+/** Replace all `MediaUsage` rows for a page from current blocks/meta media id set. */
+async function replaceMediaUsageForPage(pageId, blocks, meta) {
+  const acc = new Set();
+  collectMediaIdsFromPageJson(blocks, acc);
+  collectMediaIdsFromPageJson(meta, acc);
+  const ids = [...acc];
+  await prisma.$transaction(async (tx) => {
+    await tx.mediaUsage.deleteMany({ where: { pageId } });
+    if (ids.length > 0) {
+      await tx.mediaUsage.createMany({
+        data: ids.map((mediaId) => ({ mediaId, pageId })),
+        skipDuplicates: true,
+      });
+    }
+  });
+}
+
+/** Any page still listing this media id (indexed `cms_media_usage`). */
+async function findPageReferencingMedia(mediaId) {
+  if (!isUuid(mediaId)) return null;
+  const u = await prisma.mediaUsage.findFirst({
+    where: { mediaId },
+    include: { page: { select: { id: true, slug: true } } },
+  });
+  return u?.page ? { id: u.page.id, slug: u.page.slug } : null;
+}
+
+async function assertMediaUploadAllowed(req, addedBytes) {
+  const maxTotal = Number(process.env.CMS_MEDIA_MAX_TOTAL_BYTES || 0);
+  if (maxTotal > 0) {
+    const agg = await prisma.media.aggregate({
+      where: { deletedAt: null },
+      _sum: { sizeBytes: true },
+    });
+    const cur = Number(agg._sum.sizeBytes || 0);
+    if (cur + addedBytes > maxTotal) {
+      throw new Error("Storage quota exceeded");
+    }
+  }
+  const maxCount = Number(process.env.CMS_MEDIA_MAX_ACTIVE_COUNT || 0);
+  if (maxCount > 0) {
+    const c = await prisma.media.count({ where: { deletedAt: null } });
+    if (c >= maxCount) throw new Error("Media count limit reached");
+  }
+  const maxPerUser = Number(process.env.CMS_MEDIA_MAX_UPLOADS_PER_USER || 0);
+  if (maxPerUser > 0 && req.authUser?.id) {
+    const c = await prisma.media.count({
+      where: { deletedAt: null, uploadedByUserId: req.authUser.id },
+    });
+    if (c >= maxPerUser) throw new Error("Per-user upload limit reached");
+  }
+}
+
+function versionedUrl(u, updatedAt) {
+  if (!u) return u;
+  const dt = updatedAt instanceof Date ? updatedAt : new Date(updatedAt);
+  const t = dt.getTime();
+  if (Number.isNaN(t)) return u;
+  const sep = u.includes("?") ? "&" : "?";
+  return `${u}${sep}v=${t}`;
+}
+
+/** Attach `media: [...]` for all referenced media ids (public + admin page loads). */
+async function pageOutWithMedia(p) {
+  const base = pageOut(p);
+  if (!p) return base;
+  const acc = new Set();
+  collectMediaIdsFromPageJson(p.blocks, acc);
+  collectMediaIdsFromPageJson(p.meta, acc);
+  const ids = [...acc];
+  let media = [];
+  if (ids.length > 0) {
+    const rows = await prisma.media.findMany({
+      where: { id: { in: ids }, deletedAt: null },
+    });
+    media = await attachMediaUsageCounts(rows.map((row) => mediaOut(row)));
+  }
+  return { ...base, media };
+}
+
+async function attachMediaUsageCounts(mediaRows) {
+  if (!mediaRows?.length) return mediaRows;
+  const ids = mediaRows.map((m) => m.id).filter(Boolean);
+  if (!ids.length) return mediaRows;
+  const counts = await prisma.mediaUsage.groupBy({
+    by: ["mediaId"],
+    where: { mediaId: { in: ids } },
+    _count: { _all: true },
+  });
+  const map = new Map(counts.map((c) => [c.mediaId, c._count._all]));
+  return mediaRows.map((m) => ({ ...m, usage_count: map.get(m.id) ?? 0 }));
+}
+
+function mediaOut(m) {
+  if (!m) return m;
+  const at = m.updatedAt instanceof Date ? m.updatedAt : new Date(m.updatedAt);
+  return {
+    id: m.id,
+    storage_path: m.storagePath,
+    public_url: versionedUrl(m.publicUrl, at),
+    thumbnail_path: m.thumbnailPath,
+    thumbnail_url: m.thumbnailUrl ? versionedUrl(m.thumbnailUrl, at) : null,
+    mime: m.mime,
+    alt: m.alt,
+    width: m.width,
+    height: m.height,
+    thumb_width: m.thumbWidth,
+    thumb_height: m.thumbHeight,
+    created_at: m.createdAt instanceof Date ? m.createdAt.toISOString() : m.createdAt,
+    updated_at: m.updatedAt instanceof Date ? m.updatedAt.toISOString() : m.updatedAt,
+    deleted_at: m.deletedAt ? (m.deletedAt instanceof Date ? m.deletedAt.toISOString() : m.deletedAt) : null,
+  };
+}
+
+function settingOut(s) {
+  if (!s) return s;
+  return {
+    key: s.key,
+    value: s.value,
+    is_public: s.isPublic,
+    updated_at: s.updatedAt instanceof Date ? s.updatedAt.toISOString() : s.updatedAt,
+  };
+}
+
+function assistantListOut(a) {
+  return {
+    id: a.id,
+    name: a.name,
+    api_key_prefix: a.apiKeyPrefix,
+    provider: a.provider,
+    base_url: a.baseUrl,
+    model: a.model,
+    embed_model: a.embedModel,
+    temperature: a.temperature != null ? Number(a.temperature) : 0.7,
+    system_prompt: a.systemPrompt,
+    active: a.active,
+    created_at: a.createdAt instanceof Date ? a.createdAt.toISOString() : a.createdAt,
+    updated_at: a.updatedAt instanceof Date ? a.updatedAt.toISOString() : a.updatedAt,
+  };
+}
+
+function assistantDetailOut(a) {
+  return { ...assistantListOut(a), provider_api_key: a.providerApiKey };
 }
 
 function requireAuth(req, res, next) {
@@ -97,6 +389,10 @@ function signToken(user) {
   const secret = JWT_SECRET || "dev-only-unsafe-secret-min-32-chars!!";
   return jwt.sign({ sub: user.id, role: user.role }, secret, { expiresIn: "7d" });
 }
+
+app.get("/health", (_req, res) => {
+  res.status(200).json({ ok: true, service: "cms-api" });
+});
 
 // ─── Auth ───
 app.post("/auth/login", async (req, res) => {
@@ -180,86 +476,116 @@ app.get("/auth/me", requireAuth, async (req, res) => {
   res.json(user);
 });
 
-// ─── Public settings (no secrets) ───
+// ─── Public settings ───
 app.get("/settings/public", async (_req, res) => {
-  const { data, error } = await supabasePublic.from("cms_settings").select("key, value").eq("is_public", true);
-  if (error) return res.status(500).json({ error: error.message });
-  const map = {};
-  for (const row of data || []) {
-    map[row.key] = row.value;
+  try {
+    const rows = await prisma.cmsSetting.findMany({ where: { isPublic: true } });
+    const map = {};
+    for (const row of rows) {
+      map[row.key] = row.value;
+    }
+    res.json(map);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to load settings" });
   }
-  res.json(map);
 });
 
-// ─── Chat bootstrap (welcome + public site key reference) ───
+// ─── Chat bootstrap ───
+function pickLocale(val, loc) {
+  if (val == null) return null;
+  if (typeof val === "string") return val.trim() || null;
+  if (typeof val === "object" && val !== null) {
+    const s = val[loc] ?? val.ru ?? val.en;
+    if (s != null && String(s).trim()) return String(s).trim();
+  }
+  return null;
+}
+
 app.get("/chat/bootstrap", async (req, res) => {
   const locale = (req.query.locale || "ru").toString();
-  let welcomeMessage = "Здравствуйте! Чем могу помочь?";
-  const { data: page } = await supabasePublic
-    .from("cms_pages")
-    .select("blocks, meta")
-    .eq("slug", "chat")
-    .eq("locale", locale)
-    .eq("published", true)
-    .maybeSingle();
-
-  if (page?.blocks && Array.isArray(page.blocks)) {
-    const cfg = page.blocks.find((b) => b?.type === "chat_config");
-    if (cfg?.welcomeMessage) welcomeMessage = cfg.welcomeMessage;
-  }
-  if (page?.meta?.welcomeMessage) welcomeMessage = page.meta.welcomeMessage;
-
-  const { data: settings } = await supabasePublic.from("cms_settings").select("key, value").eq("is_public", true);
+  let welcomeMessage = null;
+  let pageTitle = null;
+  let headerTitle = null;
+  let statusLabel = null;
+  let inputPlaceholder = null;
   let siteApiKeyHint = null;
-  for (const row of settings || []) {
-    if (row.key === "public.chat.site_api_key" && row.value) {
-      siteApiKeyHint = typeof row.value === "string" ? row.value : row.value;
+  try {
+    const page = await prisma.page.findFirst({
+      where: { slug: "chat", locale, published: true },
+    });
+    if (page?.title) pageTitle = page.title;
+    const meta = page?.meta && typeof page.meta === "object" ? page.meta : null;
+    if (meta) {
+      headerTitle = pickLocale(meta.chatHeaderTitle, locale) || page?.title || null;
+      statusLabel = pickLocale(meta.chatStatusLabel, locale);
+      inputPlaceholder = pickLocale(meta.chatInputPlaceholder, locale);
     }
+    if (page?.blocks && Array.isArray(page.blocks)) {
+      const cfg = page.blocks.find((b) => b?.type === "chat_config");
+      if (cfg?.welcomeMessage != null && String(cfg.welcomeMessage).trim()) {
+        welcomeMessage = String(cfg.welcomeMessage);
+      }
+    }
+    if (meta?.welcomeMessage != null && String(meta.welcomeMessage).trim()) {
+      welcomeMessage = String(meta.welcomeMessage);
+    }
+    const settings = await prisma.cmsSetting.findMany({ where: { isPublic: true } });
+    for (const row of settings) {
+      if (row.key === "public.chat.site_api_key" && row.value != null) {
+        siteApiKeyHint = typeof row.value === "string" ? row.value : row.value;
+      }
+    }
+    res.json({ welcomeMessage, pageTitle, headerTitle, statusLabel, inputPlaceholder, siteApiKey: siteApiKeyHint });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Bootstrap failed" });
   }
-  res.json({ welcomeMessage, siteApiKey: siteApiKeyHint });
 });
 
 // ─── Pages ───
 app.get("/pages", requireAuth, async (req, res) => {
   const locale = (req.query.locale || "ru").toString();
-  const { data, error } = await supabaseAdmin
-    .from("cms_pages")
-    .select("*")
-    .eq("locale", locale)
-    .order("updated_at", { ascending: false });
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data || []);
+  try {
+    const rows = await prisma.page.findMany({
+      where: { locale },
+      orderBy: { updatedAt: "desc" },
+    });
+    res.json(rows.map(pageOut));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to list pages" });
+  }
 });
 
 app.get("/pages/slug/:slug", async (req, res) => {
-  const cfg = supabaseConfigHint();
-  if (cfg) {
-    return res.status(503).json({ error: "Supabase не настроен", hint: cfg });
-  }
   const locale = (req.query.locale || "ru").toString();
-  const { data, error } = await supabasePublic
-    .from("cms_pages")
-    .select("*")
-    .eq("slug", req.params.slug)
-    .eq("locale", locale)
-    .eq("published", true)
-    .maybeSingle();
-  if (error) {
-    console.error("[cms-server] GET /pages/slug", req.params.slug, locale, error);
-    return res.status(500).json({ error: error.message, hint: supabaseFailureHint(error.message) });
-  }
-  if (!data) {
-    return res.status(404).json({
-      error: "Not found",
-      hint: "Страница не в БД или не опубликована. Запустите: node server/seed-cms-content.mjs",
+  try {
+    const data = await prisma.page.findFirst({
+      where: { slug: req.params.slug, locale, published: true, isDraft: false },
+    });
+    if (!data) {
+      return res.status(404).json({
+        error: "Not found",
+        hint: "Страница не в БД или не опубликована. Запустите: npm run seed:cms",
+      });
+    }
+    res.json(await pageOutWithMedia(data));
+  } catch (e) {
+    console.error("[cms-server] GET /pages/slug", req.params.slug, locale, e);
+    res.status(500).json({
+      error: e.message || "Query failed",
+      hint: "Выполните: npx prisma db push && npm run seed:cms",
     });
   }
-  res.json(data);
 });
 
+/** GET /pages/:slug?locale=ru — public published page (also supports UUID + Bearer for drafts) */
+const RESERVED_PAGE_SLUGS = new Set(["slug", "media", "settings", "assistants", "auth", "chat", "upload"]);
 app.get("/pages/:param", async (req, res) => {
   const param = req.params.param;
   const locale = (req.query.locale || "ru").toString();
+
   if (isUuid(param)) {
     const secret = JWT_SECRET || "dev-only-unsafe-secret-min-32-chars!!";
     const h = req.headers.authorization;
@@ -271,228 +597,1101 @@ app.get("/pages/:param", async (req, res) => {
     } catch {
       return res.status(401).json({ error: "Invalid or expired token" });
     }
-    const { data, error } = await supabaseAdmin.from("cms_pages").select("*").eq("id", param).maybeSingle();
-    if (error) return res.status(500).json({ error: error.message });
-    if (!data) return res.status(404).json({ error: "Not found" });
-    return res.json(data);
+    try {
+      const data = await prisma.page.findUnique({ where: { id: param } });
+      if (!data) return res.status(404).json({ error: "Not found" });
+      return res.json(await pageOutWithMedia(data));
+    } catch (e) {
+      return res.status(500).json({ error: e.message || "Query failed" });
+    }
   }
-  const { data, error } = await supabasePublic
-    .from("cms_pages")
-    .select("*")
-    .eq("slug", param)
-    .eq("locale", locale)
-    .eq("published", true)
-    .maybeSingle();
-  if (error) return res.status(500).json({ error: error.message });
-  if (!data) return res.status(404).json({ error: "Not found" });
-  res.json(data);
+
+  if (RESERVED_PAGE_SLUGS.has(param)) {
+    return res.status(404).json({ error: "Not found" });
+  }
+
+  try {
+    const data = await prisma.page.findFirst({
+      where: { slug: param, locale, published: true, isDraft: false },
+    });
+    if (!data) return res.status(404).json({ error: "Not found" });
+    res.json(await pageOutWithMedia(data));
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Query failed" });
+  }
 });
 
 app.post("/pages", requireAuth, async (req, res) => {
-  const row = {
-    slug: req.body.slug,
-    title: req.body.title ?? "",
-    locale: req.body.locale ?? "ru",
-    blocks: req.body.blocks ?? [],
-    published: !!req.body.published,
-    meta: req.body.meta ?? {},
-    updated_at: new Date().toISOString(),
-  };
-  const { data, error } = await supabaseAdmin.from("cms_pages").insert(row).select("*").single();
-  if (error) return res.status(400).json({ error: error.message });
-  res.status(201).json(data);
+  try {
+    const blocks = req.body.blocks ?? [];
+    const meta = req.body.meta ?? {};
+    const ext = validateNoExternalImageFields(blocks, meta);
+    if (!ext.ok) return res.status(400).json({ error: ext.error });
+    const sch = validatePageBlocksSchema(blocks);
+    if (!sch.ok) return res.status(400).json({ error: sch.error });
+    const v = await validateMediaIdsForPage(blocks, meta);
+    if (!v.ok) return res.status(400).json({ error: v.error });
+    const row = await prisma.page.create({
+      data: {
+        slug: req.body.slug,
+        title: req.body.title ?? "",
+        locale: req.body.locale ?? "ru",
+        blocks,
+        published: !!req.body.published,
+        isDraft: !!req.body.isDraft,
+        meta,
+      },
+    });
+    await replaceMediaUsageForPage(row.id, row.blocks, row.meta);
+    res.status(201).json(await pageOutWithMedia(row));
+  } catch (e) {
+    if (e.code === "P2002") return res.status(400).json({ error: "Slug+locale already exists" });
+    res.status(400).json({ error: e.message || "Create failed" });
+  }
 });
 
 app.patch("/pages/:id", requireAuth, async (req, res) => {
-  const patch = { ...req.body, updated_at: new Date().toISOString() };
+  const patch = { ...req.body };
   delete patch.id;
-  const { data, error } = await supabaseAdmin.from("cms_pages").update(patch).eq("id", req.params.id).select("*").single();
-  if (error) return res.status(400).json({ error: error.message });
-  if (!data) return res.status(404).json({ error: "Not found" });
-  res.json(data);
+  const isAutosave = !!patch.autosave;
+  const data = {};
+  for (const k of ["slug", "title", "locale", "blocks", "published", "meta", "isDraft"]) {
+    if (patch[k] !== undefined) data[k] = patch[k];
+  }
+  try {
+    const existing = await prisma.page.findUnique({ where: { id: req.params.id } });
+    if (!existing) return res.status(404).json({ error: "Not found" });
+    const nextBlocks = data.blocks !== undefined ? data.blocks : existing.blocks;
+    const nextMeta = data.meta !== undefined ? data.meta : existing.meta;
+    const nextSlug = data.slug !== undefined ? data.slug : existing.slug;
+    const nextTitle = data.title !== undefined ? data.title : existing.title;
+    const nextLocale = data.locale !== undefined ? data.locale : existing.locale;
+    const nextPublished = data.published !== undefined ? data.published : existing.published;
+    const nextIsDraft = data.isDraft !== undefined ? data.isDraft : existing.isDraft;
+    const ext = validateNoExternalImageFields(nextBlocks, nextMeta);
+    if (!ext.ok) return res.status(400).json({ error: ext.error });
+    const sch = validatePageBlocksSchema(nextBlocks);
+    if (!sch.ok) return res.status(400).json({ error: sch.error });
+    const v = await validateMediaIdsForPage(nextBlocks, nextMeta);
+    if (!v.ok) return res.status(400).json({ error: v.error });
+
+    const unchanged =
+      nextSlug === existing.slug &&
+      nextTitle === existing.title &&
+      nextLocale === existing.locale &&
+      nextPublished === existing.published &&
+      nextIsDraft === existing.isDraft &&
+      JSON.stringify(nextBlocks) === JSON.stringify(existing.blocks) &&
+      JSON.stringify(nextMeta) === JSON.stringify(existing.meta);
+    if (unchanged) {
+      return res.json(await pageOutWithMedia(existing));
+    }
+
+    await prisma.pageVersion.create({
+      data: {
+        pageId: existing.id,
+        blocks: existing.blocks,
+        meta: existing.meta,
+        isAuto: isAutosave,
+      },
+    });
+
+    const row = await prisma.page.update({
+      where: { id: req.params.id },
+      data,
+    });
+    await replaceMediaUsageForPage(row.id, row.blocks, row.meta);
+    res.json(await pageOutWithMedia(row));
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ error: "Not found" });
+    res.status(400).json({ error: e.message || "Update failed" });
+  }
+});
+
+app.get("/pages/:id/versions", requireAuth, async (req, res) => {
+  if (!isUuid(req.params.id)) return res.status(400).json({ error: "Invalid page id" });
+  try {
+    const rows = await prisma.pageVersion.findMany({
+      where: { pageId: req.params.id },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    });
+    res.json(rows.map(pageVersionOut));
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
+app.get("/pages/:id/versions/:versionId", requireAuth, async (req, res) => {
+  const { id, versionId } = req.params;
+  if (!isUuid(id) || !isUuid(versionId)) return res.status(400).json({ error: "Invalid id" });
+  try {
+    const ver = await prisma.pageVersion.findFirst({
+      where: { id: versionId, pageId: id },
+    });
+    if (!ver) return res.status(404).json({ error: "Not found" });
+    res.json({
+      id: ver.id,
+      page_id: ver.pageId,
+      created_at: ver.createdAt instanceof Date ? ver.createdAt.toISOString() : ver.createdAt,
+      is_auto: !!ver.isAuto,
+      blocks: ver.blocks,
+      meta: ver.meta,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
+app.post("/pages/:id/restore/:versionId", requireAuth, async (req, res) => {
+  const { id, versionId } = req.params;
+  if (!isUuid(id) || !isUuid(versionId)) return res.status(400).json({ error: "Invalid id" });
+  try {
+    const page = await prisma.page.findUnique({ where: { id } });
+    if (!page) return res.status(404).json({ error: "Page not found" });
+    const ver = await prisma.pageVersion.findFirst({
+      where: { id: versionId, pageId: id },
+    });
+    if (!ver) return res.status(404).json({ error: "Version not found" });
+
+    const ext = validateNoExternalImageFields(ver.blocks, ver.meta);
+    if (!ext.ok) return res.status(400).json({ error: ext.error });
+    const sch = validatePageBlocksSchema(ver.blocks);
+    if (!sch.ok) return res.status(400).json({ error: sch.error });
+    const mv = await validateMediaIdsForPage(ver.blocks, ver.meta);
+    if (!mv.ok) return res.status(400).json({ error: mv.error });
+
+    await prisma.pageVersion.create({
+      data: {
+        pageId: page.id,
+        blocks: page.blocks,
+        meta: page.meta,
+        isAuto: false,
+      },
+    });
+
+    const row = await prisma.page.update({
+      where: { id },
+      data: { blocks: ver.blocks, meta: ver.meta },
+    });
+    await replaceMediaUsageForPage(row.id, row.blocks, row.meta);
+    res.json(await pageOutWithMedia(row));
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ error: "Not found" });
+    res.status(400).json({ error: e.message || "Restore failed" });
+  }
 });
 
 app.delete("/pages/:id", requireAuth, async (req, res) => {
-  const { error } = await supabaseAdmin.from("cms_pages").delete().eq("id", req.params.id);
-  if (error) return res.status(400).json({ error: error.message });
-  res.status(204).send();
+  try {
+    await prisma.page.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ error: "Not found" });
+    res.status(400).json({ error: e.message || "Delete failed" });
+  }
 });
 
 // ─── Media ───
-app.get("/media", requireAuth, async (_req, res) => {
-  const { data, error } = await supabaseAdmin.from("cms_media").select("*").order("created_at", { ascending: false });
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data || []);
+app.get("/media", requireAuth, async (req, res) => {
+  try {
+    const includeDeleted = String(req.query.include_deleted || "") === "1" || String(req.query.include_deleted || "").toLowerCase() === "true";
+    const where = includeDeleted ? {} : { deletedAt: null };
+    const rows = await prisma.media.findMany({ where, orderBy: { createdAt: "desc" } });
+    res.json(await attachMediaUsageCounts(rows.map((row) => mediaOut(row))));
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
 });
 
-app.post("/media/upload", requireAuth, upload.single("file"), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "Missing file" });
-  const ext = (req.file.originalname.split(".").pop() || "bin").toLowerCase().slice(0, 8);
-  const name = `${crypto.randomUUID()}.${ext}`;
-  const path = `uploads/${name}`;
-  const { error: upErr } = await supabaseAdmin.storage.from("cms-media").upload(path, req.file.buffer, {
-    contentType: req.file.mimetype || "application/octet-stream",
-    upsert: true,
-  });
-  if (upErr) return res.status(400).json({ error: upErr.message });
-  const { data: pub } = supabaseAdmin.storage.from("cms-media").getPublicUrl(path);
-  const row = {
-    storage_path: path,
-    public_url: pub?.publicUrl,
-    mime: req.file.mimetype,
-    alt: (req.body.alt || "").toString() || null,
-  };
-  const { data, error } = await supabaseAdmin.from("cms_media").insert(row).select("*").single();
-  if (error) return res.status(400).json({ error: error.message });
-  res.status(201).json(data);
+/** Optional: fetch only rows for given UUIDs (comma-separated `ids`). */
+app.get("/media/by-ids", requireAuth, async (req, res) => {
+  const raw = (req.query.ids ?? "").toString();
+  const parts = raw.split(/[,\s]+/).map((s) => s.trim()).filter(Boolean);
+  const ids = parts.filter((id) => isUuid(id));
+  if (!ids.length) return res.json([]);
+  try {
+    const rows = await prisma.media.findMany({
+      where: { id: { in: ids }, deletedAt: null },
+    });
+    res.json(await attachMediaUsageCounts(rows.map((row) => mediaOut(row))));
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
 });
+
+app.post(
+  "/media/upload",
+  requireAuth,
+  (req, res, next) => {
+    uploadMedia.single("file")(req, res, (err) => {
+      if (err) return res.status(400).json({ error: err.message || "Upload rejected" });
+      next();
+    });
+  },
+  async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "Missing file" });
+  const abs = path.join(UPLOAD_DIR, req.file.filename);
+  const baseName = path.parse(req.file.filename).name;
+  const mime = (req.file.mimetype || "").toString();
+  const alt = (req.body.alt || "").toString() || null;
+
+  let optimized = null;
+  try {
+    const sig = await validateUploadFileSignature(abs, mime);
+    if (!sig.ok) {
+      await fs.unlink(abs).catch(() => {});
+      return res.status(400).json({ error: sig.error });
+    }
+
+    optimized = await optimizeRasterUpload({ root: ROOT, absPath: abs, baseName, mime });
+
+    let totalBytes = req.file.size || 0;
+    if (optimized) {
+      try {
+        const st = await fs.stat(path.join(ROOT, "public", optimized.storagePath));
+        totalBytes = st.size;
+        if (optimized.thumbnailPath) {
+          const st2 = await fs.stat(path.join(ROOT, "public", optimized.thumbnailPath));
+          totalBytes += st2.size;
+        }
+      } catch {
+        totalBytes = req.file.size || 0;
+      }
+    }
+
+    await assertMediaUploadAllowed(req, totalBytes);
+
+    if (optimized) {
+      const row = await prisma.media.create({
+        data: {
+          storagePath: optimized.storagePath,
+          publicUrl: optimized.publicUrl,
+          thumbnailPath: optimized.thumbnailPath,
+          thumbnailUrl: optimized.thumbnailUrl,
+          mime: optimized.mime,
+          alt,
+          width: optimized.width,
+          height: optimized.height,
+          thumbWidth: optimized.thumbWidth,
+          thumbHeight: optimized.thumbHeight,
+          sizeBytes: totalBytes,
+          uploadedByUserId: req.authUser?.id ?? null,
+        },
+      });
+      return res.status(201).json(mediaOut(row));
+    }
+
+    const rel = `uploads/${req.file.filename}`;
+    const publicUrl = `/${rel}`;
+    const row = await prisma.media.create({
+      data: {
+        storagePath: rel,
+        publicUrl,
+        mime,
+        alt,
+        sizeBytes: totalBytes,
+        uploadedByUserId: req.authUser?.id ?? null,
+      },
+    });
+    res.status(201).json(mediaOut(row));
+  } catch (e) {
+    if (optimized?.storagePath) {
+      await fs.unlink(path.join(ROOT, "public", optimized.storagePath)).catch(() => {});
+    }
+    if (optimized?.thumbnailPath) {
+      await fs.unlink(path.join(ROOT, "public", optimized.thumbnailPath)).catch(() => {});
+    }
+    await fs.unlink(abs).catch(() => {});
+    const msg = e?.message || "Save failed";
+    const code = msg.includes("limit") || msg.includes("quota") ? 413 : 400;
+    res.status(code).json({ error: msg });
+  }
+  }
+);
 
 app.delete("/media/:id", requireAuth, async (req, res) => {
-  const { data: row, error: f1 } = await supabaseAdmin.from("cms_media").select("storage_path").eq("id", req.params.id).maybeSingle();
-  if (f1) return res.status(400).json({ error: f1.message });
-  if (row?.storage_path) {
-    await supabaseAdmin.storage.from("cms-media").remove([row.storage_path]);
+  try {
+    const row = await prisma.media.findFirst({
+      where: { id: req.params.id, deletedAt: null },
+    });
+    if (!row) return res.status(404).json({ error: "Not found" });
+    const ref = await findPageReferencingMedia(req.params.id);
+    if (ref) {
+      return res.status(409).json({
+        error: `Media is in use (page slug: ${ref.slug}, id: ${ref.id})`,
+      });
+    }
+    await prisma.media.update({
+      where: { id: row.id },
+      data: { deletedAt: new Date() },
+    });
+    res.status(204).send();
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ error: "Not found" });
+    res.status(400).json({ error: e.message || "Delete failed" });
   }
-  const { error } = await supabaseAdmin.from("cms_media").delete().eq("id", req.params.id);
-  if (error) return res.status(400).json({ error: error.message });
-  res.status(204).send();
 });
 
 // ─── Settings ───
 app.get("/settings", requireAuth, async (_req, res) => {
-  const { data, error } = await supabaseAdmin.from("cms_settings").select("*").order("key");
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data || []);
+  try {
+    const rows = await prisma.cmsSetting.findMany({ orderBy: { key: "asc" } });
+    res.json(rows.map(settingOut));
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
 });
 
 app.patch("/settings/:key", requireAuth, async (req, res) => {
   const key = decodeURIComponent(req.params.key);
-  const row = {
-    key,
-    value: req.body.value ?? null,
-    is_public: !!req.body.is_public,
-    updated_at: new Date().toISOString(),
-  };
-  const { data, error } = await supabaseAdmin.from("cms_settings").upsert(row, { onConflict: "key" }).select("*").single();
-  if (error) return res.status(400).json({ error: error.message });
-  res.json(data);
+  try {
+    const row = await prisma.cmsSetting.upsert({
+      where: { key },
+      create: {
+        key,
+        value: req.body.value ?? null,
+        isPublic: !!req.body.is_public,
+      },
+      update: {
+        value: req.body.value ?? null,
+        isPublic: !!req.body.is_public,
+      },
+    });
+    res.json(settingOut(row));
+  } catch (e) {
+    res.status(400).json({ error: e.message || "Upsert failed" });
+  }
 });
 
 // ─── Assistants ───
 app.get("/assistants", requireAuth, async (_req, res) => {
-  const { data, error } = await supabaseAdmin
-    .from("cms_assistants")
-    .select("id,name,api_key_prefix,provider,base_url,model,system_prompt,active,created_at,updated_at")
-    .order("created_at", { ascending: false });
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data || []);
+  try {
+    const rows = await prisma.assistant.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        apiKeyPrefix: true,
+        provider: true,
+        baseUrl: true,
+        model: true,
+        embedModel: true,
+        temperature: true,
+        systemPrompt: true,
+        active: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    res.json(rows.map(assistantListOut));
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
 });
 
 app.get("/assistants/:id", requireAuth, async (req, res) => {
-  const { data, error } = await supabaseAdmin
-    .from("cms_assistants")
-    .select("id,name,api_key_prefix,provider,base_url,model,system_prompt,active,created_at,updated_at,provider_api_key")
-    .eq("id", req.params.id)
-    .maybeSingle();
-  if (error) return res.status(500).json({ error: error.message });
-  if (!data) return res.status(404).json({ error: "Not found" });
-  res.json(data);
+  try {
+    const data = await prisma.assistant.findUnique({ where: { id: req.params.id } });
+    if (!data) return res.status(404).json({ error: "Not found" });
+    res.json(assistantDetailOut(data));
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
 });
 
 app.post("/assistants", requireAuth, async (req, res) => {
   const plain = genApiKey();
-  const api_key_hash = hashKey(plain);
-  const api_key_prefix = plain.slice(0, 10);
-  const row = {
-    name: req.body.name || "Assistant",
-    api_key_hash,
-    api_key_prefix,
-    provider: req.body.provider || "openai",
-    base_url: req.body.base_url || null,
-    model: req.body.model || "gpt-4o-mini",
-    system_prompt: req.body.system_prompt || null,
-    provider_api_key: req.body.provider_api_key || null,
-    active: req.body.active !== false,
-  };
-  const { data, error } = await supabaseAdmin.from("cms_assistants").insert(row).select("id,name,api_key_prefix,provider,base_url,model,system_prompt,active,created_at").single();
-  if (error) return res.status(400).json({ error: error.message });
-  res.status(201).json({ ...data, api_key: plain });
+  const apiKeyHash = hashKey(plain);
+  const apiKeyPrefix = plain.slice(0, 10);
+  try {
+    const cfg = getBillingConfig();
+    const data = await prisma.$transaction(async (tx) => {
+      const a = await tx.assistant.create({
+        data: {
+          name: req.body.name || "Assistant",
+          apiKeyHash,
+          apiKeyPrefix,
+          provider: req.body.provider || "ollama",
+          baseUrl: req.body.base_url || null,
+          model: req.body.model || "qwen2.5:7b",
+          embedModel: req.body.embed_model || "nomic-embed-text",
+          temperature: req.body.temperature != null ? Number(req.body.temperature) : 0.7,
+          systemPrompt: req.body.system_prompt || null,
+          providerApiKey: req.body.provider_api_key || null,
+          active: req.body.active !== false,
+        },
+        select: {
+          id: true,
+          name: true,
+          apiKeyPrefix: true,
+          provider: true,
+          baseUrl: true,
+          model: true,
+          embedModel: true,
+          temperature: true,
+          systemPrompt: true,
+          active: true,
+          createdAt: true,
+        },
+      });
+      await tx.apiKey.create({
+        data: {
+          key: a.id,
+          assistantId: a.id,
+          balance: cfg.initialBalance,
+          isActive: true,
+        },
+      });
+      return a;
+    });
+    res.status(201).json({ ...assistantListOut({ ...data, updatedAt: data.createdAt }), api_key: plain });
+  } catch (e) {
+    res.status(400).json({ error: e.message || "Create failed" });
+  }
 });
 
 app.patch("/assistants/:id/regenerate-key", requireAuth, async (req, res) => {
   const plain = genApiKey();
-  const { data, error } = await supabaseAdmin
-    .from("cms_assistants")
-    .update({
-      api_key_hash: hashKey(plain),
-      api_key_prefix: plain.slice(0, 10),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", req.params.id)
-    .select("id,name,api_key_prefix")
-    .single();
-  if (error) return res.status(400).json({ error: error.message });
-  res.json({ ...data, api_key: plain });
+  try {
+    const data = await prisma.assistant.update({
+      where: { id: req.params.id },
+      data: {
+        apiKeyHash: hashKey(plain),
+        apiKeyPrefix: plain.slice(0, 10),
+      },
+      select: { id: true, name: true, apiKeyPrefix: true },
+    });
+    res.json({ ...data, api_key_prefix: data.apiKeyPrefix, api_key: plain });
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ error: "Not found" });
+    res.status(400).json({ error: e.message || "Failed" });
+  }
 });
 
 app.patch("/assistants/:id", requireAuth, async (req, res) => {
-  const patch = { ...req.body, updated_at: new Date().toISOString() };
+  const patch = { ...req.body };
   delete patch.id;
   delete patch.api_key_hash;
   delete patch.api_key_prefix;
-  const { data, error } = await supabaseAdmin
-    .from("cms_assistants")
-    .update(patch)
-    .eq("id", req.params.id)
-    .select("id,name,api_key_prefix,provider,base_url,model,system_prompt,active")
-    .single();
-  if (error) return res.status(400).json({ error: error.message });
-  if (!data) return res.status(404).json({ error: "Not found" });
-  res.json(data);
+  const data = {
+    ...(patch.name != null && { name: patch.name }),
+    ...(patch.provider != null && { provider: patch.provider }),
+    ...(patch.base_url !== undefined && { baseUrl: patch.base_url }),
+    ...(patch.model != null && { model: patch.model }),
+    ...(patch.embed_model !== undefined && { embedModel: patch.embed_model }),
+    ...(patch.temperature !== undefined && { temperature: Number(patch.temperature) }),
+    ...(patch.system_prompt !== undefined && { systemPrompt: patch.system_prompt }),
+    ...(patch.provider_api_key !== undefined && { providerApiKey: patch.provider_api_key }),
+    ...(patch.active != null && { active: patch.active }),
+  };
+  try {
+    await prisma.assistant.update({
+      where: { id: req.params.id },
+      data,
+    });
+    const row = await prisma.assistant.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        name: true,
+        apiKeyPrefix: true,
+        provider: true,
+        baseUrl: true,
+        model: true,
+        embedModel: true,
+        temperature: true,
+        systemPrompt: true,
+        active: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    if (!row) return res.status(404).json({ error: "Not found" });
+    res.json(assistantListOut(row));
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ error: "Not found" });
+    res.status(400).json({ error: e.message || "Failed" });
+  }
 });
+
+// ─── Assistant knowledge (RAG) — admin ───
+app.post("/assistants/:id/knowledge/text", requireAuth, async (req, res) => {
+  const text = (req.body?.text || "").toString();
+  if (!text.trim()) return res.status(400).json({ error: "text required" });
+  try {
+    const asst = await prisma.assistant.findUnique({ where: { id: req.params.id } });
+    if (!asst) return res.status(404).json({ error: "Not found" });
+    const ollamaBase = getOllamaBase(asst);
+    const embedModel = asst.embedModel || "nomic-embed-text";
+    const coll = collectionNameForAssistant(asst.id);
+    const chunks = chunkText(text);
+    if (!chunks.length) return res.status(400).json({ error: "No chunks after split" });
+    const client = getQdrantClient();
+    const out = await upsertChunks({
+      client,
+      collectionName: coll,
+      ollamaBase,
+      embedModel,
+      assistantId: asst.id,
+      chunks,
+      source: "manual",
+    });
+    res.json({ ok: true, ...out });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message || "Ingest failed" });
+  }
+});
+
+app.post("/assistants/:id/knowledge/upload", requireAuth, uploadKb.single("file"), async (req, res) => {
+  try {
+    const asst = await prisma.assistant.findUnique({ where: { id: req.params.id } });
+    if (!asst) return res.status(404).json({ error: "Not found" });
+    const f = req.file;
+    if (!f?.buffer) return res.status(400).json({ error: "file required" });
+    const raw = await extractTextFromFile(f.buffer, f.mimetype, f.originalname);
+    const chunks = chunkText(raw);
+    if (!chunks.length) return res.status(400).json({ error: "No text extracted or empty" });
+    const ollamaBase = getOllamaBase(asst);
+    const embedModel = asst.embedModel || "nomic-embed-text";
+    const coll = collectionNameForAssistant(asst.id);
+    const client = getQdrantClient();
+    const out = await upsertChunks({
+      client,
+      collectionName: coll,
+      ollamaBase,
+      embedModel,
+      assistantId: asst.id,
+      chunks,
+      source: `file:${f.originalname}`,
+    });
+    res.json({ ok: true, ...out, filename: f.originalname });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message || "Upload ingest failed" });
+  }
+});
+
+app.delete("/assistants/:id/knowledge", requireAuth, async (req, res) => {
+  try {
+    const asst = await prisma.assistant.findUnique({ where: { id: req.params.id } });
+    if (!asst) return res.status(404).json({ error: "Not found" });
+    const coll = collectionNameForAssistant(asst.id);
+    const client = getQdrantClient();
+    try {
+      await client.deleteCollection(coll);
+    } catch (e) {
+      if (!String(e.message || "").includes("Not found") && !String(e.message || "").includes("404")) {
+        throw e;
+      }
+    }
+    res.json({ ok: true, cleared: coll });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message || "Clear failed" });
+  }
+});
+
+app.get("/assistants/:id/knowledge/stats", requireAuth, async (req, res) => {
+  try {
+    const asst = await prisma.assistant.findUnique({ where: { id: req.params.id } });
+    if (!asst) return res.status(404).json({ error: "Not found" });
+    const coll = collectionNameForAssistant(asst.id);
+    const client = getQdrantClient();
+    let count = 0;
+    try {
+      const c = await client.count(coll, { exact: true });
+      count = typeof c === "number" ? c : Number(c?.count ?? 0);
+    } catch {
+      count = 0;
+    }
+    res.json({ collection: coll, points: count, ollama_base: getOllamaBase(asst) });
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Stats failed" });
+  }
+});
+
+app.post("/assistants/:id/rag/embed", requireAuth, async (req, res) => {
+  try {
+    const asst = await prisma.assistant.findUnique({ where: { id: req.params.id } });
+    if (!asst) return res.status(404).json({ error: "Not found" });
+    const text = (req.body?.text || "").toString();
+    if (!text.trim()) return res.status(400).json({ error: "text required" });
+    const emb = await createEmbedding(getOllamaBase(asst), asst.embedModel || "nomic-embed-text", text);
+    res.json({ embedding: emb });
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Embed failed" });
+  }
+});
+
+app.post("/assistants/:id/rag/search", requireAuth, async (req, res) => {
+  try {
+    const asst = await prisma.assistant.findUnique({ where: { id: req.params.id } });
+    if (!asst) return res.status(404).json({ error: "Not found" });
+    const text = (req.body?.text || "").toString();
+    if (!text.trim()) return res.status(400).json({ error: "text required" });
+    const client = getQdrantClient();
+    const coll = collectionNameForAssistant(asst.id);
+    const qv = await createEmbedding(getOllamaBase(asst), asst.embedModel || "nomic-embed-text", text);
+    const hits = await searchContext(client, coll, qv, 5);
+    res.json({ hits });
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Search failed" });
+  }
+});
+
+// ─── CRM: public chat session (no auth) ───
+app.post("/crm/chat-session", async (req, res) => {
+  try {
+    const existing = req.body?.chatId;
+    if (existing && isUuid(existing)) {
+      const ch = await prisma.chat.findUnique({ where: { id: existing } });
+      if (ch) return res.json({ chatId: ch.id });
+    }
+    const chat = await prisma.chat.create({
+      data: { messages: [] },
+    });
+    res.json({ chatId: chat.id });
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Session failed" });
+  }
+});
+
+function parseChatMessagesJson(json) {
+  if (json == null) return [];
+  if (Array.isArray(json)) return json;
+  if (typeof json === "string") {
+    try {
+      const p = JSON.parse(json);
+      return Array.isArray(p) ? p : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+/** 1) Append user turn. 2) Link assistant. 3) Auto-create Lead if missing. */
+async function persistCrmUserAndLead(crmChatId, asst, userText) {
+  const chat = await prisma.chat.findUnique({ where: { id: crmChatId } });
+  if (!chat) return;
+  let arr = parseChatMessagesJson(chat.messages);
+  const last = arr[arr.length - 1];
+  const dup = last && last.role === "user" && String(last.content ?? "") === userText;
+  if (!dup) {
+    arr.push({ role: "user", content: userText, at: new Date().toISOString() });
+  }
+  await prisma.chat.update({
+    where: { id: crmChatId },
+    data: { messages: arr, assistantId: asst.id },
+  });
+  let ref = await prisma.chat.findUnique({ where: { id: crmChatId } });
+  if (ref && !ref.leadId) {
+    const lead = await prisma.lead.create({
+      data: { status: "new", name: null, phone: null },
+    });
+    await prisma.chat.update({
+      where: { id: crmChatId },
+      data: { leadId: lead.id },
+    });
+    ref = await prisma.chat.findUnique({ where: { id: crmChatId } });
+  }
+  return ref;
+}
+
+async function persistCrmAssistantReply(crmChatId, replyText) {
+  const chat = await prisma.chat.findUnique({ where: { id: crmChatId } });
+  if (!chat) return;
+  const arr = parseChatMessagesJson(chat.messages);
+  arr.push({ role: "assistant", content: String(replyText ?? ""), at: new Date().toISOString() });
+  await prisma.chat.update({
+    where: { id: crmChatId },
+    data: { messages: arr },
+  });
+}
 
 // ─── Chat ───
 app.post("/chat", async (req, res) => {
-  const { apiKey, messages, assistantId } = req.body || {};
+  const { apiKey, messages, assistantId, chatId: crmChatId } = req.body || {};
   if (!apiKey || !Array.isArray(messages)) {
     return res.status(400).json({ error: "apiKey and messages[] required" });
   }
   const h = hashKey(apiKey);
-  let q = supabaseAdmin.from("cms_assistants").select("*").eq("api_key_hash", h).eq("active", true);
-  if (assistantId) q = q.eq("id", assistantId);
-  const { data: asst, error } = await q.maybeSingle();
-  if (error) return res.status(500).json({ error: error.message });
-  if (!asst) return res.status(401).json({ error: "Invalid api key" });
-
-  const apiToken = asst.provider_api_key || OPENAI_FALLBACK;
-  if (!apiToken) return res.status(503).json({ error: "Provider API key not configured for this assistant" });
-
-  const base = (asst.base_url || "https://api.openai.com/v1").replace(/\/$/, "");
-  const url = `${base}/chat/completions`;
-  const body = {
-    model: asst.model || "gpt-4o-mini",
-    messages: [...(asst.system_prompt ? [{ role: "system", content: asst.system_prompt }] : []), ...messages],
-  };
+  const billCfg = getBillingConfig();
+  if (!rateLimitByKeyHash(h, billCfg.rateLimitPerMin)) {
+    return res.status(429).json({ error: "Rate limit exceeded", retry_after_seconds: 60 });
+  }
   try {
-    const r = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiToken}`,
-        "Content-Type": "application/json",
+    const asst = await prisma.assistant.findFirst({
+      where: {
+        apiKeyHash: h,
+        active: true,
+        ...(assistantId ? { id: assistantId } : {}),
       },
-      body: JSON.stringify(body),
     });
-    const json = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      return res.status(r.status).json({ error: json.error?.message || json.error || "Upstream error", details: json });
+    if (!asst) return res.status(401).json({ error: "Invalid api key" });
+
+    const bKey = await ensureApiKeyForAssistant(prisma, asst.id);
+    if (!bKey.isActive) return res.status(403).json({ error: "API key disabled" });
+    if (bKey.balance <= 0) return res.status(402).json({ error: "Insufficient balance" });
+
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+    const userText = String(lastUserMsg?.content ?? "").trim();
+    if (!userText) {
+      return res.status(400).json({ error: "Last message must be a non-empty user message" });
     }
-    const text = json.choices?.[0]?.message?.content ?? "";
-    res.json({ reply: text, raw: json });
+
+    if (crmChatId && isUuid(crmChatId)) {
+      try {
+        await persistCrmUserAndLead(crmChatId, asst, userText);
+      } catch (persistErr) {
+        console.error("[crm] persist user/lead", crmChatId, persistErr);
+      }
+    }
+
+    const useOllama = (asst.provider || "").toLowerCase() === "ollama" || (asst.provider || "").toLowerCase() === "local";
+
+    if (useOllama) {
+      const { reply, usedContext, promptTokens, completionTokens } = await chatWithRag({
+        assistant: asst,
+        messages,
+      });
+      if (crmChatId && isUuid(crmChatId)) {
+        try {
+          await persistCrmAssistantReply(crmChatId, reply);
+        } catch (persistErr) {
+          console.error("[crm] persist assistant", crmChatId, persistErr);
+        }
+      }
+      const cost = computeUsageCost(billCfg, {
+        promptTokens,
+        completionTokens,
+        messageCount: 1,
+      });
+      let billing = null;
+      try {
+        billing = await deductBalanceAndLog(prisma, bKey.id, {
+          tokensApprox: promptTokens + completionTokens,
+          messagesCount: 1,
+          cost,
+          path: "chat",
+        });
+      } catch (be) {
+        console.error("[billing] deduct", be);
+      }
+      return res.json({ reply, used_context: usedContext, provider: "ollama", billing });
+    }
+
+    const apiToken = asst.providerApiKey || OPENAI_FALLBACK;
+    if (!apiToken) {
+      return res.status(503).json({ error: "Provider API key not configured (or switch assistant provider to ollama)" });
+    }
+
+    const text = await chatOpenAiCompatible({
+      baseUrl: asst.baseUrl,
+      apiKey: apiToken,
+      model: asst.model,
+      systemPrompt: asst.systemPrompt,
+      messages,
+    });
+    if (crmChatId && isUuid(crmChatId)) {
+      try {
+        await persistCrmAssistantReply(crmChatId, text);
+      } catch (persistErr) {
+        console.error("[crm] persist assistant", crmChatId, persistErr);
+      }
+    }
+    const tokensApprox = estimateTokensFromText([JSON.stringify(messages), text]);
+    const cost = computeUsageCost(billCfg, {
+      promptTokens: Math.ceil(tokensApprox / 2),
+      completionTokens: Math.floor(tokensApprox / 2),
+      messageCount: 1,
+    });
+    let billing = null;
+    try {
+      billing = await deductBalanceAndLog(prisma, bKey.id, {
+        tokensApprox,
+        messagesCount: 1,
+        cost,
+        path: "chat",
+      });
+    } catch (be) {
+      console.error("[billing] deduct", be);
+    }
+    res.json({ reply: text, provider: "openai_compatible", billing });
   } catch (e) {
     res.status(502).json({ error: e.message || "Fetch failed" });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`[cms-server] http://127.0.0.1:${PORT}`);
+// ─── Billing (admin) ───
+app.get("/billing/overview", requireAuth, async (_req, res) => {
+  try {
+    const keys = await prisma.apiKey.findMany({
+      orderBy: { updatedAt: "desc" },
+      include: {
+        assistant: { select: { id: true, name: true, apiKeyPrefix: true } },
+      },
+    });
+    const usageAgg = await prisma.usageLog.groupBy({
+      by: ["apiKeyId"],
+      _sum: { cost: true, tokensApprox: true },
+      _count: { id: true },
+    });
+    const aggMap = Object.fromEntries(
+      usageAgg.map((r) => [
+        r.apiKeyId,
+        { total_cost: r._sum.cost ?? 0, total_tokens: r._sum.tokensApprox ?? 0, requests: r._count.id },
+      ]),
+    );
+    const top = [...usageAgg]
+      .sort((a, b) => (Number(b._sum.cost) || 0) - (Number(a._sum.cost) || 0))
+      .slice(0, 15)
+      .map((r) => {
+        const k = keys.find((x) => x.id === r.apiKeyId);
+        return {
+          api_key_id: r.apiKeyId,
+          assistant_name: k?.assistant?.name ?? null,
+          key: k?.key ?? null,
+          total_cost: r._sum.cost ?? 0,
+          requests: r._count.id,
+        };
+      });
+    const recent = await prisma.usageLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        apiKey: { include: { assistant: { select: { name: true } } } },
+      },
+    });
+    res.json({
+      keys: keys.map((k) => ({
+        id: k.id,
+        key: k.key,
+        balance: k.balance,
+        is_active: k.isActive,
+        assistant_id: k.assistantId,
+        assistant_name: k.assistant?.name,
+        api_key_prefix: k.assistant?.apiKeyPrefix,
+        usage: aggMap[k.id] || { total_cost: 0, total_tokens: 0, requests: 0 },
+      })),
+      top_users: top,
+      recent_usage: recent.map((u) => ({
+        id: u.id,
+        cost: u.cost,
+        tokens_approx: u.tokensApprox,
+        messages_count: u.messagesCount,
+        path: u.path,
+        created_at: u.createdAt.toISOString(),
+        assistant_name: u.apiKey?.assistant?.name,
+      })),
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
+app.patch("/billing/keys/:id", requireAuth, async (req, res) => {
+  try {
+    const { balance, is_active, add_balance } = req.body || {};
+    const data = {};
+    if (balance != null) data.balance = Number(balance);
+    if (add_balance != null) {
+      const cur = await prisma.apiKey.findUnique({ where: { id: req.params.id } });
+      if (!cur) return res.status(404).json({ error: "Not found" });
+      data.balance = (Number(cur.balance) || 0) + Number(add_balance);
+    }
+    if (is_active != null) data.isActive = !!is_active;
+    if (!Object.keys(data).length) return res.status(400).json({ error: "No fields" });
+    const row = await prisma.apiKey.update({
+      where: { id: req.params.id },
+      data,
+    });
+    res.json({
+      id: row.id,
+      key: row.key,
+      balance: row.balance,
+      is_active: row.isActive,
+    });
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ error: "Not found" });
+    res.status(400).json({ error: e.message || "Failed" });
+  }
+});
+
+// ─── CRM admin (auth) ───
+app.get("/crm/analytics", requireAuth, async (_req, res) => {
+  try {
+    const [chats, leads, sumRow] = await Promise.all([
+      prisma.chat.count(),
+      prisma.lead.count(),
+      prisma.$queryRaw`SELECT COALESCE(SUM(jsonb_array_length(COALESCE(messages, '[]'::jsonb))), 0)::bigint AS c FROM "crm_chats"`,
+    ]);
+    const messages = Number(Array.isArray(sumRow) && sumRow[0]?.c != null ? sumRow[0].c : 0);
+    const byAssistant = await prisma.chat.groupBy({
+      by: ["assistantId"],
+      _count: { id: true },
+    });
+    res.json({
+      chats,
+      leads,
+      messages,
+      by_assistant: byAssistant.map((x) => ({
+        assistant_id: x.assistantId,
+        chats: x._count.id,
+      })),
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
+app.get("/crm/leads", requireAuth, async (_req, res) => {
+  try {
+    const rows = await prisma.lead.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { _count: { select: { chats: true } } },
+    });
+    res.json(
+      rows.map((l) => ({
+        id: l.id,
+        name: l.name,
+        phone: l.phone,
+        status: l.status,
+        created_at: l.createdAt.toISOString(),
+        chats_count: l._count.chats,
+      })),
+    );
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
+app.post("/crm/leads", requireAuth, async (req, res) => {
+  try {
+    const { name, phone, status } = req.body || {};
+    const lead = await prisma.lead.create({
+      data: {
+        name: name != null ? String(name) : null,
+        phone: phone != null ? String(phone) : null,
+        ...(status != null ? { status: String(status) } : {}),
+      },
+    });
+    res.json({
+      id: lead.id,
+      name: lead.name,
+      phone: lead.phone,
+      status: lead.status,
+      created_at: lead.createdAt.toISOString(),
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
+app.patch("/crm/leads/:id", requireAuth, async (req, res) => {
+  try {
+    const { name, phone, status } = req.body || {};
+    const lead = await prisma.lead.update({
+      where: { id: req.params.id },
+      data: {
+        ...(name !== undefined && { name: name === null ? null : String(name) }),
+        ...(phone !== undefined && { phone: phone === null ? null : String(phone) }),
+        ...(status !== undefined && { status: String(status) }),
+      },
+    });
+    res.json({
+      id: lead.id,
+      name: lead.name,
+      phone: lead.phone,
+      status: lead.status,
+      created_at: lead.createdAt.toISOString(),
+    });
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ error: "Not found" });
+    res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
+app.get("/crm/chats", requireAuth, async (_req, res) => {
+  try {
+    const rows = await prisma.chat.findMany({
+      orderBy: { updatedAt: "desc" },
+      include: { lead: true },
+    });
+    res.json(
+      rows.map((c) => {
+        const msgs = c.messages;
+        const n = Array.isArray(msgs) ? msgs.length : 0;
+        return {
+          id: c.id,
+          lead_id: c.leadId,
+          lead: c.lead
+            ? { id: c.lead.id, name: c.lead.name, phone: c.lead.phone, status: c.lead.status }
+            : null,
+          status: c.status,
+          message_count: n,
+          created_at: c.createdAt.toISOString(),
+          updated_at: c.updatedAt.toISOString(),
+        };
+      }),
+    );
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
+app.get("/crm/chats/:id", requireAuth, async (req, res) => {
+  try {
+    const c = await prisma.chat.findUnique({
+      where: { id: req.params.id },
+      include: { lead: true },
+    });
+    if (!c) return res.status(404).json({ error: "Not found" });
+    res.json({
+      id: c.id,
+      lead_id: c.leadId,
+      lead: c.lead
+        ? { id: c.lead.id, name: c.lead.name, phone: c.lead.phone, status: c.lead.status }
+        : null,
+      status: c.status,
+      messages: c.messages,
+      created_at: c.createdAt.toISOString(),
+      updated_at: c.updatedAt.toISOString(),
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
+app.patch("/crm/chats/:id", requireAuth, async (req, res) => {
+  try {
+    const { status, leadId } = req.body || {};
+    const data = {};
+    if (status !== undefined) data.status = String(status);
+    if (leadId !== undefined) data.leadId = leadId === null || leadId === "" ? null : String(leadId);
+    const c = await prisma.chat.update({
+      where: { id: req.params.id },
+      data,
+      include: { lead: true },
+    });
+    res.json({
+      id: c.id,
+      lead_id: c.leadId,
+      lead: c.lead
+        ? { id: c.lead.id, name: c.lead.name, phone: c.lead.phone, status: c.lead.status }
+        : null,
+      status: c.status,
+      messages: c.messages,
+      updated_at: c.updatedAt.toISOString(),
+    });
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ error: "Not found" });
+    res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
+app.listen(PORT, "127.0.0.1", () => {
+  console.log(`[cms-server] http://127.0.0.1:${PORT} (Prisma)`);
 });
