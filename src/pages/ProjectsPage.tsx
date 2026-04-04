@@ -117,6 +117,13 @@ const ProjectsPage = () => {
   useEffect(() => { document.body.style.overflow = selectedProject ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [selectedProject]);
   useEffect(() => { setActiveDetailTab("overview"); }, [selectedProject?.id]);
 
+  const handleRefresh = useCallback(async () => {
+    await pageQ.refetch();
+    toast.success(lang === "en" ? "Updated" : "Обновлено");
+  }, [pageQ, lang]);
+
+  const { containerRef, pullDistance, isRefreshing, onTouchStart, onTouchMove, onTouchEnd } = usePullToRefresh({ onRefresh: handleRefresh });
+
   if (pageQ.isLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center bg-[#F5F5F5]">
