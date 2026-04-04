@@ -11,6 +11,9 @@ echo "=== BUILD FRONTEND ==="
 npm run build
 
 echo "=== PRISMA ==="
+set -a
+[ -f .env ] && . ./.env
+set +a
 npx prisma generate
 npx prisma db push
 
