@@ -16,6 +16,7 @@ export function getQdrantUrl() {
 
 export function getQdrantClient() {
   if (!_qdrant) {
+    console.log("QDRANT URL (env):", process.env.QDRANT_URL);
     const url = getQdrantUrl();
     console.log("QDRANT URL:", url);
     _qdrant = new QdrantClient({
