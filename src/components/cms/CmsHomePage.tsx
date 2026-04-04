@@ -46,6 +46,7 @@ type HeroBlock = {
 type ServicePreviewItem = { iconUrl?: string; name?: unknown; priceLabel?: unknown };
 type ServicesPreviewBlock = {
   type: string;
+  title?: unknown;
   sectionTitle?: unknown;
   items?: ServicePreviewItem[];
 };
