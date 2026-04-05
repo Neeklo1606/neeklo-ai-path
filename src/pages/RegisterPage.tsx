@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import { setClientSession } from "@/lib/client-session";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const RegisterPage = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
+      setClientSession();
       navigate("/chat");
     }, 800);
   };

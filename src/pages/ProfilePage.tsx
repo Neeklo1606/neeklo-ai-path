@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useLanguage } from "@/hooks/useLanguage";
 import { motion } from "framer-motion";
 import { FolderOpen, MessageCircle, Bell, Settings, FileText, HelpCircle, ChevronRight, LogOut } from "lucide-react";
 import { toast } from "sonner";
+import { clearClientSession, getClientSession } from "@/lib/client-session";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -12,7 +13,11 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const { t, lang } = useLanguage();
   usePageTitle(lang === "en" ? "Profile – neeklo" : "Профиль – neeklo");
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => getClientSession());
+
+  useEffect(() => {
+    setIsLoggedIn(getClientSession());
+  }, []);
 
   const menuItems = [
     { icon: FolderOpen, label: t("profile.myProjects"), action: "navigate" as const, path: "/projects" },
@@ -82,7 +87,7 @@ const ProfilePage = () => {
           })}
         </motion.div>
 
-        <motion.button onClick={() => { setIsLoggedIn(false); toast(t("profile.loggedOut")); }} className="w-full font-body rounded-xl mt-4 cursor-pointer hover:bg-[#FFF5F5] active:scale-[0.97] transition-all flex items-center justify-center gap-2" style={{ border: "1px solid #E0E0E0", background: "white", padding: "13px 0", fontSize: 15, fontWeight: 600, color: "#FF3B30" }} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease, delay: 0.2 }}>
+        <motion.button onClick={() => { clearClientSession(); setIsLoggedIn(false); toast(t("profile.loggedOut")); }} className="w-full font-body rounded-xl mt-4 cursor-pointer hover:bg-[#FFF5F5] active:scale-[0.97] transition-all flex items-center justify-center gap-2" style={{ border: "1px solid #E0E0E0", background: "white", padding: "13px 0", fontSize: 15, fontWeight: 600, color: "#FF3B30" }} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease, delay: 0.2 }}>
           <LogOut size={16} />
           {t("profile.logout")}
         </motion.button>

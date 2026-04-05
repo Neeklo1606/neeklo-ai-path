@@ -12,6 +12,7 @@ import PageTransition from "@/components/PageTransition";
 import Onboarding from "@/components/Onboarding";
 import CookieBanner from "@/components/CookieBanner";
 import BrandLogo from "@/components/BrandLogo";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LanguageProvider, useLanguage } from "@/hooks/useLanguage";
 import Index from "./pages/Index";
 import { Menu, X, Home, MessageSquare, Sparkles, Image, FolderOpen, User, Settings, Bell } from "lucide-react";
@@ -237,6 +238,7 @@ const AppContent = ({
       {shouldShowOnboarding && <Onboarding onComplete={onCompleteOnboarding} />}
       <Layout>
         <Suspense fallback={<RouteLoadingFallback />}>
+          <ErrorBoundary>
           <Routes>
             <Route path="/" element={<P><Index /></P>} />
             <Route path="/login" element={<P><LoginPage /></P>} />
@@ -385,6 +387,7 @@ const AppContent = ({
             </Route>
             <Route path="*" element={<P><NotFound /></P>} />
           </Routes>
+          </ErrorBoundary>
         </Suspense>
       </Layout>
       <CookieBanner />

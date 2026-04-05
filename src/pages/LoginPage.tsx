@@ -1,15 +1,23 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { safeInternalPath, setClientSession } from "@/lib/client-session";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = () => {
-    toast("Функция в разработке");
-    navigate("/profile");
+    if (!email.trim() || !password.trim()) {
+      toast("Введите email и пароль");
+      return;
+    }
+    setClientSession();
+    toast("Вход выполнен");
+    const next = safeInternalPath(searchParams.get("next"), "/profile");
+    navigate(next, { replace: true });
   };
 
   const inputStyle =
@@ -82,9 +90,9 @@ const LoginPage = () => {
           {/* Register link */}
           <p className="text-center mt-4 font-body" style={{ fontSize: 14, color: "#6A6860" }}>
             Нет аккаунта?{" "}
-            <span className="font-medium underline cursor-pointer" style={{ color: "#0D0D0B" }}>
+            <Link to="/register" className="font-medium underline" style={{ color: "#0D0D0B" }}>
               Зарегистрироваться
-            </span>
+            </Link>
           </p>
         </div>
       </div>
