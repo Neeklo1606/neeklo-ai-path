@@ -107,6 +107,33 @@ export async function createCrmChatSession(existingChatId?: string | null): Prom
   });
 }
 
+export type CrmTranscriptEntry = {
+  role: string;
+  content: string;
+  at?: string;
+};
+
+/** История сообщений для возврата пользователя на /chat (без авторизации) */
+export async function fetchChatTranscript(
+  chatId: string,
+): Promise<{ id: string; messages: CrmTranscriptEntry[] } | null> {
+  const path = `/crm/chat-transcript/${encodeURIComponent(chatId)}`;
+  const res = await fetch(`${CMS_BASE}${path}`);
+  if (res.status === 404) return null;
+  const text = await res.text();
+  let body: unknown = null;
+  try {
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    body = { error: text };
+  }
+  if (!res.ok) {
+    const err = (body as { error?: string })?.error || res.statusText;
+    throw new Error(typeof err === "string" ? err : "Transcript failed");
+  }
+  return body as { id: string; messages: CrmTranscriptEntry[] };
+}
+
 export async function cmsPageBySlug(slug: string, locale = "ru"): Promise<CmsPage> {
   const res = await fetch(`${CMS_BASE}/pages/slug/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}`);
   const text = await res.text();

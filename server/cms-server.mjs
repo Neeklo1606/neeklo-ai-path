@@ -1304,6 +1304,25 @@ app.post("/crm/chat-session", async (req, res) => {
   }
 });
 
+/** Публичная выгрузка истории чата (UUID в localStorage — секрет ссылки) */
+app.get("/crm/chat-transcript/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!isUuid(id)) return res.status(400).json({ error: "Invalid id" });
+    const billCfg = getBillingConfig();
+    const ipKey = `transcript:${clientIp(req)}`;
+    if (!rateLimitByKeyHash(ipKey, Math.max(30, billCfg.rateLimitPerMin * 2))) {
+      return res.status(429).json({ error: "Rate limit exceeded", retry_after_seconds: 60 });
+    }
+    const chat = await prisma.chat.findUnique({ where: { id } });
+    if (!chat) return res.status(404).json({ error: "Not found" });
+    const messages = parseChatMessagesJson(chat.messages);
+    res.json({ id: chat.id, messages });
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
 function parseChatMessagesJson(json) {
   if (json == null) return [];
   if (Array.isArray(json)) return json;

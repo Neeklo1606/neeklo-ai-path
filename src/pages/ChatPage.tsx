@@ -4,7 +4,13 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Send } from "lucide-react";
 import { motion } from "framer-motion";
-import { fetchChatBootstrap, chatComplete, createCrmChatSession } from "@/lib/cms-api";
+import {
+  fetchChatBootstrap,
+  chatComplete,
+  createCrmChatSession,
+  fetchChatTranscript,
+  type CrmTranscriptEntry,
+} from "@/lib/cms-api";
 import { useLanguage } from "@/hooks/useLanguage";
 
 interface Message {
@@ -14,8 +20,23 @@ interface Message {
   timestamp: Date;
 }
 
-let msgId = 1;
-const nextId = () => ++msgId;
+function mapTranscriptToUiMessages(rows: CrmTranscriptEntry[]): { msgs: Message[]; maxId: number } {
+  const msgs: Message[] = [];
+  let nid = 0;
+  for (const e of rows) {
+    const content = String(e.content ?? "");
+    const ts = e.at ? new Date(String(e.at)) : new Date();
+    nid += 1;
+    if (e.role === "user") {
+      msgs.push({ id: nid, role: "user", text: content, timestamp: ts });
+    } else if (e.role === "assistant") {
+      msgs.push({ id: nid, role: "ai", text: content, timestamp: ts });
+    } else if (e.role === "manager") {
+      msgs.push({ id: nid, role: "ai", text: `Менеджер: ${content}`, timestamp: ts });
+    }
+  }
+  return { msgs, maxId: nid };
+}
 
 const AIAvatar = ({ size = 28 }: { size?: number }) => (
   <div
@@ -88,7 +109,11 @@ const ChatPage = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [crmChatId, setCrmChatId] = useState<string | null>(null);
   const [crmSessionReady, setCrmSessionReady] = useState(false);
-  const initialized = useRef(false);
+  const msgIdRef = useRef(0);
+  const nextId = () => {
+    msgIdRef.current += 1;
+    return msgIdRef.current;
+  };
   const hasAssistant = boot.data?.hasAssistant === true;
 
   const headerTitle = boot.data?.headerTitle?.trim() || c.defaultHeader;
@@ -98,25 +123,52 @@ const ChatPage = () => {
     boot.data?.welcomeMessage?.trim() || c.defaultWelcome;
 
   useEffect(() => {
-    initialized.current = false;
+    msgIdRef.current = 0;
     setMessages([]);
     setCrmChatId(null);
     setCrmSessionReady(false);
   }, [locale]);
 
+  /** Сессия CRM + подгрузка истории с сервера (тот же chatId в localStorage) */
   useEffect(() => {
     if (!boot.data) return;
     let cancelled = false;
+    const w = welcomeText;
     (async () => {
       try {
         const existing = localStorage.getItem("neeklo_crm_chat_id");
         const r = await createCrmChatSession(existing);
-        if (!cancelled) {
-          localStorage.setItem("neeklo_crm_chat_id", r.chatId);
-          setCrmChatId(r.chatId);
+        if (cancelled) return;
+        localStorage.setItem("neeklo_crm_chat_id", r.chatId);
+        setCrmChatId(r.chatId);
+
+        let transcriptRows: CrmTranscriptEntry[] = [];
+        try {
+          const tr = await fetchChatTranscript(r.chatId);
+          if (tr?.messages?.length) transcriptRows = tr.messages;
+        } catch {
+          /* сеть / временная ошибка — показываем приветствие */
+        }
+        if (cancelled) return;
+
+        if (transcriptRows.length > 0) {
+          const { msgs, maxId } = mapTranscriptToUiMessages(transcriptRows);
+          if (msgs.length > 0) {
+            msgIdRef.current = maxId;
+            setMessages(msgs);
+          } else if (w) {
+            msgIdRef.current = 0;
+            setMessages([{ id: nextId(), role: "ai", text: w, timestamp: new Date() }]);
+          }
+        } else if (w) {
+          msgIdRef.current = 0;
+          setMessages([{ id: nextId(), role: "ai", text: w, timestamp: new Date() }]);
         }
       } catch {
-        /* CRM session optional; chat still works */
+        if (!cancelled && w) {
+          msgIdRef.current = 0;
+          setMessages([{ id: nextId(), role: "ai", text: w, timestamp: new Date() }]);
+        }
       } finally {
         if (!cancelled) setCrmSessionReady(true);
       }
@@ -124,15 +176,7 @@ const ChatPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [boot.data]);
-
-  useEffect(() => {
-    if (!boot.data || initialized.current) return;
-    const w = welcomeText;
-    if (!w) return;
-    initialized.current = true;
-    setMessages([{ id: nextId(), role: "ai", text: w, timestamp: new Date() }]);
-  }, [boot.data, welcomeText]);
+  }, [boot.data, welcomeText, locale]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
