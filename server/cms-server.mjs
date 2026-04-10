@@ -1318,6 +1318,35 @@ function parseChatMessagesJson(json) {
   return [];
 }
 
+/** Первое сообщение пользователя — для заголовка лида/чата, если имя в БД пустое */
+function firstUserSnippetFromMessages(json, max = 90) {
+  const arr = parseChatMessagesJson(json);
+  const u = arr.find((m) => m.role === "user");
+  if (!u) return null;
+  const t = String(u.content ?? "").trim();
+  if (!t) return null;
+  return t.length > max ? `${t.slice(0, max - 1)}…` : t;
+}
+
+/** Последняя реплика для списка чатов */
+function lastMessageLineFromMessages(json, max = 100) {
+  const arr = parseChatMessagesJson(json);
+  if (arr.length === 0) return null;
+  const last = arr[arr.length - 1];
+  const t = String(last.content ?? "").trim();
+  if (!t) return null;
+  const label =
+    last.role === "user"
+      ? "Клиент"
+      : last.role === "assistant"
+        ? "AI"
+        : last.role === "manager"
+          ? "Менеджер"
+          : "";
+  const snippet = t.length > max ? `${t.slice(0, max - 1)}…` : t;
+  return label ? `${label}: ${snippet}` : snippet;
+}
+
 /** 1) Append user turn. 2) Link assistant. 3) Auto-create Lead if missing. */
 async function persistCrmUserAndLead(crmChatId, asst, userText) {
   const chat = await prisma.chat.findUnique({ where: { id: crmChatId } });
@@ -1608,19 +1637,34 @@ app.get("/crm/leads", requireAuth, async (_req, res) => {
       orderBy: { createdAt: "desc" },
       include: {
         _count: { select: { chats: true } },
-        chats: { select: { id: true }, take: 1, orderBy: { createdAt: "asc" } },
+        chats: {
+          select: { id: true, messages: true, updatedAt: true },
+          take: 1,
+          orderBy: { updatedAt: "desc" },
+        },
       },
     });
     res.json(
-      rows.map((l) => ({
-        id: l.id,
-        name: l.name,
-        phone: l.phone,
-        status: l.status,
-        created_at: l.createdAt.toISOString(),
-        chats_count: l._count.chats,
-        chat_id: l.chats[0]?.id ?? null,
-      })),
+      rows.map((l) => {
+        const primary = l.chats[0];
+        const msgArr = primary ? parseChatMessagesJson(primary.messages) : [];
+        const fromChatTitle = primary ? firstUserSnippetFromMessages(primary.messages) : null;
+        const lastPrev = primary ? lastMessageLineFromMessages(primary.messages) : null;
+        const dbName = l.name && String(l.name).trim() ? String(l.name).trim() : null;
+        const display_name = dbName || fromChatTitle || null;
+        return {
+          id: l.id,
+          name: l.name,
+          display_name,
+          phone: l.phone,
+          status: l.status,
+          created_at: l.createdAt.toISOString(),
+          chats_count: l._count.chats,
+          chat_id: primary?.id ?? null,
+          last_message_preview: lastPrev,
+          message_count: msgArr.length,
+        };
+      }),
     );
   } catch (e) {
     res.status(500).json({ error: e.message || "Failed" });
@@ -1681,14 +1725,19 @@ app.get("/crm/chats", requireAuth, async (_req, res) => {
     });
     res.json(
       rows.map((c) => {
-        const msgs = c.messages;
-        const n = Array.isArray(msgs) ? msgs.length : 0;
+        const msgArr = parseChatMessagesJson(c.messages);
+        const n = msgArr.length;
+        const leadName = c.lead?.name && String(c.lead.name).trim() ? String(c.lead.name).trim() : null;
+        const fromChat = firstUserSnippetFromMessages(c.messages);
+        const display_title = leadName || fromChat || "Диалог с сайта";
         return {
           id: c.id,
           lead_id: c.leadId,
           lead: c.lead
             ? { id: c.lead.id, name: c.lead.name, phone: c.lead.phone, status: c.lead.status }
             : null,
+          display_title,
+          last_message_preview: lastMessageLineFromMessages(c.messages),
           status: c.status,
           message_count: n,
           created_at: c.createdAt.toISOString(),

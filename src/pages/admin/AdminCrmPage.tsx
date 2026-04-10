@@ -9,16 +9,22 @@ import { Input } from "@/components/ui/input";
 type LeadRow = {
   id: string;
   name: string | null;
+  display_name?: string | null;
   phone: string | null;
   status: string;
   created_at: string;
   chats_count: number;
+  chat_id?: string | null;
+  last_message_preview?: string | null;
+  message_count?: number;
 };
 
 type ChatRow = {
   id: string;
   lead_id: string | null;
   lead: { id: string; name: string | null; phone: string | null; status: string } | null;
+  display_title: string;
+  last_message_preview: string | null;
   status: string;
   message_count: number;
   created_at: string;

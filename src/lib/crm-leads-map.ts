@@ -17,17 +17,23 @@ export interface CrmLeadUi {
   manager: string;
   comment: string;
   unread: number;
+  /** Превью последней реплики из CRM (GET /crm/leads) */
+  lastMessagePreview: string | null;
 }
 
 /** Ответ GET /crm/leads */
 export type ApiCrmLead = {
   id: string;
   name: string | null;
+  /** Имя для UI: из БД или первое сообщение пользователя в чате */
+  display_name?: string | null;
   phone: string | null;
   status: string;
   created_at: string;
   chats_count: number;
   chat_id: string | null;
+  last_message_preview?: string | null;
+  message_count?: number;
 };
 
 const UI_STATUSES = new Set(["in_progress", "done", "new", "cancelled"]);
@@ -53,11 +59,15 @@ function formatDeadline(d: Date): string {
 export function mapApiLeadToUi(row: ApiCrmLead, index: number): CrmLeadUi {
   const created = new Date(row.created_at);
   const st = normalizeLeadStatus(row.status);
+  const display =
+    (row.display_name && row.display_name.trim()) ||
+    (row.name && row.name.trim()) ||
+    "";
   return {
     id: row.id,
     chatId: row.chat_id ?? null,
     num: String(index + 1).padStart(3, "0"),
-    name: (row.name && row.name.trim()) || "Без имени",
+    name: display || "Без имени",
     contact: (row.phone && row.phone.trim()) || "—",
     source: "CRM",
     service: "—",
@@ -69,6 +79,8 @@ export function mapApiLeadToUi(row: ApiCrmLead, index: number): CrmLeadUi {
     status: st,
     manager: "—",
     comment: "",
-    unread: row.chats_count > 0 ? Math.min(row.chats_count, 9) : 0,
+    /** Непрочитанное без отдельной таблицы не считаем — не показываем ложные бейджи */
+    unread: 0,
+    lastMessagePreview: row.last_message_preview ?? null,
   };
 }

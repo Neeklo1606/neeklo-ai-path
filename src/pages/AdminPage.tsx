@@ -35,6 +35,16 @@ interface PortfolioItem {
   featured: boolean; active: boolean; bg: string;
 }
 
+/** Строка GET /crm/chats — список диалогов по активности */
+type CrmChatListRow = {
+  id: string;
+  lead_id: string | null;
+  display_title: string;
+  last_message_preview: string | null;
+  message_count: number;
+  updated_at: string;
+};
+
 /* ═══════ CONFIG ═══════ */
 const leadStatusConfig: Record<string, { label: string; color: string; bg: string; border: string }> = {
   in_progress: { label: 'В работе', color: '#0052FF', bg: '#EEF3FF', border: '#0052FF' },
@@ -184,6 +194,7 @@ const AdminPage = () => {
 
   /* UI STATE */
   const [activeTab,setActiveTab] = useState<string>('dashboard');
+  const [openChat, setOpenChat] = useState<{ chatId: string; title: string } | null>(null);
   const [selectedLead,setSelectedLead] = useState<Lead|null>(null);
   const selectedCrmChatId = selectedLead?.chatId ?? null;
   const leadChatDetailQuery = useQuery({
@@ -200,8 +211,30 @@ const AdminPage = () => {
     () => mapCrmJsonMessagesToAdmin(leadChatDetailQuery.data?.messages),
     [leadChatDetailQuery.data?.messages],
   );
+
+  const crmChatsListQuery = useQuery({
+    queryKey: ["crm", "chats", "list"],
+    queryFn: async () => {
+      const { data } = await adminApi.get<CrmChatListRow[]>("/crm/chats");
+      return data;
+    },
+    enabled: activeTab === "chats",
+  });
+
+  const floatingChatDetailQuery = useQuery({
+    queryKey: ["crm", "chat", openChat?.chatId ?? ""],
+    queryFn: async () => {
+      const { data } = await adminApi.get<{ id: string; messages: unknown }>(`/crm/chats/${openChat!.chatId}`);
+      return data;
+    },
+    enabled: Boolean(openChat?.chatId),
+  });
+  const floatingChatLines = useMemo(
+    () => mapCrmJsonMessagesToAdmin(floatingChatDetailQuery.data?.messages),
+    [floatingChatDetailQuery.data?.messages],
+  );
+
   const [selectedProject,setSelectedProject] = useState<Project|null>(null);
-  const [openChat,setOpenChat] = useState<{id:string;name:string}|null>(null);
   const [chatInput,setChatInput] = useState('');
   const [searchLeads,setSearchLeads] = useState('');
   const [filterStatus,setFilterStatus] = useState('all');
@@ -221,6 +254,7 @@ const AdminPage = () => {
   const [showQuickActions,setShowQuickActions] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const leadDetailChatEndRef = useRef<HTMLDivElement>(null);
+  const floatingChatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const totalUnread = useMemo(()=>leads.reduce((a,l)=>a+l.unread,0),[leads]);
@@ -252,6 +286,7 @@ const AdminPage = () => {
         await adminApi.post(`/crm/chats/${chatId}/messages`, { text: t });
         await queryClient.invalidateQueries({ queryKey: ["crm", "chat", chatId] });
         await queryClient.invalidateQueries({ queryKey: ["crm", "leads"] });
+        await queryClient.invalidateQueries({ queryKey: ["crm", "chats", "list"] });
         setChatInput("");
       } catch {
         toast.error("Не удалось отправить сообщение");
@@ -271,21 +306,17 @@ const AdminPage = () => {
     });
   },[]);
 
-  const conversations = useMemo(()=>{
-    return leads.map(l=>{
-      const msgs=messages[l.id]||[];
-      const last=msgs[msgs.length-1];
-      const fallback = l.chatId ? "Переписка с сайта" : "";
-      return {id:l.id,name:l.name,lastMsg:last?.text||l.comment||fallback,time:last?.time||'',unread:l.unread};
-    });
-  },[leads,messages]);
-
   useEffect(()=>{messagesEndRef.current?.scrollIntoView({behavior:'smooth'});},[messages,openChat]);
 
   useEffect(() => {
     if (leadDetailTab !== "chat") return;
     leadDetailChatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [leadChatLines, leadDetailTab]);
+
+  useEffect(() => {
+    if (!openChat) return;
+    floatingChatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [floatingChatLines, openChat]);
 
   /* ═══════ TABS CONFIG ═══════ */
   const desktopTabs = [
@@ -532,6 +563,11 @@ const AdminPage = () => {
                 <span style={{fontFamily:"'Onest',sans-serif",fontSize:13,color:'#0052FF',fontWeight:600}}>{fmt(l.budget)}</span>
                 <span style={{fontFamily:"'Onest',sans-serif",fontSize:12,color:'#00B341'}}>↑ {fmt(l.prepaid)}</span>
               </div>
+              {l.lastMessagePreview ? (
+                <p className="truncate mt-2" style={{ fontFamily: "'Onest',sans-serif", fontSize: 13, color: "#6A6860" }}>
+                  {l.lastMessagePreview}
+                </p>
+              ) : null}
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center gap-2">
                   <ManagerAvatar name={l.manager} />
@@ -842,88 +878,191 @@ const AdminPage = () => {
     );
   };
 
-  /* ═══════ RENDER CHATS — TELEGRAM STYLE ═══════ */
+  /* ═══════ RENDER CHATS — TELEGRAM STYLE (данные из GET /crm/chats) ═══════ */
   const renderChats = () => {
-    if(openChat){
-      const chatMsgs = messages[openChat.id]||[];
+    if (openChat) {
+      const title = openChat.title || "Чат";
+      const initial = title.trim().charAt(0) || "?";
       return (
-        <motion.div className="fixed inset-0 z-50 bg-white flex flex-col" initial={{x:'100%'}} animate={{x:0}} exit={{x:'100%'}} transition={{duration:0.25,ease}}>
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 flex-shrink-0" style={{height:60,borderBottom:'1px solid #F0F0F0'}}>
-            <button onClick={()=>setOpenChat(null)} className="w-10 h-10 flex items-center justify-center cursor-pointer active:scale-[0.9] transition-transform"><ArrowLeft size={20} /></button>
-            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'#0D0D0B',fontFamily:"'Unbounded',sans-serif",fontSize:14,color:'white'}}>{openChat.name.charAt(0)}</div>
-            <div className="flex-1">
-              <p style={{fontFamily:"'Onest',sans-serif",fontSize:15,fontWeight:700}}>{openChat.name}</p>
-              <p style={{fontFamily:"'Onest',sans-serif",fontSize:12,color:'#00B341'}}>онлайн</p>
+        <motion.div className="fixed inset-0 z-50 bg-white flex flex-col" initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ duration: 0.25, ease }}>
+          <div className="flex items-center gap-3 px-4 flex-shrink-0" style={{ height: 60, borderBottom: "1px solid #F0F0F0" }}>
+            <button type="button" onClick={() => setOpenChat(null)} className="w-10 h-10 flex items-center justify-center cursor-pointer active:scale-[0.9] transition-transform">
+              <ArrowLeft size={20} />
+            </button>
+            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "#0D0D0B", fontFamily: "'Unbounded',sans-serif", fontSize: 14, color: "white" }}>
+              {initial}
             </div>
-            <button className="w-9 h-9 flex items-center justify-center cursor-pointer"><MoreVertical size={18} color="#6A6860" /></button>
+            <div className="flex-1 min-w-0">
+              <p className="truncate" style={{ fontFamily: "'Onest',sans-serif", fontSize: 15, fontWeight: 700 }}>
+                {title}
+              </p>
+              <p style={{ fontFamily: "'Onest',sans-serif", fontSize: 12, color: "#6A6860" }}>диалог с сайта</p>
+            </div>
+            <button type="button" className="w-9 h-9 flex items-center justify-center cursor-pointer">
+              <MoreVertical size={18} color="#6A6860" />
+            </button>
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto flex flex-col gap-2 px-4 py-3" style={{background:'#F5F5F7'}}>
-            <div className="mx-auto rounded-full px-3 py-1 mb-2" style={{background:'#E0E0E0',fontFamily:"'Onest',sans-serif",fontSize:12}}>Сегодня</div>
-            {chatMsgs.map(m=>(
-              <div key={m.id} className={`flex ${m.from==='manager'?'justify-end':'justify-start'}`}>
-                <div style={{maxWidth:'75%',padding:'10px 14px',fontFamily:"'Onest',sans-serif",fontSize:15,background:m.from==='manager'?'#0D0D0B':'white',color:m.from==='manager'?'white':'#0D0D0B',borderRadius:m.from==='manager'?'18px 4px 18px 18px':'4px 18px 18px 18px',boxShadow:m.from==='client'?'0 1px 2px rgba(0,0,0,0.08)':'none'}}>
-                  {m.text}
-                  <p style={{fontSize:11,color:m.from==='manager'?'rgba(255,255,255,0.5)':'#B0B0B0',marginTop:4,textAlign:m.from==='manager'?'right':'left'}}>
-                    {m.time}{m.from==='manager'&&<span style={{color:'#4dff91',marginLeft:6}}>✓✓</span>}
-                  </p>
-                </div>
+          <div className="flex-1 overflow-y-auto flex flex-col gap-2 px-4 py-3" style={{ background: "#F5F5F7" }}>
+            {floatingChatDetailQuery.isLoading ? (
+              <div className="flex justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E0E0E0] border-t-[#0D0D0B]" />
               </div>
-            ))}
-            <div ref={messagesEndRef} />
+            ) : floatingChatDetailQuery.isError ? (
+              <p className="font-body text-sm text-destructive px-2">Не удалось загрузить сообщения.</p>
+            ) : (
+              <>
+                {floatingChatLines.map((m) => (
+                  <div key={m.id} className={`flex ${m.from === "manager" ? "justify-end" : "justify-start"}`}>
+                    <div
+                      style={{
+                        maxWidth: "75%",
+                        padding: "10px 14px",
+                        fontFamily: "'Onest',sans-serif",
+                        fontSize: 15,
+                        background: m.from === "manager" ? "#0D0D0B" : m.isAi ? "#EEF6FF" : "white",
+                        color: m.from === "manager" ? "white" : "#0D0D0B",
+                        borderRadius: m.from === "manager" ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+                        border: m.isAi ? "1px solid #D6E8FF" : "none",
+                      }}
+                    >
+                      <span style={{ fontSize: 11, color: m.from === "manager" ? "rgba(255,255,255,0.75)" : "#888" }}>{m.name}</span>
+                      <div className="mt-0.5">{m.text}</div>
+                      <p
+                        style={{
+                          fontSize: 11,
+                          color: m.from === "manager" ? "rgba(255,255,255,0.5)" : "#B0B0B0",
+                          marginTop: 4,
+                          textAlign: m.from === "manager" ? "right" : "left",
+                        }}
+                      >
+                        {m.time}
+                        {m.from === "manager" && m.read && <span style={{ color: "#4dff91", marginLeft: 6 }}>✓✓</span>}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                <div ref={floatingChatEndRef} />
+              </>
+            )}
           </div>
 
-          {/* Quick actions */}
           <AnimatePresence>
-            {showQuickActions&&(
-              <motion.div className="bg-white border-t border-[#F0F0F0] px-4 py-3" initial={{y:20,opacity:0}} animate={{y:0,opacity:1}} exit={{y:20,opacity:0}}>
-                {['📷 Фото/Видео','📄 Документ','📋 Шаблон ответа','✅ Создать задачу'].map(a=>(
-                  <button key={a} onClick={()=>{setShowQuickActions(false);toast(a.split(' ').slice(1).join(' '));}} className="w-full text-left py-2.5 hover:bg-[#F9F9F9] rounded-xl px-3 cursor-pointer" style={{fontFamily:"'Onest',sans-serif",fontSize:14}}>{a}</button>
+            {showQuickActions && (
+              <motion.div className="bg-white border-t border-[#F0F0F0] px-4 py-3" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }}>
+                {["📷 Фото/Видео", "📄 Документ", "📋 Шаблон ответа", "✅ Создать задачу"].map((a) => (
+                  <button
+                    key={a}
+                    type="button"
+                    onClick={() => {
+                      setShowQuickActions(false);
+                      toast(a.split(" ").slice(1).join(" "));
+                    }}
+                    className="w-full text-left py-2.5 hover:bg-[#F9F9F9] rounded-xl px-3 cursor-pointer"
+                    style={{ fontFamily: "'Onest',sans-serif", fontSize: 14 }}
+                  >
+                    {a}
+                  </button>
                 ))}
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Input */}
-          <div className="bg-white flex items-end gap-2 px-3 py-3" style={{borderTop:'1px solid #F0F0F0',paddingBottom:'max(12px, env(safe-area-inset-bottom))'}}>
-            <button onClick={()=>setShowQuickActions(!showQuickActions)} className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-[0.9] transition-transform" style={{background:'#F5F5F5'}}>
+          <div className="bg-white flex items-end gap-2 px-3 py-3" style={{ borderTop: "1px solid #F0F0F0", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+            <button type="button" onClick={() => setShowQuickActions(!showQuickActions)} className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-[0.9] transition-transform" style={{ background: "#F5F5F5" }}>
               <Plus size={18} color="#6A6860" />
             </button>
-            <textarea ref={textareaRef} value={chatInput} onChange={e=>{setChatInput(e.target.value);e.target.style.height='40px';e.target.style.height=Math.min(e.target.scrollHeight,100)+'px';}}
-              onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage(openChat.id,chatInput);}}}
-              placeholder="Сообщение..." className="flex-1 outline-none resize-none" rows={1}
-              style={{fontFamily:"'Onest',sans-serif",fontSize:15,background:'#F5F5F5',border:'1px solid transparent',borderRadius:24,padding:'8px 16px',minHeight:40,maxHeight:100}} />
-            <button onClick={()=>sendMessage(openChat.id,chatInput)} className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-[0.88] transition-transform" style={{background:chatInput.trim()?'#0D0D0B':'#F5F5F5'}}>
-              <ArrowUp size={16} color={chatInput.trim()?'white':'#B0B0B0'} />
+            <textarea
+              ref={textareaRef}
+              value={chatInput}
+              onChange={(e) => {
+                setChatInput(e.target.value);
+                e.target.style.height = "40px";
+                e.target.style.height = `${Math.min(e.target.scrollHeight, 100)}px`;
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  if (openChat.chatId) void postManagerReplyToLeadChat(openChat.chatId, chatInput);
+                }
+              }}
+              placeholder="Ответ клиенту…"
+              className="flex-1 outline-none resize-none"
+              rows={1}
+              style={{ fontFamily: "'Onest',sans-serif", fontSize: 15, background: "#F5F5F5", border: "1px solid transparent", borderRadius: 24, padding: "8px 16px", minHeight: 40, maxHeight: 100 }}
+            />
+            <button
+              type="button"
+              onClick={() => openChat.chatId && void postManagerReplyToLeadChat(openChat.chatId, chatInput)}
+              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-[0.88] transition-transform"
+              style={{ background: chatInput.trim() ? "#0D0D0B" : "#F5F5F5" }}
+            >
+              <ArrowUp size={16} color={chatInput.trim() ? "white" : "#B0B0B0"} />
             </button>
           </div>
         </motion.div>
       );
     }
 
+    const chatRows = crmChatsListQuery.data ?? [];
     return (
       <div className="overflow-y-auto">
-        <div className="p-4 flex items-center justify-between" style={{borderBottom:'1px solid #F0F0F0'}}>
-          <h2 style={{fontFamily:"'Unbounded',sans-serif",fontSize:18,fontWeight:800}}>Сообщения</h2>
-          {totalUnread>0&&<span className="rounded-full text-white flex items-center justify-center" style={{fontFamily:"'Onest',sans-serif",fontSize:11,background:'#0D0D0B',minWidth:20,height:20,padding:'0 6px'}}>{totalUnread}</span>}
+        <div className="p-4 flex items-center justify-between" style={{ borderBottom: "1px solid #F0F0F0" }}>
+          <h2 style={{ fontFamily: "'Unbounded',sans-serif", fontSize: 18, fontWeight: 800 }}>Сообщения</h2>
+          <span style={{ fontFamily: "'Onest',sans-serif", fontSize: 12, color: "#6A6860" }}>{chatRows.length} диалогов</span>
         </div>
-        {conversations.map(c=>(
-          <button key={c.id} onClick={()=>setOpenChat({id:c.id,name:c.name})}
-            className="w-full flex items-center gap-3 px-4 py-3.5 cursor-pointer text-left transition-colors hover:bg-[#F9F9F9] active:bg-[#F0F0F0]"
-            style={{borderBottom:'1px solid #F5F5F5'}}>
-            <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'#0D0D0B',fontFamily:"'Unbounded',sans-serif",fontSize:16,color:'white'}}>{c.name.charAt(0)}</div>
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-center">
-                <span className="truncate" style={{fontFamily:"'Onest',sans-serif",fontSize:15,fontWeight:700}}>{c.name}</span>
-                <span style={{fontFamily:"'Onest',sans-serif",fontSize:12,color:'#B0B0B0'}}>{c.time}</span>
+        {crmChatsListQuery.isLoading && (
+          <div className="flex justify-center py-16">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E0E0E0] border-t-[#0D0D0B]" />
+          </div>
+        )}
+        {crmChatsListQuery.isError && (
+          <p className="p-4 font-body text-sm text-destructive">Не удалось загрузить чаты (GET /crm/chats).</p>
+        )}
+        {!crmChatsListQuery.isLoading && !crmChatsListQuery.isError && chatRows.length === 0 && (
+          <p className="p-4 font-body text-sm" style={{ color: "#6A6860" }}>
+            Пока нет диалогов. Сообщения с{" "}
+            <a href="/chat" className="text-[#0052FF] underline" target="_blank" rel="noreferrer">
+              /chat
+            </a>{" "}
+            появятся здесь после первого ответа ассистента.
+          </p>
+        )}
+        {chatRows.map((row) => {
+          const t = new Date(row.updated_at);
+          const timeStr = Number.isNaN(t.getTime())
+            ? ""
+            : t.toLocaleString("ru", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+          const sub = row.last_message_preview || (row.message_count > 0 ? `${row.message_count} сообщ.` : "Нет сообщений");
+          const av = (row.display_title || "?").trim().charAt(0).toUpperCase();
+          return (
+            <button
+              key={row.id}
+              type="button"
+              onClick={() => setOpenChat({ chatId: row.id, title: row.display_title })}
+              className="w-full flex items-center gap-3 px-4 py-3.5 cursor-pointer text-left transition-colors hover:bg-[#F9F9F9] active:bg-[#F0F0F0]"
+              style={{ borderBottom: "1px solid #F5F5F5" }}
+            >
+              <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "#0D0D0B", fontFamily: "'Unbounded',sans-serif", fontSize: 16, color: "white" }}>
+                {av}
               </div>
-              <p className="truncate mt-0.5" style={{fontFamily:"'Onest',sans-serif",fontSize:14,color:'#6A6860'}}>{c.lastMsg}</p>
-            </div>
-            {c.unread>0&&<span className="rounded-full text-white flex items-center justify-center flex-shrink-0" style={{fontFamily:"'Onest',sans-serif",fontSize:11,fontWeight:700,background:'#FF3B30',minWidth:20,height:20,padding:'0 5px'}}>{c.unread}</span>}
-          </button>
-        ))}
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center gap-2">
+                  <span className="truncate" style={{ fontFamily: "'Onest',sans-serif", fontSize: 15, fontWeight: 700 }}>
+                    {row.display_title}
+                  </span>
+                  <span className="flex-shrink-0" style={{ fontFamily: "'Onest',sans-serif", fontSize: 12, color: "#B0B0B0" }}>
+                    {timeStr}
+                  </span>
+                </div>
+                <p className="truncate mt-0.5" style={{ fontFamily: "'Onest',sans-serif", fontSize: 14, color: "#6A6860" }}>
+                  {sub}
+                </p>
+              </div>
+            </button>
+          );
+        })}
       </div>
     );
   };
