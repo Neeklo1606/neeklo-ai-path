@@ -12,6 +12,7 @@ import PageTransition from "@/components/PageTransition";
 import Onboarding from "@/components/Onboarding";
 import CookieBanner from "@/components/CookieBanner";
 import BrandLogo from "@/components/BrandLogo";
+import TelegramManagerButton from "@/components/TelegramManagerButton";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LanguageProvider, useLanguage } from "@/hooks/useLanguage";
 import Index from "./pages/Index";
@@ -204,13 +205,16 @@ const MobileHeader = () => {
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { pathname } = useLocation();
   const hideNav = HIDE_NAV_ROUTES.includes(pathname) || pathname.startsWith("/admin");
-  const hideBottomNav = pathname.startsWith("/admin");
+  const showManagerFab = !pathname.startsWith("/admin");
 
-  if (hideNav) return (
-    <div className="min-h-screen flex flex-col">
-      <div className="flex-1 flex flex-col">{children}</div>
-    </div>
-  );
+  if (hideNav) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 flex flex-col">{children}</div>
+        {showManagerFab && <TelegramManagerButton />}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -218,6 +222,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       <DesktopNav />
       <div className="flex-1 flex flex-col">{children}</div>
       <BottomNav />
+      {showManagerFab && <TelegramManagerButton />}
     </div>
   );
 };

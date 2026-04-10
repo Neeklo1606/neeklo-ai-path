@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import HolographicCard from "@/components/ui/holographic-card";
 import Footer from "@/components/Footer";
-import TelegramManagerButton from "@/components/TelegramManagerButton";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useLanguage } from "@/hooks/useLanguage";
 import { cmsPageBySlug, type CmsPage } from "@/lib/cms-api";
@@ -187,7 +186,6 @@ export default function CmsHomePage() {
 
   return (
     <div className="flex-1 bg-background text-foreground pb-[100px] sm:pb-0 overflow-x-hidden">
-      <TelegramManagerButton />
       <section
           className="relative overflow-hidden flex flex-col items-center justify-center text-center"
           style={{

@@ -14,11 +14,13 @@ const TelegramManagerButton = () => {
         href={TG_URL}
         target="_blank"
         rel="noopener noreferrer"
+        aria-label={t("tg.writeManager")}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="fixed z-50 hidden md:flex items-center gap-2.5 font-body select-none"
+        className="fixed z-[105] hidden md:flex items-center gap-2.5 font-body select-none pointer-events-auto"
         style={{
-          right: 28, bottom: 28,
+          right: "max(28px, env(safe-area-inset-right, 0px))",
+          bottom: "max(28px, env(safe-area-inset-bottom, 0px))",
           padding: "14px 26px 14px 22px", borderRadius: 16,
           background: hovered ? "linear-gradient(135deg, #2AABEE 0%, #1E96D1 100%)" : "linear-gradient(135deg, #229ED9 0%, #1B8DC2 100%)",
           color: "#fff", fontSize: 15, fontWeight: 600, textDecoration: "none",
@@ -36,9 +38,14 @@ const TelegramManagerButton = () => {
         href={TG_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed z-50 md:hidden flex items-center justify-center"
+        aria-label={t("tg.writeManager")}
+        className="fixed z-[105] md:hidden flex items-center justify-center pointer-events-auto"
         style={{
-          right: 16, bottom: 80, width: 52, height: 52, borderRadius: 16,
+          right: "max(16px, env(safe-area-inset-right, 0px))",
+          bottom: "calc(72px + env(safe-area-inset-bottom, 0px))",
+          width: 52,
+          height: 52,
+          borderRadius: 16,
           background: "linear-gradient(135deg, #229ED9 0%, #1B8DC2 100%)",
           color: "#fff", textDecoration: "none",
           boxShadow: "0 8px 24px rgba(34,158,217,0.35), 0 2px 8px rgba(0,0,0,0.12)",
