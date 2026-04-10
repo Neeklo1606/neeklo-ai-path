@@ -1334,14 +1334,26 @@ async function persistCrmUserAndLead(crmChatId, asst, userText) {
   });
   let ref = await prisma.chat.findUnique({ where: { id: crmChatId } });
   if (ref && !ref.leadId) {
+    const title =
+      userText.length > 100 ? `${userText.slice(0, 97)}…` : userText;
     const lead = await prisma.lead.create({
-      data: { status: "new", name: null, phone: null },
+      data: { status: "new", name: title, phone: null },
     });
     await prisma.chat.update({
       where: { id: crmChatId },
       data: { leadId: lead.id },
     });
     ref = await prisma.chat.findUnique({ where: { id: crmChatId } });
+  } else if (ref?.leadId) {
+    const leadRow = await prisma.lead.findUnique({ where: { id: ref.leadId } });
+    if (leadRow && !(leadRow.name && String(leadRow.name).trim())) {
+      const title =
+        userText.length > 100 ? `${userText.slice(0, 97)}…` : userText;
+      await prisma.lead.update({
+        where: { id: ref.leadId },
+        data: { name: title },
+      });
+    }
   }
   return ref;
 }
@@ -1594,7 +1606,10 @@ app.get("/crm/leads", requireAuth, async (_req, res) => {
   try {
     const rows = await prisma.lead.findMany({
       orderBy: { createdAt: "desc" },
-      include: { _count: { select: { chats: true } } },
+      include: {
+        _count: { select: { chats: true } },
+        chats: { select: { id: true }, take: 1, orderBy: { createdAt: "asc" } },
+      },
     });
     res.json(
       rows.map((l) => ({
@@ -1604,6 +1619,7 @@ app.get("/crm/leads", requireAuth, async (_req, res) => {
         status: l.status,
         created_at: l.createdAt.toISOString(),
         chats_count: l._count.chats,
+        chat_id: l.chats[0]?.id ?? null,
       })),
     );
   } catch (e) {
@@ -1731,6 +1747,29 @@ app.patch("/crm/chats/:id", requireAuth, async (req, res) => {
     });
   } catch (e) {
     if (e.code === "P2025") return res.status(404).json({ error: "Not found" });
+    res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
+/** Добавить сообщение менеджера в переписку (ответ клиенту вместо/после AI) */
+app.post("/crm/chats/:id/messages", requireAuth, async (req, res) => {
+  try {
+    const text = String(req.body?.text ?? "").trim();
+    if (!text) return res.status(400).json({ error: "text required" });
+    const chat = await prisma.chat.findUnique({ where: { id: req.params.id } });
+    if (!chat) return res.status(404).json({ error: "Not found" });
+    const arr = parseChatMessagesJson(chat.messages);
+    arr.push({
+      role: "manager",
+      content: text,
+      at: new Date().toISOString(),
+    });
+    await prisma.chat.update({
+      where: { id: req.params.id },
+      data: { messages: arr, updatedAt: new Date() },
+    });
+    res.json({ ok: true, messages: arr });
+  } catch (e) {
     res.status(500).json({ error: e.message || "Failed" });
   }
 });

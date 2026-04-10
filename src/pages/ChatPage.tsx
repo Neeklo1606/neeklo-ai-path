@@ -83,12 +83,6 @@ const ChatPage = () => {
 
   usePageTitle(boot.data?.pageTitle ?? "");
 
-  useEffect(() => {
-    if (boot.data !== undefined) {
-      console.log("CHAT DATA:", boot.data);
-    }
-  }, [boot.data]);
-
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);

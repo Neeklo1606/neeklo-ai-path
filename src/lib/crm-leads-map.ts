@@ -1,6 +1,8 @@
 /** UI-модель лида в админке (таблица / карточки) */
 export interface CrmLeadUi {
   id: string;
+  /** Связанный чат сайта (crm_chats) — для переписки в админке */
+  chatId: string | null;
   num: string;
   name: string;
   contact: string;
@@ -25,6 +27,7 @@ export type ApiCrmLead = {
   status: string;
   created_at: string;
   chats_count: number;
+  chat_id: string | null;
 };
 
 const UI_STATUSES = new Set(["in_progress", "done", "new", "cancelled"]);
@@ -52,6 +55,7 @@ export function mapApiLeadToUi(row: ApiCrmLead, index: number): CrmLeadUi {
   const st = normalizeLeadStatus(row.status);
   return {
     id: row.id,
+    chatId: row.chat_id ?? null,
     num: String(index + 1).padStart(3, "0"),
     name: (row.name && row.name.trim()) || "Без имени",
     contact: (row.phone && row.phone.trim()) || "—",

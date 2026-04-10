@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { clearAuthToken } from "@/lib/auth-token";
 import { adminApi } from "@/lib/admin-api";
 import { mapApiLeadToUi, type ApiCrmLead, type CrmLeadUi } from "@/lib/crm-leads-map";
+import { mapCrmJsonMessagesToAdmin } from "@/lib/crm-chat-messages";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
@@ -184,6 +185,21 @@ const AdminPage = () => {
   /* UI STATE */
   const [activeTab,setActiveTab] = useState<string>('dashboard');
   const [selectedLead,setSelectedLead] = useState<Lead|null>(null);
+  const selectedCrmChatId = selectedLead?.chatId ?? null;
+  const leadChatDetailQuery = useQuery({
+    queryKey: ["crm", "chat", selectedCrmChatId],
+    queryFn: async () => {
+      const { data } = await adminApi.get<{ id: string; messages: unknown; lead_id: string | null }>(
+        `/crm/chats/${selectedCrmChatId}`,
+      );
+      return data;
+    },
+    enabled: Boolean(selectedCrmChatId && selectedLead),
+  });
+  const leadChatLines = useMemo(
+    () => mapCrmJsonMessagesToAdmin(leadChatDetailQuery.data?.messages),
+    [leadChatDetailQuery.data?.messages],
+  );
   const [selectedProject,setSelectedProject] = useState<Project|null>(null);
   const [openChat,setOpenChat] = useState<{id:string;name:string}|null>(null);
   const [chatInput,setChatInput] = useState('');
@@ -204,6 +220,7 @@ const AdminPage = () => {
   const [scriptFilter,setScriptFilter] = useState('Все');
   const [showQuickActions,setShowQuickActions] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const leadDetailChatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const totalUnread = useMemo(()=>leads.reduce((a,l)=>a+l.unread,0),[leads]);
@@ -226,6 +243,23 @@ const AdminPage = () => {
     if(textareaRef.current){textareaRef.current.style.height='40px';}
   },[queryClient]);
 
+  /** Ответ менеджера в реальный CRM-чат (виден в БД и при следующем сообщении клиента) */
+  const postManagerReplyToLeadChat = useCallback(
+    async (chatId: string, text: string) => {
+      const t = text.trim();
+      if (!t) return;
+      try {
+        await adminApi.post(`/crm/chats/${chatId}/messages`, { text: t });
+        await queryClient.invalidateQueries({ queryKey: ["crm", "chat", chatId] });
+        await queryClient.invalidateQueries({ queryKey: ["crm", "leads"] });
+        setChatInput("");
+      } catch {
+        toast.error("Не удалось отправить сообщение");
+      }
+    },
+    [queryClient],
+  );
+
   const toggleTask = useCallback((projectId:string,taskId:string)=>{
     setTasks(prev=>{
       const updated={...prev};
@@ -241,11 +275,17 @@ const AdminPage = () => {
     return leads.map(l=>{
       const msgs=messages[l.id]||[];
       const last=msgs[msgs.length-1];
-      return {id:l.id,name:l.name,lastMsg:last?.text||l.comment,time:last?.time||'',unread:l.unread};
+      const fallback = l.chatId ? "Переписка с сайта" : "";
+      return {id:l.id,name:l.name,lastMsg:last?.text||l.comment||fallback,time:last?.time||'',unread:l.unread};
     });
   },[leads,messages]);
 
   useEffect(()=>{messagesEndRef.current?.scrollIntoView({behavior:'smooth'});},[messages,openChat]);
+
+  useEffect(() => {
+    if (leadDetailTab !== "chat") return;
+    leadDetailChatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [leadChatLines, leadDetailTab]);
 
   /* ═══════ TABS CONFIG ═══════ */
   const desktopTabs = [
@@ -543,26 +583,88 @@ const AdminPage = () => {
         )}
         {leadDetailTab==='chat'&&(
           <div className="px-5 py-4 flex flex-col" style={{minHeight:300}}>
-            <div className="flex flex-col gap-2 flex-1 overflow-y-auto" style={{maxHeight:'calc(85dvh - 300px)'}}>
-              {(messages[l.id]||[]).map(m=>(
-                <div key={m.id} className={`flex ${m.from==='manager'?'justify-end':'justify-start'}`}>
-                  <div style={{maxWidth:'75%',padding:'10px 14px',fontFamily:"'Onest',sans-serif",fontSize:15,background:m.from==='manager'?'#0D0D0B':'white',color:m.from==='manager'?'white':'#0D0D0B',borderRadius:m.from==='manager'?'18px 4px 18px 18px':'4px 18px 18px 18px',boxShadow:m.from==='client'?'0 1px 2px rgba(0,0,0,0.08)':'none'}}>
-                    {m.text}
-                    <p style={{fontSize:11,color:m.from==='manager'?'rgba(255,255,255,0.5)':'#B0B0B0',marginTop:4,textAlign:m.from==='manager'?'right':'left'}}>
-                      {m.time}{m.from==='manager'&&m.read&&<span style={{color:'#4dff91',marginLeft:6}}>✓✓</span>}
-                    </p>
-                  </div>
+            {!l.chatId ? (
+              <p className="font-body text-sm" style={{ color: "#6A6860" }}>
+                К лиду не привязан чат с сайта. Обычно чат появляется после первого сообщения пользователя в{" "}
+                <a href="/chat" className="underline text-[#0052FF]" target="_blank" rel="noreferrer">
+                  /chat
+                </a>
+                .
+              </p>
+            ) : leadChatDetailQuery.isLoading ? (
+              <div className="flex justify-center py-10" aria-busy="true">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E0E0E0] border-t-[#0D0D0B]" />
+              </div>
+            ) : leadChatDetailQuery.isError ? (
+              <p className="font-body text-sm text-destructive">Не удалось загрузить переписку.</p>
+            ) : (
+              <>
+                <p className="font-body text-xs mb-2" style={{ color: "#6A6860" }}>
+                  Клиент пишет на сайте; ответы AI и менеджера хранятся здесь. Ваш ответ уходит в ту же цепочку.
+                </p>
+                <div className="flex flex-col gap-2 flex-1 overflow-y-auto" style={{ maxHeight: "calc(85dvh - 300px)" }}>
+                  {leadChatLines.map((m) => (
+                    <div key={m.id} className={`flex ${m.from === "manager" ? "justify-end" : "justify-start"}`}>
+                      <div
+                        style={{
+                          maxWidth: "75%",
+                          padding: "10px 14px",
+                          fontFamily: "'Onest',sans-serif",
+                          fontSize: 15,
+                          background: m.from === "manager" ? "#0D0D0B" : m.isAi ? "#EEF6FF" : "white",
+                          color: m.from === "manager" ? "white" : "#0D0D0B",
+                          borderRadius: m.from === "manager" ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+                          border: m.isAi ? "1px solid #D6E8FF" : "none",
+                        }}
+                      >
+                        <span style={{ fontSize: 11, color: m.from === "manager" ? "rgba(255,255,255,0.75)" : "#888" }}>
+                          {m.name}
+                        </span>
+                        <div className="mt-0.5">{m.text}</div>
+                        <p
+                          style={{
+                            fontSize: 11,
+                            color: m.from === "manager" ? "rgba(255,255,255,0.5)" : "#B0B0B0",
+                            marginTop: 4,
+                            textAlign: m.from === "manager" ? "right" : "left",
+                          }}
+                        >
+                          {m.time}
+                          {m.from === "manager" && m.read && (
+                            <span style={{ color: "#4dff91", marginLeft: 6 }}>✓✓</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={leadDetailChatEndRef} />
                 </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-            <div className="flex gap-2 mt-3">
-              <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage(l.id,chatInput);}}}
-                placeholder="Сообщение..." className="flex-1 outline-none" style={{fontFamily:"'Onest',sans-serif",fontSize:14,background:'#F5F5F5',borderRadius:24,padding:'10px 16px'}} />
-              <button onClick={()=>sendMessage(l.id,chatInput)} className="w-9 h-9 rounded-full flex items-center justify-center text-white cursor-pointer active:scale-[0.88] transition-transform" style={{background:chatInput.trim()?'#0D0D0B':'#F5F5F5'}}>
-                <ArrowUp size={16} color={chatInput.trim()?'white':'#B0B0B0'} />
-              </button>
-            </div>
+                <div className="flex gap-2 mt-3">
+                  <input
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        if (l.chatId) void postManagerReplyToLeadChat(l.chatId, chatInput);
+                      }
+                    }}
+                    placeholder="Ответ менеджера клиенту…"
+                    className="flex-1 outline-none"
+                    style={{ fontFamily: "'Onest',sans-serif", fontSize: 14, background: "#F5F5F5", borderRadius: 24, padding: "10px 16px" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => l.chatId && void postManagerReplyToLeadChat(l.chatId, chatInput)}
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-white cursor-pointer active:scale-[0.88] transition-transform"
+                    style={{ background: chatInput.trim() ? "#0D0D0B" : "#F5F5F5" }}
+                  >
+                    <ArrowUp size={16} color={chatInput.trim() ? "white" : "#B0B0B0"} />
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
         {leadDetailTab==='notes'&&(
