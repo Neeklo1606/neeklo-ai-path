@@ -10,7 +10,8 @@ git fetch origin
 git reset --hard origin/main
 
 echo "=== INSTALL ==="
-npm install
+# Vite и Prisma CLI в devDependencies — при NODE_ENV=production обычный npm install их не ставит
+npm install --include=dev
 
 echo "=== BUILD FRONTEND ==="
 rm -rf dist
