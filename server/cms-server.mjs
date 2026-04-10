@@ -1842,6 +1842,13 @@ app.post("/crm/chats/:id/messages", requireAuth, async (req, res) => {
   }
 });
 
+process.on("unhandledRejection", (reason) => {
+  console.error("[cms-server] unhandledRejection", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("[cms-server] uncaughtException", err);
+});
+
 app.listen(PORT, "127.0.0.1", () => {
   console.log(`[cms-server] http://127.0.0.1:${PORT} (Prisma)`);
 });

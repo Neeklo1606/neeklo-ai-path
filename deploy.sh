@@ -14,8 +14,22 @@ echo "=== INSTALL ==="
 npm install --include=dev
 
 echo "=== BUILD FRONTEND ==="
-rm -rf dist
-npm run build
+# Атомарная замена dist: не удаляем текущий dist до готовности новой сборки (иначе при открытии сайта — 500/404)
+STAGE="dist.build.$$"
+rm -rf "$STAGE"
+npm run build -- --outDir "$STAGE"
+if [ ! -f "$STAGE/index.html" ]; then
+  echo "ERROR: сборка не создала $STAGE/index.html"
+  rm -rf "$STAGE"
+  exit 1
+fi
+PREV="dist.prev.$$"
+rm -rf "$PREV"
+if [ -d dist ]; then
+  mv dist "$PREV"
+fi
+mv "$STAGE" dist
+rm -rf "$PREV"
 
 echo "=== LOAD ENV ==="
 set -a
