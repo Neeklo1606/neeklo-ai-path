@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { clearAuthToken } from "@/lib/auth-token";
+import { adminApi } from "@/lib/admin-api";
+import { mapApiLeadToUi, type ApiCrmLead, type CrmLeadUi } from "@/lib/crm-leads-map";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,11 +17,7 @@ import {
 } from "lucide-react";
 
 /* ═══════ TYPES ═══════ */
-interface Lead {
-  id: string; num: string; name: string; contact: string; source: string; service: string;
-  budget: number; prepaid: number; balance: number; deadline: string; daysLeft: number;
-  status: string; manager: string; comment: string; unread: number;
-}
+type Lead = CrmLeadUi;
 interface Project {
   id: string; emoji: string; title: string; client: string; service: string;
   status: string; price: number; paid: number; deadline: string; progress: number;
@@ -52,18 +51,7 @@ const projectStatus: Record<string, { label: string; color: string; border: stri
 const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 const fmt = (n: number) => n.toLocaleString('ru') + ' ₽';
 
-/* ═══════ INITIAL DATA ═══════ */
-const initLeads: Lead[] = [
-  {id:'l1',num:'001',name:'АННА (САБИНА)',contact:'Telegram',source:'Avito',service:'Видео',budget:15000,prepaid:7500,balance:7500,deadline:'15.04.26',daysLeft:13,status:'in_progress',manager:'Сабина',comment:'Ролик на ДР',unread:0},
-  {id:'l2',num:'002',name:'@Tanychizh',contact:'@Tanychizh',source:'Avito',service:'Видео',budget:10000,prepaid:5000,balance:5000,deadline:'05.04.26',daysLeft:3,status:'in_progress',manager:'Данил',comment:'Ролик ВБ чехлы',unread:2},
-  {id:'l3',num:'003',name:'@YiliyaP',contact:'@YiliyaP',source:'Avito',service:'Видео',budget:8000,prepaid:4000,balance:4000,deadline:'05.04.26',daysLeft:3,status:'in_progress',manager:'Марина',comment:'Ролик платок',unread:1},
-  {id:'l4',num:'004',name:'АНИМАЦИЯ',contact:'Telegram',source:'Avito',service:'Видео',budget:15000,prepaid:5000,balance:10000,deadline:'02.04.26',daysLeft:0,status:'done',manager:'Сабина',comment:'Видео ДР',unread:0},
-  {id:'l5',num:'005',name:'@svetaass',contact:'@svetaass',source:'Avito',service:'Фото',budget:7500,prepaid:3750,balance:3750,deadline:'05.04.26',daysLeft:0,status:'done',manager:'Марина',comment:'Фотографии',unread:0},
-  {id:'l6',num:'006',name:'LIVEGRID',contact:'Игорь',source:'Avito',service:'Сайт',budget:350000,prepaid:250000,balance:100000,deadline:'03.04.26',daysLeft:1,status:'in_progress',manager:'Игорь',comment:'Направил фронт',unread:0},
-  {id:'l7',num:'007',name:'Ольга (MAX)',contact:'+79608640046',source:'Avito',service:'Видео',budget:12000,prepaid:6000,balance:6000,deadline:'15.04.26',daysLeft:13,status:'in_progress',manager:'Данил',comment:'Видео выпускной',unread:0},
-  {id:'l8',num:'008',name:'БОГДАН',contact:'Telegram',source:'Avito',service:'Видео',budget:15000,prepaid:7500,balance:7500,deadline:'07.04.26',daysLeft:5,status:'in_progress',manager:'Данил',comment:'Мультик, часть 01.04',unread:1},
-  {id:'l9',num:'009',name:'АЛЕКСАНДР ВЫКУП',contact:'+79523299999',source:'Avito',service:'Видео',budget:15000,prepaid:7500,balance:7500,deadline:'09.04.26',daysLeft:7,status:'in_progress',manager:'Данил',comment:'Данил',unread:0},
-];
+/* ═══════ INITIAL DATA (моки проектов/чатов; лиды — из GET /crm/leads) ═══════ */
 const initProjects: Project[] = [
   { id:'p1',emoji:'🌐',title:'LIVEGRID сайт',client:'LIVEGRID',service:'Сайт',status:'in_progress',price:350000,paid:250000,deadline:'03 апр',progress:85,manager:'Игорь',notes:'Направил фронт' },
   { id:'p2',emoji:'🎬',title:'Ролик ВБ чехлы',client:'@Tanychizh',service:'Видео',status:'in_progress',price:10000,paid:5000,deadline:'05 апр',progress:60,manager:'Данил',notes:'В монтаже' },
@@ -174,10 +162,19 @@ const ManagerAvatar = ({name,size=24}:{name:string;size?:number}) => {
 const AdminPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
   usePageTitle('Admin – neeklo');
 
+  const leadsQuery = useQuery({
+    queryKey: ["crm", "leads"],
+    queryFn: async () => {
+      const { data } = await adminApi.get<ApiCrmLead[]>("/crm/leads");
+      return data.map((row, i) => mapApiLeadToUi(row, i));
+    },
+  });
+  const leads = leadsQuery.data ?? [];
+
   /* DATA */
-  const [leads,setLeads] = useState<Lead[]>(initLeads);
   const [projects,setProjects] = useState<Project[]>(initProjects);
   const [tasks,setTasks] = useState<Record<string,Task[]>>(initTasks);
   const [messages,setMessages] = useState<Record<string,Msg[]>>(initMessages);
@@ -222,10 +219,12 @@ const AdminPage = () => {
   const sendMessage = useCallback((chatId:string,text:string)=>{
     if(!text.trim()) return;
     setMessages(prev=>({...prev,[chatId]:[...(prev[chatId]||[]),{id:'m'+Date.now(),from:'manager',name:'Никита',text:text.trim(),time:new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}),read:true}]}));
-    setLeads(prev=>prev.map(l=>l.id===chatId?{...l,unread:0}:l));
+    queryClient.setQueryData<Lead[]>(["crm", "leads"], (old) =>
+      old ? old.map((l) => (l.id === chatId ? { ...l, unread: 0 } : l)) : old,
+    );
     setChatInput('');
     if(textareaRef.current){textareaRef.current.style.height='40px';}
-  },[]);
+  },[queryClient]);
 
   const toggleTask = useCallback((projectId:string,taskId:string)=>{
     setTasks(prev=>{
@@ -360,6 +359,23 @@ const AdminPage = () => {
 
   /* ═══════ RENDER LEADS ═══════ */
   const renderLeads = () => {
+    if (leadsQuery.isLoading) {
+      return (
+        <div className="p-5 flex items-center justify-center min-h-[40vh]" aria-busy="true">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E0E0E0] border-t-[#0D0D0B]" />
+        </div>
+      );
+    }
+    if (leadsQuery.isError) {
+      return (
+        <div className="p-5 max-w-md">
+          <p className="font-body text-destructive">Не удалось загрузить лиды (GET /crm/leads). Проверьте сеть и вход в админку.</p>
+          <button type="button" onClick={() => leadsQuery.refetch()} className="mt-3 font-body text-sm underline">
+            Повторить
+          </button>
+        </div>
+      );
+    }
     const totals = {budget:filteredLeads.reduce((a,l)=>a+l.budget,0),prepaid:filteredLeads.reduce((a,l)=>a+l.prepaid,0),balance:filteredLeads.reduce((a,l)=>a+l.balance,0)};
     const inProgressCount = filteredLeads.filter(l=>l.status==='in_progress').length;
     const doneCount = filteredLeads.filter(l=>l.status==='done').length;
@@ -429,7 +445,16 @@ const AdminPage = () => {
                     <td style={{padding:'12px 16px'}}><DaysBadge days={l.daysLeft} status={l.status} /></td>
                     <td style={{padding:'12px 16px'}}><ManagerAvatar name={l.manager} /></td>
                     <td style={{padding:'12px 16px'}} onClick={e=>e.stopPropagation()}>
-                      <select value={l.status} onChange={e=>{setLeads(prev=>prev.map(ll=>ll.id===l.id?{...ll,status:e.target.value}:ll));toast('Статус обновлён');}}
+                      <select value={l.status} onChange={async (e)=>{
+                        const v = e.target.value;
+                        try {
+                          await adminApi.patch(`/crm/leads/${l.id}`, { status: v });
+                          await queryClient.invalidateQueries({ queryKey: ["crm", "leads"] });
+                          toast('Статус обновлён');
+                        } catch {
+                          toast.error('Не удалось сохранить статус');
+                        }
+                      }}
                         className="cursor-pointer bg-transparent border-none outline-none" style={{fontFamily:"'Onest',sans-serif",fontSize:12,fontWeight:600,color:leadStatusConfig[l.status]?.color}}>
                         {Object.entries(leadStatusConfig).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
                       </select>
@@ -1037,11 +1062,21 @@ const AdminPage = () => {
         <input value={newLeadForm.budget} onChange={e=>setNewLeadForm({...newLeadForm,budget:e.target.value})} placeholder="Бюджет" className="outline-none" style={{fontFamily:"'Onest',sans-serif",fontSize:14,background:'#F5F5F5',borderRadius:12,padding:'10px 16px'}} />
       </div>
       <div className="sticky bottom-0 bg-white p-4" style={{borderTop:'1px solid #F0F0F0',paddingBottom:'calc(16px + env(safe-area-inset-bottom))'}}>
-        <button onClick={()=>{
+        <button onClick={async ()=>{
           if(!newLeadForm.name.trim()){toast('Введите имя');return;}
-          const num=String(leads.length+1).padStart(3,'0');
-          setLeads(prev=>[{id:'l'+Date.now(),num,name:newLeadForm.name,contact:newLeadForm.contact,source:'Avito',service:newLeadForm.service,budget:parseInt(newLeadForm.budget)||0,prepaid:0,balance:parseInt(newLeadForm.budget)||0,deadline:'',daysLeft:14,status:'new',manager:'Данил',comment:'',unread:0},...prev]);
-          setShowNewLead(false);setNewLeadForm({name:'',contact:'',source:'Avito',service:'',budget:'',msg:''});toast('✓ Лид создан');
+          try {
+            await adminApi.post("/crm/leads", {
+              name: newLeadForm.name.trim(),
+              phone: newLeadForm.contact.trim() || undefined,
+              status: "new",
+            });
+            await queryClient.invalidateQueries({ queryKey: ["crm", "leads"] });
+            setShowNewLead(false);
+            setNewLeadForm({name:'',contact:'',source:'Avito',service:'',budget:'',msg:''});
+            toast('✓ Лид создан');
+          } catch {
+            toast.error('Не удалось создать лид');
+          }
         }} className="w-full text-white cursor-pointer active:scale-[0.96]" style={{fontFamily:"'Onest',sans-serif",fontSize:14,fontWeight:700,background:'#0D0D0B',borderRadius:12,padding:12}}>Сохранить</button>
       </div>
     </Sheet>
