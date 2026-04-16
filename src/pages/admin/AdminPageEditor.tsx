@@ -274,7 +274,7 @@ export default function AdminPageEditor() {
   const save = async () => {
     const blocks = unwrapBlocks(blockRows);
     const strict = validateNoExternalImageFieldsClient(blocks, meta);
-    if (!strict.ok) {
+    if (strict.ok === false) {
       toast.error(strict.error);
       return;
     }
