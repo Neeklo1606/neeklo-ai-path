@@ -43,7 +43,10 @@ function walk(value: unknown): { ok: true } | { ok: false; error: string } {
   return { ok: true };
 }
 
-export function validateNoExternalImageFieldsClient(blocks: unknown, meta: Record<string, unknown>) {
+export function validateNoExternalImageFieldsClient(
+  blocks: unknown,
+  meta: Record<string, unknown>,
+): { ok: true } | { ok: false; error: string } {
   const a = walk(blocks);
   if (!a.ok) return a;
   return walk(meta);
