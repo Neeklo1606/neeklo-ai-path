@@ -54,6 +54,7 @@ type ServicePreviewItem = { images?: Record<string, string>; imageId?: string; n
 type ServicesPreviewBlock = {
   type: string;
   sectionTitle?: unknown;
+  title?: unknown;
   items?: ServicePreviewItem[];
 };
 
