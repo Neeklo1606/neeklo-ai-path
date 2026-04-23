@@ -50,6 +50,8 @@ const AdminCrmPage = lazy(() => import("./pages/admin/AdminCrmPage"));
 const AdminAiAnalyticsPage = lazy(() => import("./pages/admin/AdminAiAnalyticsPage"));
 const AdminBillingPage = lazy(() => import("./pages/admin/AdminBillingPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const KpShowcasePage = lazy(() => import("./pages/kp/KpShowcasePage"));
+const KpSlugPage = lazy(() => import("./pages/kp/KpSlugPage"));
 
 const queryClient = new QueryClient();
 
@@ -75,7 +77,7 @@ const RouteLoadingFallback = () => (
   </div>
 );
 
-const HIDE_NAV_ROUTES = ["/chat", "/manager-chat"];
+const HIDE_NAV_ROUTES = ["/chat", "/manager-chat", "/kp"];
 
 const MobileHeader = () => {
   const navigate = useNavigate();
@@ -207,7 +209,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const hideNav = HIDE_NAV_ROUTES.includes(pathname) || pathname.startsWith("/admin");
   const showManagerFab = !pathname.startsWith("/admin");
 
-  if (hideNav) {
+  if (hideNav || pathname.startsWith("/kp")) {
     return (
       <div className="min-h-screen flex flex-col">
         <div className="flex-1 flex flex-col">{children}</div>
@@ -390,6 +392,8 @@ const AppContent = ({
                 </Route>
               </Route>
             </Route>
+            <Route path="/kp" element={<KpShowcasePage />} />
+            <Route path="/kp/:slug" element={<KpSlugPage />} />
             <Route path="*" element={<P><NotFound /></P>} />
           </Routes>
           </ErrorBoundary>

@@ -171,6 +171,36 @@ model Lead {
   @@map("crm_leads")
 }
 
+/// Commercial offer (КП) for a specific client
+model CommercialOffer {
+  id               String    @id @default(cuid())
+  slug             String    @unique
+  clientName       String    @map("client_name")
+  clientIndustry   String    @map("client_industry")
+  kpNumber         String    @map("kp_number")
+  expiresDays      Int       @default(14) @map("expires_days")
+  published        Boolean   @default(false)
+
+  heroData         Json      @map("hero_data")
+  problemsData     Json      @map("problems_data")
+  solutionData     Json      @map("solution_data")
+  packagesData     Json      @map("packages_data")
+  includedData     Json      @map("included_data")
+  timelineData     Json      @map("timeline_data")
+  nextPhaseData    Json      @map("next_phase_data")
+  whyUsData        Json      @map("why_us_data")
+  ctaData          Json      @map("cta_data")
+  contactsData     Json      @map("contacts_data")
+
+  viewsCount       Int       @default(0) @map("views_count")
+  lastViewedAt     DateTime? @map("last_viewed_at")
+
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@map("commercial_offers")
+}
+
 /// CRM: one chat thread; messages stored as JSON array
 model Chat {
   id          String     @id @default(uuid())

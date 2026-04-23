@@ -175,3 +175,67 @@ export async function fetchChatBootstrap(locale = "ru"): Promise<ChatBootstrap> 
 export async function fetchPublicSettings(): Promise<Record<string, unknown>> {
   return cmsJson<Record<string, unknown>>("/settings/public");
 }
+
+// ─── Commercial Offers (КП) ────────────────────────────────────────────────
+
+export type KpStat = { num: string; unit: string; label: string };
+export type KpProblemItem = { num: string; title: string; text: string };
+export type KpSolutionStep = { num: string; title: string; text: string };
+export type KpPackageItem = {
+  name: string; subtitle: string; price: string; price_sub: string;
+  featured: boolean; badge: string; cta: string; features: string[];
+};
+export type KpTimelineItem = { week: string; title: string; text: string };
+export type KpWhyItem = { num: string; title: string; text: string };
+
+export type KpHeroData = {
+  title_line_1: string; title_line_2: string;
+  subtitle: string; stats: KpStat[];
+};
+export type KpProblemsData = { title_1: string; title_2: string; items: KpProblemItem[] };
+export type KpSolutionData = { title_1: string; title_2: string; lead: string; steps: KpSolutionStep[] };
+export type KpPackagesData = { title_1: string; title_2: string; items: KpPackageItem[] };
+export type KpIncludedData = { title_1: string; title_2: string; yes: string[]; no: string[] };
+export type KpTimelineData = { title_1: string; title_2: string; items: KpTimelineItem[] };
+export type KpNextPhaseData = {
+  title_1: string; title_2: string; lead_1: string; lead_2: string;
+  text: string; items: string[]; price: string; price_label: string;
+};
+export type KpWhyUsData = { title_1: string; title_2: string; items: KpWhyItem[] };
+export type KpCtaData = { title_1: string; title_2: string; text: string; button_label: string; button_url: string };
+export type KpContactsData = {
+  telegram_handle: string; telegram_url: string;
+  email: string; site: string; site_url: string;
+};
+
+export type CommercialOffer = {
+  id: string;
+  slug: string;
+  clientName: string;
+  clientIndustry: string;
+  kpNumber: string;
+  expiresDays: number;
+  published: boolean;
+  heroData: KpHeroData;
+  problemsData: KpProblemsData;
+  solutionData: KpSolutionData;
+  packagesData: KpPackagesData;
+  includedData: KpIncludedData;
+  timelineData: KpTimelineData;
+  nextPhaseData: KpNextPhaseData;
+  whyUsData: KpWhyUsData;
+  ctaData: KpCtaData;
+  contactsData: KpContactsData;
+  viewsCount: number;
+  lastViewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function fetchKp(slug: string): Promise<CommercialOffer> {
+  return cmsJson<CommercialOffer>(`/api/kp/${encodeURIComponent(slug)}`);
+}
+
+export async function fetchKpList(): Promise<Omit<CommercialOffer, "heroData"|"problemsData"|"solutionData"|"packagesData"|"includedData"|"timelineData"|"nextPhaseData"|"whyUsData"|"ctaData"|"contactsData">[]> {
+  return cmsJson("/api/kp");
+}
