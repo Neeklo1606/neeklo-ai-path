@@ -110,8 +110,60 @@ export default function CmsHomePage() {
     queryFn: () => cmsPageBySlug("home", locale),
   });
 
-  usePageTitle(q.data?.title ?? "");
-  const mediaById = useMemo(() => mediaPublicUrlMap(q.data ?? null), [q.data]);
+  usePageTitle(q.data?.title ?? "neeklo.studio");
+
+  // Fallback page used when CMS is unreachable or returns no data, so the
+  // landing template still renders with a polished default content.
+  const fallbackPage: CmsPage = useMemo(
+    () => ({
+      id: "fallback",
+      slug: "home",
+      title: "neeklo.studio",
+      locale,
+      published: true,
+      meta: {},
+      created_at: "",
+      updated_at: "",
+      blocks: [
+        {
+          type: "hero",
+          title: {
+            ru: "Делаем digital\nбыстро и красиво",
+            en: "We build digital\nfast and beautiful",
+          },
+          subtitle: {
+            ru: "AI-продакшн студия: сайты, мини-приложения и автоматизации под ключ.",
+            en: "AI production studio: websites, mini-apps and automation, end-to-end.",
+          },
+          ctaLabel: { ru: "Начать в чате", en: "Start in chat" },
+          secondaryLabel: { ru: "Посмотреть работы", en: "See our work" },
+          showScrollChevron: true,
+        },
+        {
+          type: "steps",
+          title: { ru: "Как это работает", en: "How it works" },
+          steps: [
+            { num: "01", title: { ru: "Бриф", en: "Brief" }, desc: { ru: "Расскажите задачу в чате", en: "Tell us your task in chat" } },
+            { num: "02", title: { ru: "Концепт", en: "Concept" }, desc: { ru: "Покажем идею и смету", en: "We show the idea and quote" } },
+            { num: "03", title: { ru: "Разработка", en: "Development" }, desc: { ru: "Делаем и согласовываем этапы", en: "We build and review milestones" } },
+            { num: "04", title: { ru: "Запуск", en: "Launch" }, desc: { ru: "Релизим и поддерживаем", en: "We launch and support" } },
+          ],
+          footerNote: { ru: "Средний срок — 48 часов", en: "Average turnaround — 48h" },
+        },
+        {
+          type: "cta",
+          title: { ru: "Готовы обсудить проект?", en: "Ready to discuss your project?" },
+          subtitle: { ru: "Бесплатная консультация в чате", en: "Free consultation in chat" },
+          buttonLabel: { ru: "Открыть чат", en: "Open chat" },
+          buttonHref: "/chat",
+        },
+      ],
+    }),
+    [locale],
+  );
+
+  const page = q.data ?? fallbackPage;
+  const mediaById = useMemo(() => mediaPublicUrlMap(page), [page]);
 
   if (q.isLoading) {
     return (
@@ -120,16 +172,6 @@ export default function CmsHomePage() {
       </div>
     );
   }
-
-  if (q.isError || !q.data) {
-    return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-2 px-6 text-center">
-        <p className="font-body text-destructive break-words">{q.isError ? (q.error as Error).message : "CMS"}</p>
-      </div>
-    );
-  }
-
-  const page = q.data;
   if (!Array.isArray(page.blocks)) {
     logBrokenBlock("home page.blocks not array", page);
   }
