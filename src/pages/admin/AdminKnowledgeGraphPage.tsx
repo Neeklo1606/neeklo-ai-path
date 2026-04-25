@@ -7,24 +7,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { adminApi } from "@/lib/admin-api";
 import type { CmsAssistant } from "@/lib/cms-api";
-import { buildKnowledgeGraph } from "@/lib/knowledge-graph";
 import {
   askKnowledgeCoach,
+  getKnowledgeGraph,
   getKnowledgeStats,
   ingestKnowledgeText,
-  listKnowledgeChunks,
+  type KnowledgeGraphEdge,
+  type KnowledgeGraphNode,
   type KnowledgeStats,
 } from "@/services/ai.service";
 
 type AssistantRow = CmsAssistant & { provider_api_key?: string | null };
-type ChunkItem = { id: string; text: string; source: string };
+type GraphFacets = { categories: string[]; sections: string[]; tags: string[] };
 
 export default function AdminKnowledgeGraphPage() {
   const [assistants, setAssistants] = useState<AssistantRow[]>([]);
   const [assistantId, setAssistantId] = useState("");
   const [stats, setStats] = useState<KnowledgeStats | null>(null);
-  const [chunks, setChunks] = useState<ChunkItem[]>([]);
-  const [selectedChunkId, setSelectedChunkId] = useState("");
+  const [graphNodes, setGraphNodes] = useState<KnowledgeGraphNode[]>([]);
+  const [graphEdges, setGraphEdges] = useState<KnowledgeGraphEdge[]>([]);
+  const [facets, setFacets] = useState<GraphFacets>({ categories: [], sections: [], tags: [] });
+  const [selectedNodeId, setSelectedNodeId] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [sectionFilter, setSectionFilter] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
   const [loading, setLoading] = useState(true);
 
   const [zoom, setZoom] = useState(1);
@@ -38,24 +44,37 @@ export default function AdminKnowledgeGraphPage() {
   const [agentStatus, setAgentStatus] = useState("");
   const [agentBusy, setAgentBusy] = useState(false);
 
-  const graph = useMemo(() => buildKnowledgeGraph(stats?.points ?? 0, assistantId || "kb"), [stats?.points, assistantId]);
-  const byId = useMemo(() => Object.fromEntries(graph.nodes.map((n) => [n.id, n])), [graph.nodes]);
-  const nodeToChunk = useMemo(() => {
-    const map: Record<string, ChunkItem> = {};
-    if (!chunks.length) return map;
-    for (const n of graph.nodes) {
-      if (n.id === "core") continue;
-      const idx = Number(n.id.replace("n", "")) || 0;
-      const ch = chunks[idx % chunks.length];
-      if (ch) map[n.id] = ch;
+  const layoutNodes = useMemo(() => {
+    if (!graphNodes.length) return [];
+    const incoming = new Map<string, number>();
+    const outgoing = new Map<string, number>();
+    for (const e of graphEdges) {
+      outgoing.set(e.from, (outgoing.get(e.from) || 0) + 1);
+      incoming.set(e.to, (incoming.get(e.to) || 0) + 1);
     }
-    return map;
-  }, [graph.nodes, chunks]);
-  const selectedChunk = useMemo(() => chunks.find((c) => c.id === selectedChunkId) || null, [chunks, selectedChunkId]);
-  const hoveredChunk = useMemo(
-    () => (hoveredNodeId ? nodeToChunk[hoveredNodeId] || null : null),
-    [hoveredNodeId, nodeToChunk],
-  );
+    const roots = graphNodes
+      .map((n) => ({ ...n, degree: (incoming.get(n.id) || 0) + (outgoing.get(n.id) || 0) }))
+      .sort((a, b) => b.degree - a.degree);
+    const rootId = roots[0]?.id || graphNodes[0].id;
+    const circles = graphNodes.filter((n) => n.id !== rootId);
+    const out: Array<KnowledgeGraphNode & { x: number; y: number; size: number }> = [];
+    out.push({ ...(graphNodes.find((n) => n.id === rootId) || graphNodes[0]), x: 0, y: 0, size: 4.8 });
+    const total = Math.max(1, circles.length);
+    for (let i = 0; i < circles.length; i += 1) {
+      const angle = (Math.PI * 2 * i) / total;
+      const radius = 54 + (i % 4) * 6;
+      out.push({
+        ...circles[i],
+        x: Math.cos(angle) * radius,
+        y: Math.sin(angle) * radius,
+        size: 2.2 + Math.min(2.2, ((incoming.get(circles[i].id) || 0) + (outgoing.get(circles[i].id) || 0)) * 0.22),
+      });
+    }
+    return out;
+  }, [graphNodes, graphEdges]);
+  const byId = useMemo(() => Object.fromEntries(layoutNodes.map((n) => [n.id, n])), [layoutNodes]);
+  const selectedNode = useMemo(() => graphNodes.find((n) => n.id === selectedNodeId) || null, [graphNodes, selectedNodeId]);
+  const hoveredNode = useMemo(() => (hoveredNodeId ? graphNodes.find((n) => n.id === hoveredNodeId) || null : null), [hoveredNodeId, graphNodes]);
   const current = useMemo(() => assistants.find((a) => a.id === assistantId) || null, [assistants, assistantId]);
 
   useEffect(() => {
@@ -74,14 +93,21 @@ export default function AdminKnowledgeGraphPage() {
   }, [zoom]);
 
   const refreshAll = async (id: string) => {
-    const [statsOut, chunksOut] = await Promise.all([
+    const [statsOut, graphOut] = await Promise.all([
       getKnowledgeStats(id).catch(() => null),
-      listKnowledgeChunks(id, 60).catch(() => ({ chunks: [] })),
+      getKnowledgeGraph(id, {
+        category: categoryFilter || undefined,
+        section: sectionFilter || undefined,
+        tag: tagFilter || undefined,
+      }).catch(() => ({ nodes: [], edges: [], facets: { categories: [], sections: [], tags: [] } })),
     ]);
     setStats(statsOut);
-    const list = Array.isArray(chunksOut?.chunks) ? chunksOut.chunks : [];
-    setChunks(list);
-    if (list.length) setSelectedChunkId((prev) => prev || list[0].id);
+    const nodes = Array.isArray(graphOut?.nodes) ? graphOut.nodes : [];
+    const edges = Array.isArray(graphOut?.edges) ? graphOut.edges : [];
+    setGraphNodes(nodes);
+    setGraphEdges(edges);
+    setFacets(graphOut?.facets || { categories: [], sections: [], tags: [] });
+    if (nodes.length) setSelectedNodeId((prev) => prev || nodes[0].id);
   };
 
   useEffect(() => {
@@ -102,7 +128,7 @@ export default function AdminKnowledgeGraphPage() {
   useEffect(() => {
     if (!assistantId) return;
     refreshAll(assistantId).catch(() => undefined);
-  }, [assistantId]);
+  }, [assistantId, categoryFilter, sectionFilter, tagFilter]);
 
   const runChunkAgent = async () => {
     if (!assistantId) return toast.error("Выберите ассистента");
@@ -170,6 +196,32 @@ export default function AdminKnowledgeGraphPage() {
             </div>
             <p className="text-xs text-white/70">Точек: {stats?.points ?? 0}</p>
           </div>
+          <div className="mb-3 grid gap-2 md:grid-cols-3">
+            <select
+              className="h-8 rounded-md border border-white/20 bg-[#141a24] px-2 text-xs text-white"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="">Все категории</option>
+              {facets.categories.map((x) => <option key={x} value={x}>{x}</option>)}
+            </select>
+            <select
+              className="h-8 rounded-md border border-white/20 bg-[#141a24] px-2 text-xs text-white"
+              value={sectionFilter}
+              onChange={(e) => setSectionFilter(e.target.value)}
+            >
+              <option value="">Все разделы</option>
+              {facets.sections.map((x) => <option key={x} value={x}>{x}</option>)}
+            </select>
+            <select
+              className="h-8 rounded-md border border-white/20 bg-[#141a24] px-2 text-xs text-white"
+              value={tagFilter}
+              onChange={(e) => setTagFilter(e.target.value)}
+            >
+              <option value="">Все теги</option>
+              {facets.tags.map((x) => <option key={x} value={x}>{x}</option>)}
+            </select>
+          </div>
 
           <div
             ref={wrapRef}
@@ -196,7 +248,7 @@ export default function AdminKnowledgeGraphPage() {
           >
             <svg viewBox="-100 -100 200 200" className="h-full w-full cursor-grab active:cursor-grabbing">
               <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
-                {graph.edges.map((e, idx) => {
+                {graphEdges.map((e, idx) => {
                   const a = byId[e.from];
                   const b = byId[e.to];
                   if (!a || !b) return null;
@@ -209,28 +261,26 @@ export default function AdminKnowledgeGraphPage() {
                       x2={b.x}
                       y2={b.y}
                       stroke={isHoveredEdge ? "rgba(160,170,255,0.95)" : "rgba(106,120,255,0.45)"}
-                      strokeWidth={isHoveredEdge ? 1.25 : e.from === "core" ? 0.9 : 0.45}
+                      strokeWidth={isHoveredEdge ? 1.25 : 0.75}
                       style={{ animation: `kb-fade 2.8s ease-in-out ${idx * 40}ms infinite` }}
                     />
                   );
                 })}
-                {graph.nodes.map((n, idx) => (
+                {layoutNodes.map((n, idx) => (
                   <g key={n.id}>
                     <circle
                       cx={n.x}
                       cy={n.y}
-                      r={n.id === "core" ? 4.4 : hoveredNodeId === n.id ? n.size + 1.2 : n.size}
-                      fill={n.id === "core" ? "#f8f9ff" : hoveredNodeId === n.id ? "#ffffff" : "rgba(224,230,255,0.92)"}
-                      style={{ cursor: n.id === "core" ? "default" : "pointer", animation: `kb-pulse 2.1s ease-in-out ${idx * 55}ms infinite` }}
-                      onMouseEnter={() => n.id !== "core" && setHoveredNodeId(n.id)}
-                      onMouseLeave={() => n.id !== "core" && setHoveredNodeId("")}
+                      r={hoveredNodeId === n.id ? n.size + 1.2 : n.size}
+                      fill={hoveredNodeId === n.id ? "#ffffff" : "rgba(224,230,255,0.92)"}
+                      style={{ cursor: "pointer", animation: `kb-pulse 2.1s ease-in-out ${idx * 55}ms infinite` }}
+                      onMouseEnter={() => setHoveredNodeId(n.id)}
+                      onMouseLeave={() => setHoveredNodeId("")}
                       onClick={() => {
-                        if (n.id === "core" || !chunks.length) return;
-                        const ch = nodeToChunk[n.id];
-                        if (ch) setSelectedChunkId(ch.id);
+                        setSelectedNodeId(n.id);
                       }}
                     />
-                    {hoveredNodeId === n.id && n.id !== "core" && (
+                    {hoveredNodeId === n.id && (
                       <text
                         x={n.x + 3}
                         y={n.y - 3}
@@ -238,7 +288,7 @@ export default function AdminKnowledgeGraphPage() {
                         fill="#d9deff"
                         style={{ pointerEvents: "none", userSelect: "none" }}
                       >
-                        {nodeToChunk[n.id]?.source || n.label}
+                        {n.title}
                       </text>
                     )}
                   </g>
@@ -248,10 +298,12 @@ export default function AdminKnowledgeGraphPage() {
             <div className="pointer-events-none absolute bottom-2 right-2 rounded-md bg-black/60 px-2 py-1 text-[11px] text-white/85">
               Колесо: zoom, Shift+колесо: быстрее, мышь: pan
             </div>
-            {hoveredChunk && (
+            {hoveredNode && (
               <div className="pointer-events-none absolute left-2 top-2 max-w-[340px] rounded-md border border-white/10 bg-black/70 px-3 py-2 text-xs text-white/90">
-                <p className="font-medium text-white">{hoveredChunk.source || "chunk"}</p>
-                <p className="mt-1 line-clamp-3 text-white/80">{hoveredChunk.text || "(пусто)"}</p>
+                <p className="font-medium text-white">{hoveredNode.title || "note"}</p>
+                <p className="mt-1 line-clamp-3 text-white/80">
+                  {hoveredNode.category || hoveredNode.section || hoveredNode.tags?.join(", ") || "Без метаданных"}
+                </p>
               </div>
             )}
           </div>
@@ -279,14 +331,16 @@ export default function AdminKnowledgeGraphPage() {
           </div>
 
           <div className="rounded-xl border border-[#E8E6E0] p-3">
-            <p className="text-sm font-semibold">Выбранный chunk</p>
-            {selectedChunk ? (
+            <p className="text-sm font-semibold">Выбранный узел</p>
+            {selectedNode ? (
               <>
-                <p className="mt-1 text-xs text-muted-foreground">Источник: {selectedChunk.source}</p>
-                <p className="mt-1 text-xs text-muted-foreground">ID: {selectedChunk.id}</p>
-                <p className="mt-1 text-xs text-muted-foreground">Длина: {selectedChunk.text.length} символов</p>
+                <p className="mt-1 text-xs text-muted-foreground">Название: {selectedNode.title}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Slug: {selectedNode.id}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Источник: {selectedNode.source}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Категория: {selectedNode.category || "—"}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Раздел: {selectedNode.section || "—"}</p>
                 <div className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg border border-[#E8E6E0] bg-[#FAFAF8] p-2 text-sm">
-                  {selectedChunk.text}
+                  Теги: {selectedNode.tags?.length ? selectedNode.tags.join(", ") : "—"}
                 </div>
               </>
             ) : (

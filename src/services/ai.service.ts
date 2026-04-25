@@ -90,6 +90,42 @@ export async function listKnowledgeChunks(assistantId: string, limit = 24): Prom
   return data;
 }
 
+export type KnowledgeGraphNode = {
+  id: string;
+  title: string;
+  source: string;
+  category: string;
+  section: string;
+  tags: string[];
+};
+
+export type KnowledgeGraphEdge = {
+  id: string;
+  from: string;
+  to: string;
+};
+
+export async function getKnowledgeGraph(
+  assistantId: string,
+  filters?: { category?: string; section?: string; tag?: string },
+): Promise<{
+  nodes: KnowledgeGraphNode[];
+  edges: KnowledgeGraphEdge[];
+  facets: { categories: string[]; sections: string[]; tags: string[] };
+}> {
+  const q = new URLSearchParams();
+  if (filters?.category) q.set("category", filters.category);
+  if (filters?.section) q.set("section", filters.section);
+  if (filters?.tag) q.set("tag", filters.tag);
+  const qs = q.toString();
+  const { data } = await adminApi.get<{
+    nodes: KnowledgeGraphNode[];
+    edges: KnowledgeGraphEdge[];
+    facets: { categories: string[]; sections: string[]; tags: string[] };
+  }>(`/assistants/${assistantId}/knowledge/graph${qs ? `?${qs}` : ""}`);
+  return data;
+}
+
 export async function askKnowledgeCoach(input: {
   assistantId: string;
   goal?: string;

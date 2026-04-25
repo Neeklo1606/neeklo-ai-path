@@ -18,12 +18,15 @@ import {
   getQdrantClient,
   getOllamaBase,
   collectionNameForAssistant,
+  collectionNameForKnowledgeGraph,
   createEmbedding,
   createOpenAiCompatibleEmbedding,
   generateResponse,
   chunkText,
   extractTextFromFile,
+  parseKnowledgeNoteFromMarkdown,
   upsertChunks,
+  upsertKnowledgeGraph,
   chatWithRag,
   chatOpenAiCompatible,
   searchContext,
@@ -1354,6 +1357,69 @@ app.get("/assistants/:id/knowledge/chunks", requireAuth, async (req, res) => {
   }
 });
 
+app.get("/assistants/:id/knowledge/graph", requireAuth, async (req, res) => {
+  try {
+    const asst = await prisma.assistant.findUnique({ where: { id: req.params.id } });
+    if (!asst) return res.status(404).json({ error: "Not found" });
+    const client = getQdrantClient();
+    const coll = collectionNameForKnowledgeGraph(asst.id);
+    let points = [];
+    try {
+      const out = await client.scroll(coll, {
+        limit: 2000,
+        with_payload: true,
+        with_vector: false,
+      });
+      points = Array.isArray(out?.points) ? out.points : [];
+    } catch {
+      points = [];
+    }
+
+    const categoryFilter = String(req.query?.category || "").trim();
+    const sectionFilter = String(req.query?.section || "").trim();
+    const tagFilter = String(req.query?.tag || "").trim();
+
+    const nodesAll = points
+      .map((p) => p?.payload || null)
+      .filter((p) => p?.kind === "node")
+      .map((p) => ({
+        id: String(p.slug || ""),
+        title: String(p.title || p.slug || ""),
+        source: String(p.source || "manual"),
+        category: p.category ? String(p.category) : "",
+        section: p.section ? String(p.section) : "",
+        tags: Array.isArray(p.tags) ? p.tags.map((t) => String(t || "")).filter(Boolean) : [],
+      }))
+      .filter((n) => n.id);
+
+    const nodes = nodesAll.filter((n) => {
+      if (categoryFilter && n.category !== categoryFilter) return false;
+      if (sectionFilter && n.section !== sectionFilter) return false;
+      if (tagFilter && !n.tags.includes(tagFilter)) return false;
+      return true;
+    });
+    const nodeIds = new Set(nodes.map((n) => n.id));
+
+    const edges = points
+      .map((p) => p?.payload || null)
+      .filter((p) => p?.kind === "edge")
+      .map((p) => ({
+        id: `${String(p.from || "")}->${String(p.to || "")}`,
+        from: String(p.from || ""),
+        to: String(p.to || ""),
+      }))
+      .filter((e) => e.from && e.to && nodeIds.has(e.from) && nodeIds.has(e.to));
+
+    const categories = [...new Set(nodesAll.map((n) => n.category).filter(Boolean))].sort();
+    const sections = [...new Set(nodesAll.map((n) => n.section).filter(Boolean))].sort();
+    const tags = [...new Set(nodesAll.flatMap((n) => n.tags || []).filter(Boolean))].sort();
+
+    return res.json({ nodes, edges, facets: { categories, sections, tags } });
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || "Failed to load graph" });
+  }
+});
+
 app.post("/assistants/:id/knowledge/coach", requireAuth, async (req, res) => {
   try {
     const asst = await prisma.assistant.findUnique({ where: { id: req.params.id } });
@@ -1426,7 +1492,18 @@ app.post("/assistants/:id/knowledge/text", requireAuth, async (req, res) => {
       source: "manual",
       embedText: (t) => createAssistantEmbedding(asst, t),
     });
-    res.json({ ok: true, ...out });
+    const graphCollection = collectionNameForKnowledgeGraph(asst.id);
+    const note = parseKnowledgeNoteFromMarkdown(text, "manual");
+    let graphOut = { nodes: 0, edges: 0 };
+    if (note) {
+      graphOut = await upsertKnowledgeGraph({
+        client,
+        collectionName: graphCollection,
+        assistantId: asst.id,
+        notes: [note],
+      });
+    }
+    res.json({ ok: true, ...out, graph: graphOut });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message || "Ingest failed" });
@@ -1454,7 +1531,19 @@ app.post("/assistants/:id/knowledge/upload", requireAuth, uploadKb.single("file"
       source: `file:${f.originalname}`,
       embedText: (t) => createAssistantEmbedding(asst, t),
     });
-    res.json({ ok: true, ...out, filename: f.originalname });
+    const graphCollection = collectionNameForKnowledgeGraph(asst.id);
+    const source = `file:${f.originalname}`;
+    const note = parseKnowledgeNoteFromMarkdown(raw, source);
+    let graphOut = { nodes: 0, edges: 0 };
+    if (note) {
+      graphOut = await upsertKnowledgeGraph({
+        client,
+        collectionName: graphCollection,
+        assistantId: asst.id,
+        notes: [note],
+      });
+    }
+    res.json({ ok: true, ...out, filename: f.originalname, graph: graphOut });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message || "Upload ingest failed" });
@@ -1466,6 +1555,7 @@ app.delete("/assistants/:id/knowledge", requireAuth, async (req, res) => {
     const asst = await prisma.assistant.findUnique({ where: { id: req.params.id } });
     if (!asst) return res.status(404).json({ error: "Not found" });
     const coll = collectionNameForAssistant(asst.id);
+    const graphColl = collectionNameForKnowledgeGraph(asst.id);
     const client = getQdrantClient();
     try {
       await client.deleteCollection(coll);
@@ -1474,7 +1564,14 @@ app.delete("/assistants/:id/knowledge", requireAuth, async (req, res) => {
         throw e;
       }
     }
-    res.json({ ok: true, cleared: coll });
+    try {
+      await client.deleteCollection(graphColl);
+    } catch (e) {
+      if (!String(e.message || "").includes("Not found") && !String(e.message || "").includes("404")) {
+        throw e;
+      }
+    }
+    res.json({ ok: true, cleared: coll, cleared_graph: graphColl });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message || "Clear failed" });

@@ -37,6 +37,93 @@ export function collectionNameForAssistant(assistantId) {
   return `kb_${safe}`.slice(0, 200);
 }
 
+export function collectionNameForKnowledgeGraph(assistantId) {
+  const safe = assistantId.replace(/[^a-zA-Z0-9_-]/g, "_");
+  return `kb_graph_${safe}`.slice(0, 200);
+}
+
+function slugifyTitle(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s_-]/gu, " ")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 120) || "untitled";
+}
+
+function parseFrontmatter(raw) {
+  const src = String(raw || "").replace(/\r\n/g, "\n");
+  if (!src.startsWith("---\n")) {
+    return { meta: {}, body: src };
+  }
+  const end = src.indexOf("\n---\n", 4);
+  if (end < 0) {
+    return { meta: {}, body: src };
+  }
+  const block = src.slice(4, end);
+  const body = src.slice(end + 5);
+  const meta = {};
+  for (const line of block.split("\n")) {
+    const idx = line.indexOf(":");
+    if (idx < 0) continue;
+    const key = line.slice(0, idx).trim().toLowerCase();
+    const value = line.slice(idx + 1).trim();
+    if (!key) continue;
+    if (key === "tags") {
+      const norm = value
+        .replace(/^\[|\]$/g, "")
+        .split(/[,\s]+/g)
+        .map((t) => t.trim().replace(/^#/, ""))
+        .filter(Boolean);
+      meta.tags = norm;
+      continue;
+    }
+    meta[key] = value;
+  }
+  return { meta, body };
+}
+
+function extractWikiLinks(text) {
+  const out = [];
+  const re = /\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g;
+  let m = null;
+  while ((m = re.exec(String(text || "")))) {
+    const raw = String(m[1] || "").trim();
+    if (!raw) continue;
+    out.push(raw);
+  }
+  return [...new Set(out)];
+}
+
+export function parseKnowledgeNoteFromMarkdown(rawText, source = "manual") {
+  const src = String(rawText || "").replace(/\r\n/g, "\n").trim();
+  if (!src) return null;
+  const { meta, body } = parseFrontmatter(src);
+  const firstHeading = body
+    .split("\n")
+    .find((l) => /^#\s+/.test(l))
+    ?.replace(/^#\s+/, "")
+    .trim();
+  const sourceBase = String(source || "manual").replace(/^file:/, "").replace(/\.md$/i, "").trim();
+  const title = firstHeading || String(meta.title || sourceBase || "Untitled");
+  const slug = slugifyTitle(String(meta.slug || title));
+  const category = String(meta.category || meta.topic || "").trim() || null;
+  const section = String(meta.section || meta.group || "").trim() || null;
+  const tags = Array.isArray(meta.tags)
+    ? meta.tags.map((t) => String(t || "").trim()).filter(Boolean)
+    : [];
+  const links = extractWikiLinks(body).map((v) => slugifyTitle(v));
+  return {
+    slug,
+    title,
+    source: String(source || "manual"),
+    category,
+    section,
+    tags,
+    links,
+  };
+}
+
 /** 10s timeout for Ollama /api/embeddings (undici AbortSignal.timeout in Node 18+). */
 function embeddingFetchSignal() {
   if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
@@ -390,6 +477,84 @@ export async function upsertChunks({ client, collectionName, ollamaBase, embedMo
     }
     throw e;
   }
+}
+
+export async function upsertKnowledgeGraph({ client, collectionName, assistantId, notes }) {
+  const list = Array.isArray(notes) ? notes.filter(Boolean) : [];
+  if (!list.length) return { nodes: 0, edges: 0 };
+  await ensureCollection(client, collectionName, [0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001]);
+
+  const nodeMap = new Map();
+  for (const note of list) {
+    if (!note?.slug) continue;
+    const prev = nodeMap.get(note.slug) || null;
+    nodeMap.set(note.slug, {
+      slug: note.slug,
+      title: note.title || prev?.title || note.slug,
+      source: note.source || prev?.source || "manual",
+      category: note.category || prev?.category || null,
+      section: note.section || prev?.section || null,
+      tags: [...new Set([...(prev?.tags || []), ...(note.tags || [])])],
+      links: [...new Set([...(prev?.links || []), ...(note.links || [])])],
+    });
+  }
+  for (const note of [...nodeMap.values()]) {
+    for (const target of note.links || []) {
+      if (!nodeMap.has(target)) {
+        nodeMap.set(target, {
+          slug: target,
+          title: target.replace(/-/g, " "),
+          source: "wikilink",
+          category: null,
+          section: null,
+          tags: [],
+          links: [],
+        });
+      }
+    }
+  }
+
+  const edgeSet = new Set();
+  for (const note of [...nodeMap.values()]) {
+    for (const target of note.links || []) {
+      if (!target || target === note.slug) continue;
+      edgeSet.add(`${note.slug}->${target}`);
+    }
+  }
+
+  const points = [];
+  for (const node of [...nodeMap.values()]) {
+    points.push({
+      id: `node:${node.slug}`,
+      vector: [0.11, 0.13, 0.17, 0.19, 0.23, 0.29, 0.31, 0.37],
+      payload: {
+        kind: "node",
+        assistant_id: assistantId,
+        slug: node.slug,
+        title: node.title,
+        source: node.source,
+        category: node.category,
+        section: node.section,
+        tags: node.tags,
+      },
+    });
+  }
+  for (const edge of edgeSet) {
+    const [from, to] = edge.split("->");
+    points.push({
+      id: `edge:${from}->${to}`,
+      vector: [0.41, 0.43, 0.47, 0.53, 0.59, 0.61, 0.67, 0.71],
+      payload: {
+        kind: "edge",
+        assistant_id: assistantId,
+        from,
+        to,
+      },
+    });
+  }
+
+  await client.upsert(collectionName, { wait: true, points });
+  return { nodes: nodeMap.size, edges: edgeSet.size };
 }
 
 function formatHistoryTranscript(apiMessages) {
