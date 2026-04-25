@@ -30,7 +30,7 @@ function seeded(seed: string) {
 
 export function buildKnowledgeGraph(pointCount: number, seed = "kb"): { nodes: KnowledgeNode[]; edges: KnowledgeEdge[] } {
   const rand = seeded(seed);
-  const outerNodes = Math.max(10, Math.min(36, Math.ceil(Math.max(1, pointCount) / 2)));
+  const outerNodes = Math.max(1, Math.min(60, Math.floor(Math.max(1, pointCount))));
   const center: KnowledgeNode = { id: "core", x: 0, y: 0, size: 10, label: "Knowledge Core" };
 
   const nodes: KnowledgeNode[] = [center];
