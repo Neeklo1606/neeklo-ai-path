@@ -30,6 +30,7 @@ export default function AdminKnowledgeGraphPage() {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
+  const [hoveredNodeId, setHoveredNodeId] = useState("");
   const dragStart = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
@@ -39,7 +40,22 @@ export default function AdminKnowledgeGraphPage() {
 
   const graph = useMemo(() => buildKnowledgeGraph(stats?.points ?? 0, assistantId || "kb"), [stats?.points, assistantId]);
   const byId = useMemo(() => Object.fromEntries(graph.nodes.map((n) => [n.id, n])), [graph.nodes]);
+  const nodeToChunk = useMemo(() => {
+    const map: Record<string, ChunkItem> = {};
+    if (!chunks.length) return map;
+    for (const n of graph.nodes) {
+      if (n.id === "core") continue;
+      const idx = Number(n.id.replace("n", "")) || 0;
+      const ch = chunks[idx % chunks.length];
+      if (ch) map[n.id] = ch;
+    }
+    return map;
+  }, [graph.nodes, chunks]);
   const selectedChunk = useMemo(() => chunks.find((c) => c.id === selectedChunkId) || null, [chunks, selectedChunkId]);
+  const hoveredChunk = useMemo(
+    () => (hoveredNodeId ? nodeToChunk[hoveredNodeId] || null : null),
+    [hoveredNodeId, nodeToChunk],
+  );
   const current = useMemo(() => assistants.find((a) => a.id === assistantId) || null, [assistants, assistantId]);
 
   useEffect(() => {
@@ -47,7 +63,8 @@ export default function AdminKnowledgeGraphPage() {
     if (!el) return;
     const onWheel = (ev: WheelEvent) => {
       ev.preventDefault();
-      const next = ev.deltaY < 0 ? zoom + 0.1 : zoom - 0.1;
+      const step = ev.shiftKey ? 0.2 : 0.12;
+      const next = ev.deltaY < 0 ? zoom + step : zoom - step;
       setZoom(Math.max(0.6, Math.min(2.6, Number(next.toFixed(2)))));
     };
     el.addEventListener("wheel", onWheel, { passive: false });
@@ -162,14 +179,16 @@ export default function AdminKnowledgeGraphPage() {
             onMouseLeave={() => {
               setDragging(false);
               dragStart.current = null;
+              setHoveredNodeId("");
             }}
           >
             <svg viewBox="-100 -100 200 200" className="h-full w-full cursor-grab active:cursor-grabbing">
-              <g style={{ transformOrigin: "50% 50%", transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}>
+              <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
                 {graph.edges.map((e, idx) => {
                   const a = byId[e.from];
                   const b = byId[e.to];
                   if (!a || !b) return null;
+                  const isHoveredEdge = hoveredNodeId && (e.from === hoveredNodeId || e.to === hoveredNodeId);
                   return (
                     <line
                       key={e.id}
@@ -177,33 +196,52 @@ export default function AdminKnowledgeGraphPage() {
                       y1={a.y}
                       x2={b.x}
                       y2={b.y}
-                      stroke="rgba(106,120,255,0.45)"
-                      strokeWidth={e.from === "core" ? 0.9 : 0.45}
+                      stroke={isHoveredEdge ? "rgba(160,170,255,0.95)" : "rgba(106,120,255,0.45)"}
+                      strokeWidth={isHoveredEdge ? 1.25 : e.from === "core" ? 0.9 : 0.45}
                       style={{ animation: `kb-fade 2.8s ease-in-out ${idx * 40}ms infinite` }}
                     />
                   );
                 })}
                 {graph.nodes.map((n, idx) => (
-                  <circle
-                    key={n.id}
-                    cx={n.x}
-                    cy={n.y}
-                    r={n.id === "core" ? 4.4 : n.size}
-                    fill={n.id === "core" ? "#f8f9ff" : "rgba(224,230,255,0.92)"}
-                    style={{ cursor: n.id === "core" ? "default" : "pointer", animation: `kb-pulse 2.1s ease-in-out ${idx * 55}ms infinite` }}
-                    onClick={() => {
-                      if (n.id === "core" || !chunks.length) return;
-                      const idx = Number(n.id.replace("n", "")) || 0;
-                      const ch = chunks[idx % chunks.length];
-                      if (ch) setSelectedChunkId(ch.id);
-                    }}
-                  />
+                  <g key={n.id}>
+                    <circle
+                      cx={n.x}
+                      cy={n.y}
+                      r={n.id === "core" ? 4.4 : hoveredNodeId === n.id ? n.size + 1.2 : n.size}
+                      fill={n.id === "core" ? "#f8f9ff" : hoveredNodeId === n.id ? "#ffffff" : "rgba(224,230,255,0.92)"}
+                      style={{ cursor: n.id === "core" ? "default" : "pointer", animation: `kb-pulse 2.1s ease-in-out ${idx * 55}ms infinite` }}
+                      onMouseEnter={() => n.id !== "core" && setHoveredNodeId(n.id)}
+                      onMouseLeave={() => n.id !== "core" && setHoveredNodeId("")}
+                      onClick={() => {
+                        if (n.id === "core" || !chunks.length) return;
+                        const ch = nodeToChunk[n.id];
+                        if (ch) setSelectedChunkId(ch.id);
+                      }}
+                    />
+                    {hoveredNodeId === n.id && n.id !== "core" && (
+                      <text
+                        x={n.x + 3}
+                        y={n.y - 3}
+                        fontSize="4.5"
+                        fill="#d9deff"
+                        style={{ pointerEvents: "none", userSelect: "none" }}
+                      >
+                        {nodeToChunk[n.id]?.source || n.label}
+                      </text>
+                    )}
+                  </g>
                 ))}
               </g>
             </svg>
             <div className="pointer-events-none absolute bottom-2 right-2 rounded-md bg-black/60 px-2 py-1 text-[11px] text-white/85">
-              Колесо: zoom, мышь: pan
+              Колесо: zoom, Shift+колесо: быстрее, мышь: pan
             </div>
+            {hoveredChunk && (
+              <div className="pointer-events-none absolute left-2 top-2 max-w-[340px] rounded-md border border-white/10 bg-black/70 px-3 py-2 text-xs text-white/90">
+                <p className="font-medium text-white">{hoveredChunk.source || "chunk"}</p>
+                <p className="mt-1 line-clamp-3 text-white/80">{hoveredChunk.text || "(пусто)"}</p>
+              </div>
+            )}
           </div>
           <style>{`
             @keyframes kb-pulse { 0%,100% { opacity: .65; } 50% { opacity: 1; } }
@@ -233,6 +271,8 @@ export default function AdminKnowledgeGraphPage() {
             {selectedChunk ? (
               <>
                 <p className="mt-1 text-xs text-muted-foreground">Источник: {selectedChunk.source}</p>
+                <p className="mt-1 text-xs text-muted-foreground">ID: {selectedChunk.id}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Длина: {selectedChunk.text.length} символов</p>
                 <div className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg border border-[#E8E6E0] bg-[#FAFAF8] p-2 text-sm">
                   {selectedChunk.text}
                 </div>
