@@ -56,18 +56,50 @@ export default function AdminKnowledgeGraphPage() {
       .map((n) => ({ ...n, degree: (incoming.get(n.id) || 0) + (outgoing.get(n.id) || 0) }))
       .sort((a, b) => b.degree - a.degree);
     const rootId = roots[0]?.id || graphNodes[0].id;
-    const circles = graphNodes.filter((n) => n.id !== rootId);
+    const others = graphNodes.filter((n) => n.id !== rootId);
     const out: Array<KnowledgeGraphNode & { x: number; y: number; size: number }> = [];
     out.push({ ...(graphNodes.find((n) => n.id === rootId) || graphNodes[0]), x: 0, y: 0, size: 4.8 });
-    const total = Math.max(1, circles.length);
-    for (let i = 0; i < circles.length; i += 1) {
+
+    const byCategory = new Map<string, KnowledgeGraphNode[]>();
+    for (const n of others) {
+      const key = n.category?.trim() || "Общее";
+      if (!byCategory.has(key)) byCategory.set(key, []);
+      byCategory.get(key)!.push(n);
+    }
+    const categories = [...byCategory.entries()].sort((a, b) => b[1].length - a[1].length);
+
+    // If there are meaningful categories, place nodes in category clusters.
+    if (categories.length > 1) {
+      const clusterRadius = 52;
+      categories.forEach(([_, nodes], clusterIdx) => {
+        const cAngle = (Math.PI * 2 * clusterIdx) / categories.length;
+        const cx = Math.cos(cAngle) * clusterRadius;
+        const cy = Math.sin(cAngle) * clusterRadius;
+        const total = Math.max(1, nodes.length);
+        nodes.forEach((node, i) => {
+          const a = (Math.PI * 2 * i) / total;
+          const r = 9 + Math.min(18, Math.ceil(total / 4) * 2) + (i % 3);
+          out.push({
+            ...node,
+            x: cx + Math.cos(a) * r,
+            y: cy + Math.sin(a) * r,
+            size: 2.2 + Math.min(2.2, ((incoming.get(node.id) || 0) + (outgoing.get(node.id) || 0)) * 0.22),
+          });
+        });
+      });
+      return out;
+    }
+
+    // Fallback ring layout when there are no categories.
+    const total = Math.max(1, others.length);
+    for (let i = 0; i < others.length; i += 1) {
       const angle = (Math.PI * 2 * i) / total;
       const radius = 54 + (i % 4) * 6;
       out.push({
-        ...circles[i],
+        ...others[i],
         x: Math.cos(angle) * radius,
         y: Math.sin(angle) * radius,
-        size: 2.2 + Math.min(2.2, ((incoming.get(circles[i].id) || 0) + (outgoing.get(circles[i].id) || 0)) * 0.22),
+        size: 2.2 + Math.min(2.2, ((incoming.get(others[i].id) || 0) + (outgoing.get(others[i].id) || 0)) * 0.22),
       });
     }
     return out;

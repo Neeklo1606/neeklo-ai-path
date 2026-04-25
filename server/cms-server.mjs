@@ -1408,33 +1408,85 @@ app.get("/assistants/:id/knowledge/graph", requireAuth, async (req, res) => {
       } catch {
         chunkPoints = [];
       }
+      const inferFromChunk = (payload, idx) => {
+        const source = String(payload?.source || "manual");
+        const text = String(payload?.text || "");
+        const low = `${source}\n${text}`.toLowerCase();
+        const has = (re) => re.test(low);
+
+        let category = "";
+        if (has(/\b(video|reels|tiktok|shorts|ролик|видео|аватар|промо)\b/u)) category = "AI-видео";
+        else if (has(/\b(лендинг|сайт|landing|react|seo|h1|метрика)\b/u)) category = "Сайты";
+        else if (has(/\b(bot|бот|telegram|mini app|мини.?апп|ассистент)\b/u)) category = "Боты и AI-ассистенты";
+        else if (has(/\b(n8n|make|zapier|crm|amocrm|битрикс|интеграц|автоматиз)\b/u)) category = "Автоматизация";
+        else if (has(/\b(цена|стоим|прайс|от \d|₽|руб|k\b|пакет)\b/u)) category = "Цены и пакеты";
+        else if (has(/\b(этап|договор|предоплат|гарант|срок|оплат)\b/u)) category = "Процесс работы";
+        else if (has(/\b(faq|вопрос|ответ|q:|a:)\b/u)) category = "FAQ";
+        else if (has(/\b(команда|ceo|developer|project manager|продаж)\b/u)) category = "Команда";
+        else if (has(/\b(контакт|telegram|whatsapp|написать|связа)\b/u)) category = "Контакты";
+
+        let section = "";
+        if (source.startsWith("file:")) {
+          const fileName = source.replace(/^file:/, "");
+          const pieces = fileName.split(/[\\/]/g).filter(Boolean);
+          if (pieces.length > 1) section = pieces[pieces.length - 2];
+        }
+        if (!section && has(/\b(прайс|price|стоим|цена|пакет)\b/u)) section = "Прайс";
+        if (!section && has(/\b(faq|вопрос|ответ)\b/u)) section = "FAQ";
+        if (!section && has(/\b(этап|договор|оплат|гарант)\b/u)) section = "Регламент";
+        if (!section && has(/\b(кейс|пример|ниша)\b/u)) section = "Кейсы";
+        if (!section && has(/\b(видео|ролик|reels|shorts)\b/u)) section = "Видео";
+        if (!section) section = "Общее";
+
+        const tags = [];
+        if (has(/\b(telegram|телеграм)\b/u)) tags.push("telegram");
+        if (has(/\b(crm|amocrm|битрикс)\b/u)) tags.push("crm");
+        if (has(/\b(n8n|make|zapier)\b/u)) tags.push("automation");
+        if (has(/\b(video|видео|ролик|reels|shorts)\b/u)) tags.push("video");
+        if (has(/\b(лендинг|сайт|seo|react)\b/u)) tags.push("web");
+        if (has(/\b(ai|gpt|ассистент|llm)\b/u)) tags.push("ai");
+        if (has(/\b(цена|стоим|прайс|₽|руб)\b/u)) tags.push("pricing");
+
+        const title = source.startsWith("file:") ? source.replace(/^file:/, "") : `chunk-${idx + 1}`;
+        const slug = title
+          .toLowerCase()
+          .replace(/[^\p{L}\p{N}\s_-]/gu, " ")
+          .trim()
+          .replace(/\s+/g, "-")
+          .slice(0, 120) || `chunk-${idx + 1}`;
+        return {
+          id: `${slug}-${idx + 1}`,
+          title,
+          source,
+          category,
+          section,
+          tags: [...new Set(tags)],
+        };
+      };
+
       const derived = chunkPoints
         .map((p, idx) => {
           const payload = p?.payload || {};
-          const source = String(payload.source || "manual");
-          const title = source.startsWith("file:") ? source.replace(/^file:/, "") : `chunk-${idx + 1}`;
-          const slug = title
-            .toLowerCase()
-            .replace(/[^\p{L}\p{N}\s_-]/gu, " ")
-            .trim()
-            .replace(/\s+/g, "-")
-            .slice(0, 120) || `chunk-${idx + 1}`;
-          return {
-            id: `${slug}-${idx + 1}`,
-            title,
-            source,
-            category: "",
-            section: "",
-            tags: [],
-          };
+          return inferFromChunk(payload, idx);
         });
       nodesAll = derived;
-      // simple chain edges so nodes are visible connected
-      fallbackEdges = derived.slice(1).map((n, i) => ({
-        id: `${derived[i].id}->${n.id}`,
-        from: derived[i].id,
-        to: n.id,
-      }));
+      // Build grouped links by category/section for better structured clusters.
+      const byCategory = new Map();
+      for (const n of derived) {
+        const key = n.category || "Общее";
+        if (!byCategory.has(key)) byCategory.set(key, []);
+        byCategory.get(key).push(n);
+      }
+      const edgeSet = new Set();
+      for (const group of byCategory.values()) {
+        for (let i = 1; i < group.length; i += 1) {
+          edgeSet.add(`${group[i - 1].id}->${group[i].id}`);
+        }
+      }
+      fallbackEdges = [...edgeSet].map((id) => {
+        const [from, to] = id.split("->");
+        return { id, from, to };
+      });
     }
 
     const nodes = nodesAll.filter((n) => {
