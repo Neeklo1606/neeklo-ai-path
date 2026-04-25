@@ -559,6 +559,38 @@ async function getActiveAssistant() {
   });
 }
 
+async function getAssistantKnowledgePoints(assistantId) {
+  try {
+    const client = getQdrantClient();
+    const coll = collectionNameForAssistant(assistantId);
+    const counted = await Promise.race([
+      client.count(coll, { exact: true }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Qdrant count timeout")), 3000)),
+    ]);
+    return typeof counted === "number" ? counted : Number(counted?.count ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
+async function resolveAssistantForPublicChat() {
+  const activeRows = await prisma.assistant.findMany({
+    where: { active: true },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!activeRows.length) return null;
+  if (activeRows.length === 1) return activeRows[0];
+
+  const withPoints = await Promise.all(
+    activeRows.map(async (a) => ({
+      assistant: a,
+      points: await getAssistantKnowledgePoints(a.id),
+    })),
+  );
+  const bestWithKb = withPoints.find((x) => x.points > 0);
+  return (bestWithKb?.assistant || activeRows[0]) ?? null;
+}
+
 app.get("/chat/bootstrap", async (req, res) => {
   const locale = (req.query.locale || "ru").toString();
   let welcomeMessage = null;
@@ -586,7 +618,7 @@ app.get("/chat/bootstrap", async (req, res) => {
     if (meta?.welcomeMessage != null && String(meta.welcomeMessage).trim()) {
       welcomeMessage = String(meta.welcomeMessage);
     }
-    const asst = await getActiveAssistant();
+    const asst = await resolveAssistantForPublicChat();
     res.json({
       welcomeMessage,
       pageTitle,
@@ -594,6 +626,8 @@ app.get("/chat/bootstrap", async (req, res) => {
       statusLabel,
       inputPlaceholder,
       hasAssistant: !!asst,
+      assistantId: asst?.id || null,
+      assistantName: asst?.name || null,
     });
   } catch (e) {
     console.error(e);
@@ -1599,8 +1633,9 @@ app.post("/chat", async (req, res) => {
     return res.status(429).json({ error: "Rate limit exceeded", retry_after_seconds: 60 });
   }
   try {
-    const asst = await getActiveAssistant();
+    const asst = await resolveAssistantForPublicChat();
     if (!asst) return res.status(503).json({ error: "No active assistant configured" });
+    const kbPoints = await getAssistantKnowledgePoints(asst.id);
 
     const bKey = await ensureApiKeyForAssistant(prisma, asst.id);
     if (!bKey.isActive) return res.status(403).json({ error: "API key disabled" });
@@ -1652,7 +1687,18 @@ app.post("/chat", async (req, res) => {
       } catch (be) {
         console.error("[billing] deduct", be);
       }
-      return res.json({ reply, used_context: usedContext, provider: "ollama", billing });
+      return res.json({
+        reply,
+        used_context: usedContext,
+        provider: "ollama",
+        billing,
+        rag_diagnostics: {
+          ...(result.ragDiagnostics || {}),
+          activeAssistantId: asst.id,
+          activeAssistantName: asst.name,
+          activeAssistantKbPoints: kbPoints,
+        },
+      });
     }
 
     const apiToken = getAssistantProviderToken(asst);
@@ -1706,7 +1752,18 @@ app.post("/chat", async (req, res) => {
     } catch (be) {
       console.error("[billing] deduct", be);
     }
-    res.json({ reply: text, used_context: result.usedContext, provider: "openai_compatible", billing });
+    res.json({
+      reply: text,
+      used_context: result.usedContext,
+      provider: "openai_compatible",
+      billing,
+      rag_diagnostics: {
+        ...(result.ragDiagnostics || {}),
+        activeAssistantId: asst.id,
+        activeAssistantName: asst.name,
+        activeAssistantKbPoints: kbPoints,
+      },
+    });
   } catch (e) {
     res.status(502).json({ error: e.message || "Fetch failed" });
   }

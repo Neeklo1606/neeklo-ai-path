@@ -429,21 +429,32 @@ export async function chatWithRag({
   console.log("RAG START");
 
   let contextBlock = "";
+  let contextError = "";
+  let contextHitsCount = 0;
   try {
     const loadRagContext = async () => {
       const qv = embedText
         ? await embedText(queryText)
         : await createEmbedding(ollamaBase, embedModel, queryText);
       const hits = await searchContext(client, coll, qv, 5);
+      contextHitsCount = Array.isArray(hits) ? hits.length : 0;
       const texts = hits.map((h) => h.text).filter(Boolean);
       return texts.join("\n---\n");
     };
-    contextBlock = await Promise.race([
+    const loadWithTimeout = async () => Promise.race([
       loadRagContext(),
-      new Promise((resolve) => setTimeout(() => resolve(""), 2000)),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("RAG context timeout")), 6000)),
     ]);
+    try {
+      contextBlock = await loadWithTimeout();
+    } catch (firstErr) {
+      // Retry once to reduce flaky upstream/network misses.
+      contextBlock = await loadWithTimeout();
+      console.warn("[ai-rag] context retry succeeded after first error:", firstErr?.message || String(firstErr));
+    }
   } catch (e) {
-    console.warn("[ai-rag] context search skipped:", e.message);
+    contextError = e?.message || String(e);
+    console.warn("[ai-rag] context search skipped:", contextError);
   }
 
   console.log("RAG CONTEXT:", contextBlock.trim() ? contextBlock.slice(0, 4000) : "(empty)");
@@ -503,6 +514,14 @@ ${queryText}
     usedContext: Boolean(contextBlock.trim()),
     promptTokens,
     completionTokens,
+    ragDiagnostics: {
+      assistantId: assistant.id,
+      collection: coll,
+      contextHits: contextHitsCount,
+      contextError: contextError || null,
+      embedModel,
+      chatModel,
+    },
   };
 }
 
