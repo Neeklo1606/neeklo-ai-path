@@ -8,6 +8,7 @@ import { adminApi } from "@/lib/admin-api";
 import type { CmsAssistant } from "@/lib/cms-api";
 import { buildKnowledgeGraph } from "@/lib/knowledge-graph";
 import {
+  askKnowledgeHelper,
   clearKnowledge,
   fetchOpenAiModels,
   getKnowledgeStats,
@@ -88,8 +89,14 @@ export default function AdminKnowledgePage() {
 
   const [kbText, setKbText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [helperQuestion, setHelperQuestion] = useState("");
+  const [helperAnswer, setHelperAnswer] = useState("");
+  const [helperLoading, setHelperLoading] = useState(false);
 
   const current = useMemo(() => assistants.find((a) => a.id === assistantId) || null, [assistants, assistantId]);
+  const step1Done = Boolean(model && embedModel && (provider !== "openai" || providerApiKey.trim()));
+  const step2Done = (stats?.points ?? 0) > 0;
+  const completedSteps = (step1Done ? 1 : 0) + (step2Done ? 1 : 0) + (step2Done ? 1 : 0);
 
   const refreshStats = async (id: string) => {
     try {
@@ -257,6 +264,28 @@ export default function AdminKnowledgePage() {
     }
   };
 
+  const askHelper = async (questionText?: string) => {
+    const q = (questionText ?? helperQuestion).trim();
+    if (!assistantId) return toast.error("Сначала выберите ассистента");
+    if (!q) return toast.error("Введите вопрос для помощника");
+    setHelperLoading(true);
+    try {
+      const out = await askKnowledgeHelper({
+        assistantId,
+        question: q,
+        points: stats?.points ?? 0,
+      });
+      setHelperAnswer(out.answer || "Помощник не дал ответ.");
+    } catch (e) {
+      const msg = axios.isAxiosError(e)
+        ? (e.response?.data as { error?: string })?.error || e.message
+        : (e as Error).message;
+      toast.error(msg);
+    } finally {
+      setHelperLoading(false);
+    }
+  };
+
   if (loading) return <p className="text-muted-foreground">Загрузка…</p>;
 
   return (
@@ -265,10 +294,11 @@ export default function AdminKnowledgePage() {
 
       <div className="rounded-2xl border border-[#E8E6E0] bg-[#FAFAF8] p-4 text-sm">
         <p className="font-bold">Пошагово</p>
+        <p className="mt-1 text-xs text-muted-foreground">Прогресс: {completedSteps}/3 шага</p>
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
-          <li>Выберите ассистента и подключите модель OpenAI/Ollama.</li>
-          <li>Загрузите заметки Obsidian или файлы.</li>
-          <li>Проверьте граф связей и количество точек в базе.</li>
+          <li>Выберите ассистента и подключите модель OpenAI/Ollama. {step1Done ? "✅" : "⏳"}</li>
+          <li>Загрузите заметки Obsidian или файлы. {step2Done ? "✅" : "⏳"}</li>
+          <li>Проверьте граф связей и количество точек в базе. {step2Done ? "✅" : "⏳"}</li>
         </ol>
       </div>
 
@@ -418,6 +448,46 @@ export default function AdminKnowledgePage() {
           </div>
 
           <GraphPreview points={stats?.points ?? 0} seed={assistantId || "kb"} />
+
+          <div className="rounded-2xl border border-[#E8E6E0] bg-white p-6">
+            <h2 className="font-heading text-lg font-extrabold">LLM-помощник по настройке</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Задайте вопрос простыми словами. Помощник подскажет следующий шаг именно для текущего ассистента.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button type="button" variant="outline" onClick={() => askHelper("Почему у меня нет ответа в чате?")}>
+                Почему нет ответа?
+              </Button>
+              <Button type="button" variant="outline" onClick={() => askHelper("Как быстро загрузить Obsidian и проверить результат?")}>
+                Как загрузить Obsidian?
+              </Button>
+              <Button type="button" variant="outline" onClick={() => askHelper("Какую модель лучше выбрать для сайта продаж?")}>
+                Как выбрать модель?
+              </Button>
+            </div>
+            <div className="mt-3 space-y-2">
+              <Label>Ваш вопрос</Label>
+              <Input
+                value={helperQuestion}
+                onChange={(e) => setHelperQuestion(e.target.value)}
+                placeholder="Например: почему модель не отвечает?"
+              />
+              <Button type="button" onClick={() => askHelper()} disabled={helperLoading}>
+                {helperLoading ? "Думаю..." : "Спросить LLM-помощника"}
+              </Button>
+            </div>
+            <div className="mt-3 rounded-xl border border-[#E8E6E0] bg-[#FAFAF8] p-3 text-sm whitespace-pre-wrap min-h-[88px]">
+              {helperAnswer || "Здесь появится ответ помощника."}
+            </div>
+            <a
+              href="/docs/knowledge-base-user-guide.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-block text-sm underline underline-offset-4"
+            >
+              Открыть документацию для пользователя
+            </a>
+          </div>
         </div>
       </div>
     </div>

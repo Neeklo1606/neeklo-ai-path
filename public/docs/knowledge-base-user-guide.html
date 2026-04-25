@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Neeklo — База знаний: инструкция</title>
+  <style>
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #f6f6f7; color: #111; }
+    .wrap { max-width: 860px; margin: 36px auto; background: #fff; border: 1px solid #e7e7ea; border-radius: 16px; padding: 28px; }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    h2 { margin: 26px 0 10px; font-size: 20px; }
+    p, li { line-height: 1.55; color: #2f2f35; }
+    .tip { background: #f8f8fa; border: 1px solid #e7e7ea; border-radius: 12px; padding: 12px; margin: 10px 0; }
+    code { background: #f0f2f4; padding: 1px 5px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>База знаний Neeklo: инструкция для пользователя</h1>
+    <p>Эта страница помогает настроить базу знаний из Obsidian и подключить ее к ассистенту.</p>
+
+    <h2>Шаг 1. Настройка модели</h2>
+    <ol>
+      <li>Откройте <b>Админка → База знаний</b>.</li>
+      <li>Выберите ассистента.</li>
+      <li>Провайдер: <b>OpenAI API (рекомендуется)</b>.</li>
+      <li>Вставьте ключ OpenAI.</li>
+      <li>Нажмите <b>Загрузить доступные модели</b> и выберите модель.</li>
+      <li>Нажмите <b>Сохранить шаг 1</b>.</li>
+    </ol>
+    <div class="tip">
+      <b>Зачем Base URL?</b> Обычно не нужен. Он нужен только если вы используете не официальный OpenAI, а OpenAI-compatible сервис.
+    </div>
+
+    <h2>Шаг 2. Загрузка знаний</h2>
+    <ol>
+      <li>Для Obsidian используйте <b>Импорт Obsidian vault (папка с .md)</b>.</li>
+      <li>Либо загрузите одиночные файлы <code>.pdf .txt .docx .md</code>.</li>
+      <li>Можно вставлять текст вручную в поле «Добавить текст».</li>
+    </ol>
+
+    <h2>Шаг 3. Проверка</h2>
+    <ul>
+      <li>Смотрите блок «Точек в базе» — число должно расти после загрузки.</li>
+      <li>Граф знаний отображает связь фрагментов и обновляется автоматически.</li>
+      <li>Если чат не учитывает базу — проверьте, что у ассистента статус «Активен» и модель сохранена.</li>
+    </ul>
+
+    <h2>LLM-помощник</h2>
+    <p>На странице есть блок <b>LLM-помощник по настройке</b>. Туда можно писать вопрос простым языком, например:</p>
+    <ul>
+      <li>«Почему у меня нет ответа в чате?»</li>
+      <li>«Как правильно загрузить Obsidian?»</li>
+      <li>«Какую модель выбрать для продаж?»</li>
+    </ul>
+  </main>
+</body>
+</html>

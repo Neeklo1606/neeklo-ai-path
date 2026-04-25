@@ -20,6 +20,7 @@ import {
   collectionNameForAssistant,
   createEmbedding,
   createOpenAiCompatibleEmbedding,
+  generateResponse,
   chunkText,
   extractTextFromFile,
   upsertChunks,
@@ -1210,6 +1211,42 @@ app.post("/assistants/models/openai", requireAuth, async (req, res) => {
     return res.json({ models });
   } catch (e) {
     return res.status(502).json({ error: e?.message || "Failed to load models" });
+  }
+});
+
+app.post("/assistants/:id/knowledge/help", requireAuth, async (req, res) => {
+  try {
+    const asst = await prisma.assistant.findUnique({ where: { id: req.params.id } });
+    if (!asst) return res.status(404).json({ error: "Not found" });
+    const question = String(req.body?.question || "").trim();
+    if (!question) return res.status(400).json({ error: "question required" });
+    const points = Number(req.body?.points ?? 0) || 0;
+    const context = `Assistant=${asst.name}; provider=${asst.provider}; chatModel=${asst.model}; embedModel=${asst.embedModel}; kbPoints=${points}`;
+    const helperPrompt =
+      "Ты помощник настройки базы знаний для нетехнического пользователя. " +
+      "Дай короткий ответ: 3-6 шагов, простые слова, без терминов где можно. " +
+      "Если есть ошибка модели/доступа — дай как исправить по шагам.";
+
+    if (isOllamaAssistant(asst)) {
+      const out = await generateResponse(getOllamaBase(asst), asst.model || "qwen2.5:7b", [
+        { role: "system", content: helperPrompt },
+        { role: "user", content: `Контекст: ${context}\nВопрос: ${question}` },
+      ]);
+      return res.json({ answer: String(out.text || "").trim() });
+    }
+
+    const apiToken = getAssistantProviderToken(asst);
+    if (!apiToken) return res.status(503).json({ error: "Provider API key not configured" });
+    const answer = await chatOpenAiCompatible({
+      baseUrl: asst.baseUrl,
+      apiKey: apiToken,
+      model: asst.model || "gpt-4o-mini",
+      systemPrompt: helperPrompt,
+      messages: [{ role: "user", content: `Контекст: ${context}\nВопрос: ${question}` }],
+    });
+    return res.json({ answer: String(answer || "").trim() });
+  } catch (e) {
+    return res.status(502).json({ error: e?.message || "LLM helper failed" });
   }
 });
 

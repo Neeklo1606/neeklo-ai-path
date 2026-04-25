@@ -70,3 +70,15 @@ export async function fetchOpenAiModels(input: {
   });
   return data;
 }
+
+export async function askKnowledgeHelper(input: {
+  assistantId: string;
+  question: string;
+  points?: number;
+}): Promise<{ answer: string }> {
+  const { data } = await adminApi.post<{ answer: string }>(`/assistants/${input.assistantId}/knowledge/help`, {
+    question: input.question,
+    points: input.points ?? 0,
+  });
+  return data;
+}
