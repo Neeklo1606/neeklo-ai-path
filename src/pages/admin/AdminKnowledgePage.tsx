@@ -30,12 +30,18 @@ function GraphPreview({
   chunks,
   selectedChunkId,
   onSelectChunk,
+  assistantName,
+  collectionName,
+  embedModelName,
 }: {
   points: number;
   seed: string;
   chunks: ChunkItem[];
   selectedChunkId: string;
   onSelectChunk: (id: string) => void;
+  assistantName: string;
+  collectionName: string;
+  embedModelName: string;
 }) {
   const graph = useMemo(() => buildKnowledgeGraph(points, seed), [points, seed]);
   const byId = useMemo(() => Object.fromEntries(graph.nodes.map((n) => [n.id, n])), [graph.nodes]);
@@ -43,8 +49,10 @@ function GraphPreview({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<string>("");
+  const [fullscreen, setFullscreen] = useState(false);
   const dragStart = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const selectedChunk = useMemo(() => chunks.find((c) => c.id === selectedChunkId) || null, [chunks, selectedChunkId]);
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -60,11 +68,21 @@ function GraphPreview({
     };
   }, [zoom]);
 
-  return (
+  const GraphCanvas = (
     <div className="rounded-2xl border border-[#E8E6E0] bg-[#0E1016] p-4 text-white">
       <div className="mb-2 flex items-center justify-between">
         <p className="text-sm font-semibold">Граф знаний (как в Obsidian)</p>
-        <p className="text-xs text-white/70">Узлы: {graph.nodes.length - 1}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-white/70">Узлы: {graph.nodes.length - 1}</p>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-7 rounded-md border-white/25 bg-transparent px-2 text-xs text-white hover:bg-white/10"
+            onClick={() => setFullscreen((v) => !v)}
+          >
+            {fullscreen ? "Свернуть" : "На весь экран"}
+          </Button>
+        </div>
       </div>
       <div
         ref={wrapRef}
@@ -157,6 +175,63 @@ function GraphPreview({
         @keyframes kb-fade { 0%,100% { opacity: .2; } 50% { opacity: .8; } }
       `}</style>
     </div>
+  );
+
+  return (
+    <>
+      {GraphCanvas}
+      {fullscreen && (
+        <div className="fixed inset-0 z-[120] bg-black/70 p-4 md:p-6">
+          <div className="mx-auto grid h-full max-w-[1480px] gap-4 rounded-2xl border border-[#2B2F3A] bg-[#0B0F16] p-4 md:grid-cols-[1fr_360px]">
+            <div className="min-h-0">{GraphCanvas}</div>
+            <aside className="min-h-0 overflow-auto rounded-2xl border border-[#2B2F3A] bg-[#111827] p-4 text-white">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Управление и информация</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-7 rounded-md border-white/25 bg-transparent px-2 text-xs text-white hover:bg-white/10"
+                  onClick={() => setFullscreen(false)}
+                >
+                  Закрыть
+                </Button>
+              </div>
+
+              <div className="space-y-2 rounded-xl border border-white/10 bg-black/20 p-3 text-sm">
+                <p><span className="text-white/60">Ассистент:</span> {assistantName || "—"}</p>
+                <p><span className="text-white/60">Коллекция:</span> {collectionName || "—"}</p>
+                <p><span className="text-white/60">Точек:</span> {points}</p>
+                <p><span className="text-white/60">Эмбеддинги:</span> {embedModelName || "—"}</p>
+              </div>
+
+              <div className="mt-3 space-y-2 rounded-xl border border-white/10 bg-black/20 p-3">
+                <p className="text-sm font-medium">Масштаб и позиция</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" className="h-8 border-white/25 bg-transparent px-2 text-white hover:bg-white/10" onClick={() => setZoom((z) => Math.min(2.4, Number((z + 0.1).toFixed(2))))}>+</Button>
+                  <Button type="button" variant="outline" className="h-8 border-white/25 bg-transparent px-2 text-white hover:bg-white/10" onClick={() => setZoom((z) => Math.max(0.6, Number((z - 0.1).toFixed(2))))}>-</Button>
+                  <Button type="button" variant="outline" className="h-8 border-white/25 bg-transparent px-2 text-white hover:bg-white/10" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}>Reset</Button>
+                </div>
+                <p className="text-xs text-white/70">Zoom: {zoom.toFixed(2)}</p>
+              </div>
+
+              <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
+                <p className="text-sm font-medium">Выбранный chunk</p>
+                {selectedChunk ? (
+                  <>
+                    <p className="mt-1 text-xs text-white/70">Источник: {selectedChunk.source}</p>
+                    <div className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap rounded-lg border border-white/10 bg-black/30 p-2 text-sm">
+                      {selectedChunk.text || "(пустой)"}
+                    </div>
+                  </>
+                ) : (
+                  <p className="mt-1 text-xs text-white/70">Кликните по узлу графа.</p>
+                )}
+              </div>
+            </aside>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -750,6 +825,9 @@ export default function AdminKnowledgePage() {
             chunks={chunks}
             selectedChunkId={selectedChunkId}
             onSelectChunk={setSelectedChunkId}
+            assistantName={current?.name || ""}
+            collectionName={stats?.collection || ""}
+            embedModelName={embedModel}
           />
           <div className="rounded-2xl border border-[#E8E6E0] bg-white p-4">
             <p className="text-sm font-semibold">Выбранный chunk</p>
