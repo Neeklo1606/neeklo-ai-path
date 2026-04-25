@@ -11,11 +11,18 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
-import { clearKnowledge, getKnowledgeStats, ingestKnowledgeFile, ingestKnowledgeText } from "@/services/ai.service";
+import {
+  clearKnowledge,
+  fetchOpenAiModels,
+  getKnowledgeStats,
+  ingestKnowledgeFile,
+  ingestKnowledgeText,
+} from "@/services/ai.service";
 
 type AssistantRow = CmsAssistant & { provider_api_key?: string | null };
 
 const MODEL_PRESETS = ["qwen2.5:7b", "mistral:7b", "llama3.2:3b", "phi3:mini"];
+const OPENAI_MODEL_PRESETS = ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4.1", "o4-mini"];
 
 export default function AdminAssistantEditor() {
   const { id } = useParams();
@@ -33,6 +40,8 @@ export default function AdminAssistantEditor() {
   const [temperature, setTemperature] = useState(0.7);
   const [systemPrompt, setSystemPrompt] = useState("");
   const [providerApiKey, setProviderApiKey] = useState("");
+  const [openAiModels, setOpenAiModels] = useState<string[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
   const [active, setActive] = useState(true);
   const [loading, setLoading] = useState(!isNew);
   const [shownKey, setShownKey] = useState<string | null>(null);
@@ -166,6 +175,30 @@ export default function AdminAssistantEditor() {
     }
   };
 
+  const onObsidianFolder = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (isNew || !id || !files.length) return;
+    const mdFiles = files.filter((f) => f.name.toLowerCase().endsWith(".md"));
+    if (!mdFiles.length) {
+      toast.error("В папке нет .md файлов");
+      return;
+    }
+    let ok = 0;
+    let failed = 0;
+    for (const f of mdFiles) {
+      try {
+        await ingestKnowledgeFile(id, f);
+        ok += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    statsQ.refetch();
+    if (failed === 0) toast.success(`Obsidian импорт: ${ok} файлов`);
+    else toast.warning(`Obsidian импорт: ${ok} успешно, ${failed} с ошибкой`);
+  };
+
   const wipeKb = async () => {
     if (isNew || !id) return;
     if (!confirm("Удалить всю базу знаний (Qdrant) для этого ассистента?")) return;
@@ -178,6 +211,35 @@ export default function AdminAssistantEditor() {
         ? (e.response?.data as { error?: string })?.error || e.message
         : (e as Error).message;
       toast.error(msg);
+    }
+  };
+
+  const loadOpenAiModels = async () => {
+    if (ollamaMode) return;
+    if (!providerApiKey.trim()) {
+      toast.error("Введите ключ провайдера");
+      return;
+    }
+    setLoadingModels(true);
+    try {
+      const out = await fetchOpenAiModels({
+        apiKey: providerApiKey.trim(),
+        baseUrl: openaiBaseUrl.trim() || undefined,
+      });
+      setOpenAiModels(out.models || []);
+      if (!out.models?.length) {
+        toast.warning("Провайдер не вернул список моделей");
+      } else {
+        if (!model && out.models[0]) setModel(out.models[0]);
+        toast.success(`Загружено моделей: ${out.models.length}`);
+      }
+    } catch (e) {
+      const msg = axios.isAxiosError(e)
+        ? (e.response?.data as { error?: string })?.error || e.message
+        : (e as Error).message;
+      toast.error(msg);
+    } finally {
+      setLoadingModels(false);
     }
   };
 
@@ -230,7 +292,7 @@ export default function AdminAssistantEditor() {
             <Label htmlFor="md">Модель чата</Label>
             <Input id="md" value={model} onChange={(e) => setModel(e.target.value)} className="rounded-xl" list="chat-models" />
             <datalist id="chat-models">
-              {MODEL_PRESETS.map((m) => (
+              {(ollamaMode ? MODEL_PRESETS : [...OPENAI_MODEL_PRESETS, ...openAiModels]).map((m) => (
                 <option key={m} value={m} />
               ))}
             </datalist>
@@ -267,6 +329,18 @@ export default function AdminAssistantEditor() {
         )}
         {!ollamaMode && (
           <div className="space-y-2">
+            <Label htmlFor="base">Base URL (OpenAI-совместимый API)</Label>
+            <Input
+              id="base"
+              value={openaiBaseUrl}
+              onChange={(e) => setOpenaiBaseUrl(e.target.value)}
+              className="rounded-xl"
+              placeholder="https://api.openai.com/v1"
+            />
+          </div>
+        )}
+        {!ollamaMode && (
+          <div className="space-y-2">
             <Label htmlFor="pk">Ключ провайдера</Label>
             <Input
               id="pk"
@@ -277,6 +351,16 @@ export default function AdminAssistantEditor() {
               className="rounded-xl"
               placeholder="sk-..."
             />
+          </div>
+        )}
+        {!ollamaMode && (
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" className="rounded-xl" onClick={loadOpenAiModels} disabled={loadingModels}>
+              {loadingModels ? "Загружаю модели..." : "Загрузить доступные модели"}
+            </Button>
+            {openAiModels.length > 0 && (
+              <p className="text-sm text-muted-foreground self-center">Доступно: {openAiModels.length}</p>
+            )}
           </div>
         )}
         <div className="space-y-2">
@@ -327,6 +411,20 @@ export default function AdminAssistantEditor() {
           <div className="space-y-2">
             <Label htmlFor="kbfile">Загрузить файл (PDF, TXT, DOCX)</Label>
             <Input id="kbfile" type="file" accept=".pdf,.txt,.md,.docx" className="cursor-pointer" onChange={onKbFile} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="obsidianFolder">Импорт Obsidian vault (папка с .md)</Label>
+            <Input
+              id="obsidianFolder"
+              type="file"
+              className="cursor-pointer"
+              // @ts-expect-error non-standard attribute supported in Chromium browsers
+              webkitdirectory=""
+              // @ts-expect-error non-standard attribute supported in Chromium browsers
+              directory=""
+              multiple
+              onChange={onObsidianFolder}
+            />
           </div>
           <Button type="button" variant="outline" className="rounded-xl border-red-200 text-red-800" onClick={wipeKb}>
             Очистить базу знаний

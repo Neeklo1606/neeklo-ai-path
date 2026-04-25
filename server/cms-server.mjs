@@ -1161,6 +1161,34 @@ app.patch("/assistants/:id", requireAuth, async (req, res) => {
   }
 });
 
+app.post("/assistants/models/openai", requireAuth, async (req, res) => {
+  try {
+    const base = String(req.body?.base_url || "https://api.openai.com/v1").trim().replace(/\/$/, "");
+    const apiKey = String(req.body?.api_key || "").trim();
+    if (!apiKey) return res.status(400).json({ error: "api_key required" });
+
+    const r = await fetch(`${base}/models`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+    const json = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const msg = json?.error?.message || json?.error || `Upstream models error (${r.status})`;
+      return res.status(502).json({ error: String(msg) });
+    }
+    const rows = Array.isArray(json?.data) ? json.data : [];
+    const models = rows
+      .map((m) => String(m?.id || "").trim())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+    return res.json({ models });
+  } catch (e) {
+    return res.status(502).json({ error: e?.message || "Failed to load models" });
+  }
+});
+
 // ─── Assistant knowledge (RAG) — admin ───
 app.post("/assistants/:id/knowledge/text", requireAuth, async (req, res) => {
   const text = (req.body?.text || "").toString();

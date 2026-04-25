@@ -59,3 +59,14 @@ export async function getKnowledgeStats(assistantId: string): Promise<KnowledgeS
   const { data } = await adminApi.get<KnowledgeStats>(`/assistants/${assistantId}/knowledge/stats`);
   return data;
 }
+
+export async function fetchOpenAiModels(input: {
+  apiKey: string;
+  baseUrl?: string;
+}): Promise<{ models: string[] }> {
+  const { data } = await adminApi.post<{ models: string[] }>("/assistants/models/openai", {
+    api_key: input.apiKey,
+    base_url: input.baseUrl || null,
+  });
+  return data;
+}
