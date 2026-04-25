@@ -301,6 +301,10 @@ const ChatPage = () => {
       chatComplete({ messages: apiMsgs, chatId: crmChatId ?? undefined })
         .then((r) => {
           setIsTyping(false);
+          if (r.chat_id && !crmChatId) {
+            setCrmChatId(r.chat_id);
+            localStorage.setItem("neeklo_crm_chat_id", r.chat_id);
+          }
           setMessages((p) => [...p, { id: nextId(), role: "ai", text: r.reply, timestamp: new Date() }]);
           if (r.prototype_job?.id) {
             startPrototypePolling(r.prototype_job.id);

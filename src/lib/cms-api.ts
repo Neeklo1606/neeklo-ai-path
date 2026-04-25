@@ -92,6 +92,7 @@ export async function chatComplete(body: {
   chatId?: string;
 }): Promise<{
   reply: string;
+  chat_id?: string | null;
   prototype_job?: { id: string; status: string; progress: number };
 }> {
   return cmsJson("/chat", {

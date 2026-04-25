@@ -598,6 +598,26 @@ function detectPrototypeIntent(text) {
   return /(прототип|лендинг|landing|показать\s+решение|пример\s+сайта|собери\s+сайт|создай\s+сайт|макет\s+сайта)/i.test(q);
 }
 
+function detectOperatorIntent(text) {
+  const q = String(text || "").toLowerCase();
+  return /(оператор|менеджер|жив(ой|ого)\s+ч(а|я)т|свяжи|соедини|позови\s+человека|человек\s+в\s+чат)/i.test(q);
+}
+
+function detectPurchaseReadiness(text) {
+  const q = String(text || "").toLowerCase();
+  let score = 0;
+  if (/(купить|заказать|оформить|хочу\s+сделать|давайте\s+делать|готов)/i.test(q)) score += 35;
+  if (/(бюджет|цена|стоимость|прайс|сколько\s+стоит)/i.test(q)) score += 20;
+  if (/(срок|когда|до\s+\d|дедлайн|срочно)/i.test(q)) score += 15;
+  if (/(оплата|договор|предоплата|кп|коммерческое)/i.test(q)) score += 20;
+  if (/(созвон|звонок|контакт|телефон|telegram|whatsapp)/i.test(q)) score += 10;
+  const norm = Math.max(0, Math.min(100, score));
+  let label = "cold";
+  if (norm >= 70) label = "hot";
+  else if (norm >= 40) label = "warm";
+  return { score: norm, label };
+}
+
 function inferKnowledgeTaxonomyFromText(source, text) {
   const src = String(source || "manual");
   const body = String(text || "");
@@ -2108,16 +2128,29 @@ async function persistCrmUserAndLead(crmChatId, asst, userText) {
   if (!dup) {
     arr.push({ role: "user", content: userText, at: new Date().toISOString() });
   }
+  const readiness = detectPurchaseReadiness(userText);
+  const operatorIntent = detectOperatorIntent(userText);
   await prisma.chat.update({
     where: { id: crmChatId },
-    data: { messages: arr, assistantId: asst.id },
+    data: {
+      messages: arr,
+      assistantId: asst.id,
+      ...(operatorIntent && { operatorRequested: true }),
+    },
   });
   let ref = await prisma.chat.findUnique({ where: { id: crmChatId } });
   if (ref && !ref.leadId) {
     const title =
       userText.length > 100 ? `${userText.slice(0, 97)}…` : userText;
     const lead = await prisma.lead.create({
-      data: { status: "new", name: title, phone: null },
+      data: {
+        status: readiness.label === "hot" ? "qualified" : readiness.label === "warm" ? "contacted" : "new",
+        name: title,
+        phone: null,
+        readinessScore: readiness.score,
+        intentLabel: readiness.label,
+        summary: userText.slice(0, 400),
+      },
     });
     await prisma.chat.update({
       where: { id: crmChatId },
@@ -2132,6 +2165,19 @@ async function persistCrmUserAndLead(crmChatId, asst, userText) {
       await prisma.lead.update({
         where: { id: ref.leadId },
         data: { name: title },
+      });
+    }
+    if (leadRow) {
+      const nextScore = Math.max(Number(leadRow.readinessScore || 0), readiness.score);
+      await prisma.lead.update({
+        where: { id: ref.leadId },
+        data: {
+          readinessScore: nextScore,
+          intentLabel: readiness.label,
+          summary: userText.slice(0, 400),
+          ...(nextScore >= 70 && { status: "qualified" }),
+          ...(nextScore >= 40 && nextScore < 70 && leadRow.status === "new" && { status: "contacted" }),
+        },
       });
     }
   }
@@ -2152,7 +2198,8 @@ async function persistCrmAssistantReply(crmChatId, replyText) {
 // ─── Chat ───
 app.post("/chat", async (req, res) => {
   console.log("CHAT REQUEST START", Date.now());
-  const { messages, chatId: crmChatId } = req.body || {};
+  const { messages, chatId: incomingChatId } = req.body || {};
+  let crmChatId = incomingChatId;
   if (!Array.isArray(messages)) {
     return res.status(400).json({ error: "messages[] required" });
   }
@@ -2176,11 +2223,65 @@ app.post("/chat", async (req, res) => {
       return res.status(400).json({ error: "Last message must be a non-empty user message" });
     }
 
+    if (!crmChatId || !isUuid(crmChatId)) {
+      try {
+        const created = await prisma.chat.create({
+          data: { messages: [], assistantId: asst.id, status: "active" },
+        });
+        crmChatId = created.id;
+      } catch (sessionErr) {
+        console.error("[crm] auto-create chat session failed", sessionErr);
+      }
+    }
+
     if (crmChatId && isUuid(crmChatId)) {
       try {
         await persistCrmUserAndLead(crmChatId, asst, userText);
       } catch (persistErr) {
         console.error("[crm] persist user/lead", crmChatId, persistErr);
+      }
+    }
+
+    if (detectOperatorIntent(userText)) {
+      const reply =
+        "Подключаю оператора. Передал ваш диалог менеджеру, он подключится в этот чат в ближайшее время.";
+      if (crmChatId && isUuid(crmChatId)) {
+        await prisma.chat.update({
+          where: { id: crmChatId },
+          data: { operatorRequested: true, status: "operator_pending" },
+        }).catch(() => undefined);
+        try {
+          await persistCrmAssistantReply(crmChatId, reply);
+        } catch (persistErr) {
+          console.error("[crm] persist assistant operator ack", crmChatId, persistErr);
+        }
+      }
+      return res.json({
+        reply,
+        used_context: false,
+        provider: "operator_handoff",
+        chat_id: crmChatId || null,
+      });
+    }
+
+    if (crmChatId && isUuid(crmChatId)) {
+      const currentChat = await prisma.chat.findUnique({
+        where: { id: crmChatId },
+        select: { aiPaused: true, operatorConnected: true },
+      });
+      if (currentChat?.aiPaused || currentChat?.operatorConnected) {
+        const reply = "Оператор уже подключен. Продолжайте диалог в этом чате, менеджер ответит вручную.";
+        try {
+          await persistCrmAssistantReply(crmChatId, reply);
+        } catch (persistErr) {
+          console.error("[crm] persist assistant live-operator ack", crmChatId, persistErr);
+        }
+        return res.json({
+          reply,
+          used_context: false,
+          provider: "operator_live",
+          chat_id: crmChatId,
+        });
       }
     }
 
@@ -2214,6 +2315,7 @@ app.post("/chat", async (req, res) => {
         reply: ack,
         used_context: false,
         provider: "prototype_builder",
+        chat_id: crmChatId || null,
         prototype_job: {
           id: job.id,
           status: job.status,
@@ -2267,6 +2369,7 @@ app.post("/chat", async (req, res) => {
         reply,
         used_context: usedContext,
         provider: "ollama",
+        chat_id: crmChatId || null,
         billing,
         rag_diagnostics: {
           ...(result.ragDiagnostics || {}),
@@ -2361,6 +2464,7 @@ app.post("/chat", async (req, res) => {
       reply: text,
       used_context: result.usedContext,
       provider: "openai_compatible",
+      chat_id: crmChatId || null,
       billing,
       rag_diagnostics: {
         ...(result.ragDiagnostics || {}),
@@ -2523,6 +2627,9 @@ app.get("/crm/leads", requireAuth, async (_req, res) => {
           display_name,
           phone: l.phone,
           status: l.status,
+          readiness_score: Number(l.readinessScore || 0),
+          intent_label: l.intentLabel || null,
+          summary: l.summary || null,
           created_at: l.createdAt.toISOString(),
           chats_count: l._count.chats,
           chat_id: primary?.id ?? null,
@@ -2538,12 +2645,15 @@ app.get("/crm/leads", requireAuth, async (_req, res) => {
 
 app.post("/crm/leads", requireAuth, async (req, res) => {
   try {
-    const { name, phone, status } = req.body || {};
+    const { name, phone, status, readiness_score, intent_label, summary } = req.body || {};
     const lead = await prisma.lead.create({
       data: {
         name: name != null ? String(name) : null,
         phone: phone != null ? String(phone) : null,
         ...(status != null ? { status: String(status) } : {}),
+        ...(readiness_score != null ? { readinessScore: Number(readiness_score) } : {}),
+        ...(intent_label != null ? { intentLabel: String(intent_label) } : {}),
+        ...(summary != null ? { summary: String(summary) } : {}),
       },
     });
     res.json({
@@ -2551,6 +2661,9 @@ app.post("/crm/leads", requireAuth, async (req, res) => {
       name: lead.name,
       phone: lead.phone,
       status: lead.status,
+      readiness_score: Number(lead.readinessScore || 0),
+      intent_label: lead.intentLabel || null,
+      summary: lead.summary || null,
       created_at: lead.createdAt.toISOString(),
     });
   } catch (e) {
@@ -2560,13 +2673,16 @@ app.post("/crm/leads", requireAuth, async (req, res) => {
 
 app.patch("/crm/leads/:id", requireAuth, async (req, res) => {
   try {
-    const { name, phone, status } = req.body || {};
+    const { name, phone, status, readiness_score, intent_label, summary } = req.body || {};
     const lead = await prisma.lead.update({
       where: { id: req.params.id },
       data: {
         ...(name !== undefined && { name: name === null ? null : String(name) }),
         ...(phone !== undefined && { phone: phone === null ? null : String(phone) }),
         ...(status !== undefined && { status: String(status) }),
+        ...(readiness_score !== undefined && { readinessScore: Number(readiness_score) }),
+        ...(intent_label !== undefined && { intentLabel: intent_label === null ? null : String(intent_label) }),
+        ...(summary !== undefined && { summary: summary === null ? null : String(summary) }),
       },
     });
     res.json({
@@ -2574,6 +2690,9 @@ app.patch("/crm/leads/:id", requireAuth, async (req, res) => {
       name: lead.name,
       phone: lead.phone,
       status: lead.status,
+      readiness_score: Number(lead.readinessScore || 0),
+      intent_label: lead.intentLabel || null,
+      summary: lead.summary || null,
       created_at: lead.createdAt.toISOString(),
     });
   } catch (e) {
@@ -2604,6 +2723,9 @@ app.get("/crm/chats", requireAuth, async (_req, res) => {
           display_title,
           last_message_preview: lastMessageLineFromMessages(c.messages),
           status: c.status,
+          operator_requested: Boolean(c.operatorRequested),
+          operator_connected: Boolean(c.operatorConnected),
+          ai_paused: Boolean(c.aiPaused),
           message_count: n,
           created_at: c.createdAt.toISOString(),
           updated_at: c.updatedAt.toISOString(),
@@ -2629,6 +2751,9 @@ app.get("/crm/chats/:id", requireAuth, async (req, res) => {
         ? { id: c.lead.id, name: c.lead.name, phone: c.lead.phone, status: c.lead.status }
         : null,
       status: c.status,
+      operator_requested: Boolean(c.operatorRequested),
+      operator_connected: Boolean(c.operatorConnected),
+      ai_paused: Boolean(c.aiPaused),
       messages: c.messages,
       created_at: c.createdAt.toISOString(),
       updated_at: c.updatedAt.toISOString(),
@@ -2640,10 +2765,13 @@ app.get("/crm/chats/:id", requireAuth, async (req, res) => {
 
 app.patch("/crm/chats/:id", requireAuth, async (req, res) => {
   try {
-    const { status, leadId } = req.body || {};
+    const { status, leadId, operator_requested, operator_connected, ai_paused } = req.body || {};
     const data = {};
     if (status !== undefined) data.status = String(status);
     if (leadId !== undefined) data.leadId = leadId === null || leadId === "" ? null : String(leadId);
+    if (operator_requested !== undefined) data.operatorRequested = !!operator_requested;
+    if (operator_connected !== undefined) data.operatorConnected = !!operator_connected;
+    if (ai_paused !== undefined) data.aiPaused = !!ai_paused;
     const c = await prisma.chat.update({
       where: { id: req.params.id },
       data,
@@ -2656,6 +2784,9 @@ app.patch("/crm/chats/:id", requireAuth, async (req, res) => {
         ? { id: c.lead.id, name: c.lead.name, phone: c.lead.phone, status: c.lead.status }
         : null,
       status: c.status,
+      operator_requested: Boolean(c.operatorRequested),
+      operator_connected: Boolean(c.operatorConnected),
+      ai_paused: Boolean(c.aiPaused),
       messages: c.messages,
       updated_at: c.updatedAt.toISOString(),
     });
@@ -2680,11 +2811,32 @@ app.post("/crm/chats/:id/messages", requireAuth, async (req, res) => {
     });
     await prisma.chat.update({
       where: { id: req.params.id },
-      data: { messages: arr, updatedAt: new Date() },
+      data: { messages: arr, updatedAt: new Date(), operatorConnected: true, operatorRequested: false, status: "operator_live" },
     });
     res.json({ ok: true, messages: arr });
   } catch (e) {
     res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
+app.post("/crm/chats/:id/connect-operator", requireAuth, async (req, res) => {
+  try {
+    const c = await prisma.chat.update({
+      where: { id: req.params.id },
+      data: { operatorConnected: true, operatorRequested: false, aiPaused: true, status: "operator_live" },
+      include: { lead: true },
+    });
+    return res.json({
+      ok: true,
+      id: c.id,
+      status: c.status,
+      operator_requested: Boolean(c.operatorRequested),
+      operator_connected: Boolean(c.operatorConnected),
+      ai_paused: Boolean(c.aiPaused),
+    });
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ error: "Not found" });
+    return res.status(500).json({ error: e.message || "Failed" });
   }
 });
 

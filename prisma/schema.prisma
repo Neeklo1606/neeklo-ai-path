@@ -162,12 +162,15 @@ model UsageLog {
 
 /// CRM: site visitors / contacts
 model Lead {
-  id        String   @id @default(uuid())
-  name      String?
-  phone     String?
-  status    String   @default("new")
-  createdAt DateTime @default(now()) @map("created_at")
-  chats     Chat[]
+  id             String   @id @default(uuid())
+  name           String?
+  phone          String?
+  status         String   @default("new")
+  readinessScore Int      @default(0) @map("readiness_score")
+  intentLabel    String?  @map("intent_label")
+  summary        String?  @map("summary")
+  createdAt      DateTime @default(now()) @map("created_at")
+  chats          Chat[]
 
   @@map("crm_leads")
 }
@@ -212,6 +215,9 @@ model Chat {
   prototypeJobs PrototypeJob[]
   messages    Json       @default("[]")
   status      String     @default("active")
+  operatorRequested Boolean @default(false) @map("operator_requested")
+  operatorConnected Boolean @default(false) @map("operator_connected")
+  aiPaused    Boolean    @default(false) @map("ai_paused")
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
 

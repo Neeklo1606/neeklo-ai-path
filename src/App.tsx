@@ -47,6 +47,7 @@ const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
 const AdminSettingEditor = lazy(() => import("./pages/admin/AdminSettingEditor"));
 const AdminBrandingPage = lazy(() => import("./pages/admin/AdminBrandingPage"));
 const AdminCrmPage = lazy(() => import("./pages/admin/AdminCrmPage"));
+const AdminOperatorPage = lazy(() => import("./pages/admin/AdminOperatorPage"));
 const AdminAiAnalyticsPage = lazy(() => import("./pages/admin/AdminAiAnalyticsPage"));
 const AdminBillingPage = lazy(() => import("./pages/admin/AdminBillingPage"));
 const AdminKnowledgePage = lazy(() => import("./pages/admin/AdminKnowledgePage"));
@@ -318,6 +319,14 @@ const AppContent = ({
                     element={
                       <Suspense fallback={<RouteLoadingFallback />}>
                         <AdminCrmPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="operator"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <AdminOperatorPage />
                       </Suspense>
                     }
                   />
