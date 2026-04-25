@@ -82,3 +82,22 @@ export async function askKnowledgeHelper(input: {
   });
   return data;
 }
+
+export async function listKnowledgeChunks(assistantId: string, limit = 24): Promise<{ chunks: { id: string; text: string; source: string }[] }> {
+  const { data } = await adminApi.get<{ chunks: { id: string; text: string; source: string }[] }>(
+    `/assistants/${assistantId}/knowledge/chunks?limit=${encodeURIComponent(String(limit))}`,
+  );
+  return data;
+}
+
+export async function askKnowledgeCoach(input: {
+  assistantId: string;
+  goal?: string;
+  answers: Record<string, string>;
+}): Promise<{ next_question: string; draft: string; is_ready: boolean }> {
+  const { data } = await adminApi.post<{ next_question: string; draft: string; is_ready: boolean }>(
+    `/assistants/${input.assistantId}/knowledge/coach`,
+    { goal: input.goal || "", answers: input.answers },
+  );
+  return data;
+}

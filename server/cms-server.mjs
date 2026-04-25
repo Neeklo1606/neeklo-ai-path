@@ -1252,6 +1252,86 @@ app.post("/assistants/:id/knowledge/help", requireAuth, async (req, res) => {
   }
 });
 
+app.get("/assistants/:id/knowledge/chunks", requireAuth, async (req, res) => {
+  try {
+    const asst = await prisma.assistant.findUnique({ where: { id: req.params.id } });
+    if (!asst) return res.status(404).json({ error: "Not found" });
+    const client = getQdrantClient();
+    const coll = collectionNameForAssistant(asst.id);
+    const limit = Math.max(1, Math.min(50, Number(req.query?.limit || 24)));
+    let points = [];
+    try {
+      const out = await client.scroll(coll, {
+        limit,
+        with_payload: true,
+        with_vector: false,
+      });
+      points = Array.isArray(out?.points) ? out.points : [];
+    } catch {
+      points = [];
+    }
+    const chunks = points.map((p, idx) => ({
+      id: String(p?.id ?? `chunk-${idx + 1}`),
+      text: String(p?.payload?.text || ""),
+      source: String(p?.payload?.source || "manual"),
+    }));
+    return res.json({ chunks });
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || "Failed to load chunks" });
+  }
+});
+
+app.post("/assistants/:id/knowledge/coach", requireAuth, async (req, res) => {
+  try {
+    const asst = await prisma.assistant.findUnique({ where: { id: req.params.id } });
+    if (!asst) return res.status(404).json({ error: "Not found" });
+    const answers = req.body?.answers && typeof req.body.answers === "object" ? req.body.answers : {};
+    const goal = String(req.body?.goal || "").trim() || "Создать качественную базу знаний для ассистента сайта";
+    const helperPrompt =
+      "Ты коуч настройки базы знаний в админке neeklo. " +
+      "Сначала задай 1 следующий вопрос, который нужен для сбора данных (без воды). " +
+      "Когда данных достаточно — верни готовый черновик знаний (chunk-ready) в markdown. " +
+      "Отвечай JSON-строкой: {\"next_question\":\"...\",\"draft\":\"...\",\"is_ready\":true|false}.";
+
+    const userText = `GOAL:\n${goal}\n\nANSWERS:\n${JSON.stringify(answers, null, 2)}`;
+    let raw = "";
+    if (isOllamaAssistant(asst)) {
+      const out = await generateResponse(getOllamaBase(asst), asst.model || "qwen2.5:7b", [
+        { role: "system", content: helperPrompt },
+        { role: "user", content: userText },
+      ]);
+      raw = String(out.text || "").trim();
+    } else {
+      const apiToken = getAssistantProviderToken(asst);
+      if (!apiToken) return res.status(503).json({ error: "Provider API key not configured" });
+      raw = await chatOpenAiCompatible({
+        baseUrl: asst.baseUrl,
+        apiKey: apiToken,
+        model: asst.model || "gpt-4o-mini",
+        systemPrompt: helperPrompt,
+        messages: [{ role: "user", content: userText }],
+      });
+    }
+    let parsed = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = {
+        next_question: "Уточните: какие 3 ключевые услуги и для какой аудитории?",
+        draft: "",
+        is_ready: false,
+      };
+    }
+    return res.json({
+      next_question: String(parsed?.next_question || ""),
+      draft: String(parsed?.draft || ""),
+      is_ready: Boolean(parsed?.is_ready),
+    });
+  } catch (e) {
+    return res.status(502).json({ error: e?.message || "LLM coach failed" });
+  }
+});
+
 // ─── Assistant knowledge (RAG) — admin ───
 app.post("/assistants/:id/knowledge/text", requireAuth, async (req, res) => {
   const text = (req.body?.text || "").toString();

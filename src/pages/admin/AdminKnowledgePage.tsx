@@ -9,18 +9,34 @@ import type { CmsAssistant } from "@/lib/cms-api";
 import { buildKnowledgeGraph } from "@/lib/knowledge-graph";
 import {
   askKnowledgeHelper,
+  askKnowledgeCoach,
   clearKnowledge,
   fetchOpenAiModels,
   getKnowledgeStats,
   ingestKnowledgeFile,
   ingestKnowledgeText,
+  listKnowledgeChunks,
   type KnowledgeStats,
 } from "@/services/ai.service";
 
 type AssistantRow = CmsAssistant & { provider_api_key?: string | null };
 const OPENAI_MODEL_PRESETS = ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4.1", "o4-mini"];
 
-function GraphPreview({ points, seed }: { points: number; seed: string }) {
+type ChunkItem = { id: string; text: string; source: string };
+
+function GraphPreview({
+  points,
+  seed,
+  chunks,
+  selectedChunkId,
+  onSelectChunk,
+}: {
+  points: number;
+  seed: string;
+  chunks: ChunkItem[];
+  selectedChunkId: string;
+  onSelectChunk: (id: string) => void;
+}) {
   const graph = useMemo(() => buildKnowledgeGraph(points, seed), [points, seed]);
   const byId = useMemo(() => Object.fromEntries(graph.nodes.map((n) => [n.id, n])), [graph.nodes]);
   const [zoom, setZoom] = useState(1);
@@ -104,6 +120,14 @@ function GraphPreview({ points, seed }: { points: number; seed: string }) {
                 }}
                 onMouseEnter={() => setHoveredNode(n.id)}
                 onMouseLeave={() => setHoveredNode("")}
+                onClick={() => {
+                  if (n.id === "core" || !chunks.length) return;
+                  const idx = Number(n.id.replace("n", "")) || 0;
+                  const ch = chunks[idx % chunks.length];
+                  if (ch) onSelectChunk(ch.id);
+                }}
+                stroke={selectedChunkId && n.id !== "core" ? "rgba(148,163,255,0.45)" : "none"}
+                strokeWidth={selectedChunkId ? 0.6 : 0}
               />
             ))}
           </g>
@@ -148,6 +172,13 @@ export default function AdminKnowledgePage() {
   const [importProgress, setImportProgress] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const folderInputRef = useRef<HTMLInputElement | null>(null);
+  const [chunks, setChunks] = useState<ChunkItem[]>([]);
+  const [selectedChunkId, setSelectedChunkId] = useState("");
+  const [coachAnswers, setCoachAnswers] = useState<Record<string, string>>({});
+  const [coachQuestion, setCoachQuestion] = useState("Какая у вас ниша, основная услуга и целевая аудитория?");
+  const [coachInput, setCoachInput] = useState("");
+  const [coachDraft, setCoachDraft] = useState("");
+  const [coachLoading, setCoachLoading] = useState(false);
 
   const current = useMemo(() => assistants.find((a) => a.id === assistantId) || null, [assistants, assistantId]);
   const step1Done = Boolean(model && embedModel && (provider !== "openai" || providerApiKey.trim()));
@@ -160,6 +191,19 @@ export default function AdminKnowledgePage() {
       setStats(data);
     } catch {
       setStats(null);
+    }
+  };
+
+  const refreshChunks = async (id: string) => {
+    try {
+      const out = await listKnowledgeChunks(id, 24);
+      const list = Array.isArray(out?.chunks) ? out.chunks : [];
+      setChunks(list);
+      if (list.length && !selectedChunkId) setSelectedChunkId(list[0].id);
+      if (!list.length) setSelectedChunkId("");
+    } catch {
+      setChunks([]);
+      setSelectedChunkId("");
     }
   };
 
@@ -189,6 +233,7 @@ export default function AdminKnowledgePage() {
         setProviderApiKey(data.provider_api_key || "");
         setOpenaiBaseUrl(data.base_url || "");
         await refreshStats(assistantId);
+        await refreshChunks(assistantId);
       } catch (e) {
         toast.error(axios.isAxiosError(e) ? e.message : "Не удалось загрузить ассистента");
       }
@@ -250,6 +295,7 @@ export default function AdminKnowledgePage() {
       toast.success(`Добавлено фрагментов: ${out.upserted}`);
       setKbText("");
       await refreshStats(assistantId);
+      await refreshChunks(assistantId);
     } catch (e) {
       const msg = axios.isAxiosError(e)
         ? (e.response?.data as { error?: string })?.error || e.message
@@ -269,6 +315,7 @@ export default function AdminKnowledgePage() {
       const out = await ingestKnowledgeFile(assistantId, f);
       toast.success(`Файл: ${out.filename ?? f.name}, фрагментов: ${out.upserted}`);
       await refreshStats(assistantId);
+      await refreshChunks(assistantId);
     } catch (err) {
       const msg = axios.isAxiosError(err)
         ? (err.response?.data as { error?: string })?.error || err.message
@@ -301,6 +348,7 @@ export default function AdminKnowledgePage() {
       }
     }
     await refreshStats(assistantId);
+    await refreshChunks(assistantId);
     setBusy(false);
     setImportProgress(`Готово: успешно ${ok}, ошибок ${fail}`);
     if (!fail) toast.success(`Импортировано Obsidian файлов: ${ok}`);
@@ -321,6 +369,7 @@ export default function AdminKnowledgePage() {
       await clearKnowledge(assistantId);
       toast.success("База знаний очищена");
       await refreshStats(assistantId);
+      await refreshChunks(assistantId);
     } catch (e) {
       const msg = axios.isAxiosError(e)
         ? (e.response?.data as { error?: string })?.error || e.message
@@ -352,6 +401,56 @@ export default function AdminKnowledgePage() {
       setHelperLoading(false);
     }
   };
+
+  const runCoach = async () => {
+    if (!assistantId) return toast.error("Сначала выберите ассистента");
+    setCoachLoading(true);
+    try {
+      const payload = { ...coachAnswers };
+      if (coachQuestion.trim() && coachInput.trim()) payload[coachQuestion.trim()] = coachInput.trim();
+      const out = await askKnowledgeCoach({
+        assistantId,
+        answers: payload,
+      });
+      setCoachAnswers(payload);
+      setCoachQuestion(out.next_question || "");
+      setCoachInput("");
+      setCoachDraft(out.draft || "");
+      if (out.is_ready && out.draft) {
+        toast.success("Черновик базы знаний готов");
+      }
+    } catch (e) {
+      const msg = axios.isAxiosError(e)
+        ? (e.response?.data as { error?: string })?.error || e.message
+        : (e as Error).message;
+      toast.error(msg);
+    } finally {
+      setCoachLoading(false);
+    }
+  };
+
+  const saveCoachDraftToKb = async () => {
+    if (!assistantId || !coachDraft.trim()) return;
+    setBusy(true);
+    try {
+      const out = await ingestKnowledgeText(assistantId, coachDraft);
+      toast.success(`Черновик добавлен в KB, фрагментов: ${out.upserted}`);
+      await refreshStats(assistantId);
+      await refreshChunks(assistantId);
+    } catch (e) {
+      const msg = axios.isAxiosError(e)
+        ? (e.response?.data as { error?: string })?.error || e.message
+        : (e as Error).message;
+      toast.error(msg);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const selectedChunk = useMemo(
+    () => chunks.find((c) => c.id === selectedChunkId) || null,
+    [chunks, selectedChunkId],
+  );
 
   if (loading) return <p className="text-muted-foreground">Загрузка…</p>;
 
@@ -539,7 +638,61 @@ export default function AdminKnowledgePage() {
             </p>
           </div>
 
-          <GraphPreview points={stats?.points ?? 0} seed={assistantId || "kb"} />
+          <GraphPreview
+            points={stats?.points ?? 0}
+            seed={assistantId || "kb"}
+            chunks={chunks}
+            selectedChunkId={selectedChunkId}
+            onSelectChunk={setSelectedChunkId}
+          />
+          <div className="rounded-2xl border border-[#E8E6E0] bg-white p-4">
+            <p className="text-sm font-semibold">Выбранный chunk</p>
+            {selectedChunk ? (
+              <>
+                <p className="mt-2 text-xs text-muted-foreground">Источник: {selectedChunk.source}</p>
+                <div className="mt-2 max-h-40 overflow-auto rounded-lg border border-[#E8E6E0] bg-[#FAFAF8] p-3 text-sm whitespace-pre-wrap">
+                  {selectedChunk.text || "(пустой текст)"}
+                </div>
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">Кликните по узлу графа, чтобы увидеть chunk.</p>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-[#E8E6E0] bg-white p-6">
+            <h2 className="font-heading text-lg font-extrabold">LLM-конструктор базы знаний</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Помощник задаёт вопросы по шагам и сам формирует черновик базы знаний.
+            </p>
+            <div className="mt-3 rounded-xl border border-[#E8E6E0] bg-[#FAFAF8] p-3 text-sm">
+              <p className="font-medium">Следующий вопрос</p>
+              <p className="mt-1">{coachQuestion || "Нажмите «Продолжить», чтобы получить следующий вопрос"}</p>
+            </div>
+            <div className="mt-3 space-y-2">
+              <Label>Ваш ответ</Label>
+              <textarea
+                className="min-h-[90px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+                value={coachInput}
+                onChange={(e) => setCoachInput(e.target.value)}
+                placeholder="Опишите данные для базы знаний..."
+              />
+              <Button type="button" onClick={runCoach} disabled={coachLoading}>
+                {coachLoading ? "LLM формирует..." : "Продолжить с LLM-коучем"}
+              </Button>
+            </div>
+            <div className="mt-3 space-y-2">
+              <Label>Черновик базы знаний</Label>
+              <textarea
+                className="min-h-[160px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+                value={coachDraft}
+                onChange={(e) => setCoachDraft(e.target.value)}
+                placeholder="Здесь появится LLM-черновик для индексации..."
+              />
+              <Button type="button" variant="secondary" onClick={saveCoachDraftToKb} disabled={!coachDraft.trim() || busy}>
+                Добавить черновик в базу знаний (создать chunk)
+              </Button>
+            </div>
+          </div>
 
           <div className="rounded-2xl border border-[#E8E6E0] bg-white p-6">
             <h2 className="font-heading text-lg font-extrabold">LLM-помощник по настройке</h2>
