@@ -77,6 +77,45 @@ async function createAssistantEmbedding(assistant, text) {
   });
 }
 
+async function reindexAssistantKnowledge(assistant) {
+  const client = getQdrantClient();
+  const coll = collectionNameForAssistant(assistant.id);
+  const points = [];
+  let nextOffset = undefined;
+  for (let i = 0; i < 20; i += 1) {
+    const out = await client.scroll(coll, {
+      limit: 128,
+      with_payload: true,
+      with_vector: false,
+      offset: nextOffset,
+    });
+    const batch = Array.isArray(out?.points) ? out.points : [];
+    points.push(...batch);
+    if (!out?.next_page_offset || batch.length === 0) break;
+    nextOffset = out.next_page_offset;
+  }
+  const chunks = points
+    .map((p) => ({
+      text: String(p?.payload?.text || "").trim(),
+      source: String(p?.payload?.source || "reindexed"),
+    }))
+    .filter((c) => c.text);
+  if (!chunks.length) return { reindexed: 0, collection: coll };
+
+  await client.deleteCollection(coll).catch(() => undefined);
+  const out = await upsertChunks({
+    client,
+    collectionName: coll,
+    ollamaBase: getOllamaBase(assistant),
+    embedModel: assistant.embedModel || "nomic-embed-text",
+    assistantId: assistant.id,
+    chunks,
+    source: "reindex",
+    embedText: (text) => createAssistantEmbedding(assistant, text),
+  });
+  return { reindexed: out?.upserted || 0, collection: coll };
+}
+
 
 const prisma = new PrismaClient();
 
@@ -1660,7 +1699,16 @@ app.post("/chat", async (req, res) => {
     if (useOllama) {
       const ollamaStarted = Date.now();
       console.log("BEFORE QUEUE");
-      const result = await chatWithRag({ assistant: asst, messages });
+      let result = await chatWithRag({ assistant: asst, messages });
+      const ragError = String(result?.ragDiagnostics?.contextError || "");
+      if (!result.usedContext && kbPoints > 0 && /bad request/i.test(ragError)) {
+        const repaired = await reindexAssistantKnowledge(asst);
+        result = await chatWithRag({ assistant: asst, messages });
+        result.ragDiagnostics = {
+          ...(result.ragDiagnostics || {}),
+          autoReindex: repaired,
+        };
+      }
       console.log("AFTER QUEUE");
       console.log("OLLAMA DIRECT TIME:", Date.now() - ollamaStarted);
       const { reply, usedContext, promptTokens, completionTokens } = result;
@@ -1706,7 +1754,7 @@ app.post("/chat", async (req, res) => {
       return res.status(503).json({ error: "Provider API key not configured (or switch assistant provider to ollama)" });
     }
 
-    const result = await chatWithRag({
+    let result = await chatWithRag({
       assistant: asst,
       messages,
       embedText: (t) =>
@@ -1727,6 +1775,35 @@ app.post("/chat", async (req, res) => {
         return { text };
       },
     });
+    const ragError = String(result?.ragDiagnostics?.contextError || "");
+    if (!result.usedContext && kbPoints > 0 && /bad request/i.test(ragError)) {
+      const repaired = await reindexAssistantKnowledge(asst);
+      result = await chatWithRag({
+        assistant: asst,
+        messages,
+        embedText: (t) =>
+          createOpenAiCompatibleEmbedding({
+            baseUrl: asst.baseUrl,
+            apiKey: apiToken,
+            model: asst.embedModel || "text-embedding-3-small",
+            text: t,
+          }),
+        generateText: async ({ systemContent, queryText }) => {
+          const text = await chatOpenAiCompatible({
+            baseUrl: asst.baseUrl,
+            apiKey: apiToken,
+            model: asst.model,
+            systemPrompt: systemContent,
+            messages: [{ role: "user", content: queryText }],
+          });
+          return { text };
+        },
+      });
+      result.ragDiagnostics = {
+        ...(result.ragDiagnostics || {}),
+        autoReindex: repaired,
+      };
+    }
     const text = result.reply;
     if (crmChatId && isUuid(crmChatId)) {
       try {
