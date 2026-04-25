@@ -536,7 +536,7 @@ export async function chatWithRag({
 
   const baseSystem =
     assistant.systemPrompt ||
-    "You are a helpful assistant. Answer clearly. Prefer facts from CONTEXT when relevant.";
+    "Ты helpful assistant. Отвечай только на русском языке. Отвечай ясно и по существу. Используй факты из CONTEXT, когда они релевантны.";
 
   const ctx =
     contextBlock.trim() ||
@@ -558,6 +558,7 @@ ${queryText}
 === END ===
 
 Правила ответа:
+0) Всегда отвечай только на русском языке.
 1) Если в CONTEXT есть конкретные цифры, сроки, цены или условия — обязательно используй их в ответе.
 2) Не уходи в общие формулировки, если в CONTEXT уже есть релевантный факт.
 3) Если спрашивают стоимость/срок — отвечай коротко и по делу, в формате "что/сколько/за сколько времени".
