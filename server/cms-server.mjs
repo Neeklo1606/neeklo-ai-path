@@ -598,6 +598,71 @@ function detectPrototypeIntent(text) {
   return /(прототип|лендинг|landing|показать\s+решение|пример\s+сайта|собери\s+сайт|создай\s+сайт|макет\s+сайта)/i.test(q);
 }
 
+function inferKnowledgeTaxonomyFromText(source, text) {
+  const src = String(source || "manual");
+  const body = String(text || "");
+  const low = `${src}\n${body}`.toLowerCase();
+  const has = (re) => re.test(low);
+
+  let category = "";
+  if (has(/\b(video|reels|tiktok|shorts|ролик|видео|аватар|промо)\b/u)) category = "AI-видео";
+  else if (has(/\b(лендинг|сайт|landing|react|seo|h1|метрика)\b/u)) category = "Сайты";
+  else if (has(/\b(bot|бот|telegram|mini app|мини.?апп|ассистент)\b/u)) category = "Боты и AI-ассистенты";
+  else if (has(/\b(n8n|make|zapier|crm|amocrm|битрикс|интеграц|автоматиз)\b/u)) category = "Автоматизация";
+  else if (has(/\b(цена|стоим|прайс|от \d|₽|руб|k\b|пакет)\b/u)) category = "Цены и пакеты";
+  else if (has(/\b(этап|договор|предоплат|гарант|срок|оплат)\b/u)) category = "Процесс работы";
+  else if (has(/\b(faq|вопрос|ответ|q:|a:)\b/u)) category = "FAQ";
+  else if (has(/\b(команда|ceo|developer|project manager|продаж)\b/u)) category = "Команда";
+  else if (has(/\b(контакт|telegram|whatsapp|написать|связа)\b/u)) category = "Контакты";
+
+  let section = "";
+  if (src.startsWith("file:")) {
+    const fileName = src.replace(/^file:/, "");
+    const pieces = fileName.split(/[\\/]/g).filter(Boolean);
+    if (pieces.length > 1) section = pieces[pieces.length - 2];
+  }
+  if (!section && has(/\b(прайс|price|стоим|цена|пакет)\b/u)) section = "Прайс";
+  if (!section && has(/\b(faq|вопрос|ответ)\b/u)) section = "FAQ";
+  if (!section && has(/\b(этап|договор|оплат|гарант)\b/u)) section = "Регламент";
+  if (!section && has(/\b(кейс|пример|ниша)\b/u)) section = "Кейсы";
+  if (!section && has(/\b(видео|ролик|reels|shorts)\b/u)) section = "Видео";
+  if (!section) section = "Общее";
+
+  const tags = [];
+  if (has(/\b(telegram|телеграм)\b/u)) tags.push("telegram");
+  if (has(/\b(crm|amocrm|битрикс)\b/u)) tags.push("crm");
+  if (has(/\b(n8n|make|zapier)\b/u)) tags.push("automation");
+  if (has(/\b(video|видео|ролик|reels|shorts)\b/u)) tags.push("video");
+  if (has(/\b(лендинг|сайт|seo|react)\b/u)) tags.push("web");
+  if (has(/\b(ai|gpt|ассистент|llm)\b/u)) tags.push("ai");
+  if (has(/\b(цена|стоим|прайс|₽|руб)\b/u)) tags.push("pricing");
+
+  return { category, section, tags: [...new Set(tags)] };
+}
+
+function buildDerivedNodeFromChunkPayload(payload, idx, pointId = "") {
+  const source = String(payload?.source || "manual");
+  const text = String(payload?.text || "");
+  const taxonomy = inferKnowledgeTaxonomyFromText(source, text);
+  const title = source.startsWith("file:") ? source.replace(/^file:/, "") : `chunk-${idx + 1}`;
+  const slug = title
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s_-]/gu, " ")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 120) || `chunk-${idx + 1}`;
+  return {
+    id: `${slug}-${idx + 1}`,
+    chunk_id: String(pointId || ""),
+    title,
+    source,
+    category: taxonomy.category,
+    section: taxonomy.section,
+    tags: taxonomy.tags,
+    snippet: text.slice(0, 900).trim(),
+  };
+}
+
 function getPublicSiteBase() {
   const raw = String(process.env.PUBLIC_SITE_BASE || "https://neeklo.ru").trim();
   return raw.replace(/\/$/, "");
@@ -1534,6 +1599,7 @@ app.get("/assistants/:id/knowledge/graph", requireAuth, async (req, res) => {
         section: p.section ? String(p.section) : "",
         tags: Array.isArray(p.tags) ? p.tags.map((t) => String(t || "")).filter(Boolean) : [],
         snippet: "",
+        chunk_id: "",
       }))
       .filter((n) => n.id);
 
@@ -1553,67 +1619,10 @@ app.get("/assistants/:id/knowledge/graph", requireAuth, async (req, res) => {
       } catch {
         chunkPoints = [];
       }
-      const inferFromChunk = (payload, idx) => {
-        const source = String(payload?.source || "manual");
-        const text = String(payload?.text || "");
-        const low = `${source}\n${text}`.toLowerCase();
-        const has = (re) => re.test(low);
-
-        let category = "";
-        if (has(/\b(video|reels|tiktok|shorts|ролик|видео|аватар|промо)\b/u)) category = "AI-видео";
-        else if (has(/\b(лендинг|сайт|landing|react|seo|h1|метрика)\b/u)) category = "Сайты";
-        else if (has(/\b(bot|бот|telegram|mini app|мини.?апп|ассистент)\b/u)) category = "Боты и AI-ассистенты";
-        else if (has(/\b(n8n|make|zapier|crm|amocrm|битрикс|интеграц|автоматиз)\b/u)) category = "Автоматизация";
-        else if (has(/\b(цена|стоим|прайс|от \d|₽|руб|k\b|пакет)\b/u)) category = "Цены и пакеты";
-        else if (has(/\b(этап|договор|предоплат|гарант|срок|оплат)\b/u)) category = "Процесс работы";
-        else if (has(/\b(faq|вопрос|ответ|q:|a:)\b/u)) category = "FAQ";
-        else if (has(/\b(команда|ceo|developer|project manager|продаж)\b/u)) category = "Команда";
-        else if (has(/\b(контакт|telegram|whatsapp|написать|связа)\b/u)) category = "Контакты";
-
-        let section = "";
-        if (source.startsWith("file:")) {
-          const fileName = source.replace(/^file:/, "");
-          const pieces = fileName.split(/[\\/]/g).filter(Boolean);
-          if (pieces.length > 1) section = pieces[pieces.length - 2];
-        }
-        if (!section && has(/\b(прайс|price|стоим|цена|пакет)\b/u)) section = "Прайс";
-        if (!section && has(/\b(faq|вопрос|ответ)\b/u)) section = "FAQ";
-        if (!section && has(/\b(этап|договор|оплат|гарант)\b/u)) section = "Регламент";
-        if (!section && has(/\b(кейс|пример|ниша)\b/u)) section = "Кейсы";
-        if (!section && has(/\b(видео|ролик|reels|shorts)\b/u)) section = "Видео";
-        if (!section) section = "Общее";
-
-        const tags = [];
-        if (has(/\b(telegram|телеграм)\b/u)) tags.push("telegram");
-        if (has(/\b(crm|amocrm|битрикс)\b/u)) tags.push("crm");
-        if (has(/\b(n8n|make|zapier)\b/u)) tags.push("automation");
-        if (has(/\b(video|видео|ролик|reels|shorts)\b/u)) tags.push("video");
-        if (has(/\b(лендинг|сайт|seo|react)\b/u)) tags.push("web");
-        if (has(/\b(ai|gpt|ассистент|llm)\b/u)) tags.push("ai");
-        if (has(/\b(цена|стоим|прайс|₽|руб)\b/u)) tags.push("pricing");
-
-        const title = source.startsWith("file:") ? source.replace(/^file:/, "") : `chunk-${idx + 1}`;
-        const slug = title
-          .toLowerCase()
-          .replace(/[^\p{L}\p{N}\s_-]/gu, " ")
-          .trim()
-          .replace(/\s+/g, "-")
-          .slice(0, 120) || `chunk-${idx + 1}`;
-        return {
-          id: `${slug}-${idx + 1}`,
-          title,
-          source,
-          category,
-          section,
-          tags: [...new Set(tags)],
-          snippet: text.slice(0, 900).trim(),
-        };
-      };
-
       const derived = chunkPoints
         .map((p, idx) => {
           const payload = p?.payload || {};
-          return inferFromChunk(payload, idx);
+          return buildDerivedNodeFromChunkPayload(payload, idx, String(p?.id || ""));
         });
       nodesAll = derived;
       // Build grouped links by category/section for better structured clusters.
@@ -1738,6 +1747,12 @@ app.post("/assistants/:id/knowledge/text", requireAuth, async (req, res) => {
     });
     const graphCollection = collectionNameForKnowledgeGraph(asst.id);
     const note = parseKnowledgeNoteFromMarkdown(text, "manual");
+    if (note) {
+      const inferred = inferKnowledgeTaxonomyFromText("manual", text);
+      if (!note.category) note.category = inferred.category || null;
+      if (!note.section) note.section = inferred.section || null;
+      if (!Array.isArray(note.tags) || !note.tags.length) note.tags = inferred.tags || [];
+    }
     let graphOut = { nodes: 0, edges: 0 };
     if (note) {
       graphOut = await upsertKnowledgeGraph({
@@ -1778,6 +1793,12 @@ app.post("/assistants/:id/knowledge/upload", requireAuth, uploadKb.single("file"
     const graphCollection = collectionNameForKnowledgeGraph(asst.id);
     const source = `file:${f.originalname}`;
     const note = parseKnowledgeNoteFromMarkdown(raw, source);
+    if (note) {
+      const inferred = inferKnowledgeTaxonomyFromText(source, raw);
+      if (!note.category) note.category = inferred.category || null;
+      if (!note.section) note.section = inferred.section || null;
+      if (!Array.isArray(note.tags) || !note.tags.length) note.tags = inferred.tags || [];
+    }
     let graphOut = { nodes: 0, edges: 0 };
     if (note) {
       graphOut = await upsertKnowledgeGraph({
@@ -1791,6 +1812,100 @@ app.post("/assistants/:id/knowledge/upload", requireAuth, uploadKb.single("file"
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message || "Upload ingest failed" });
+  }
+});
+
+app.delete("/assistants/:id/knowledge/chunks/:chunkId", requireAuth, async (req, res) => {
+  try {
+    const asst = await prisma.assistant.findUnique({ where: { id: req.params.id } });
+    if (!asst) return res.status(404).json({ error: "Not found" });
+    const chunkId = String(req.params.chunkId || "").trim();
+    if (!chunkId) return res.status(400).json({ error: "chunkId required" });
+    const coll = collectionNameForAssistant(asst.id);
+    const client = getQdrantClient();
+    await client.delete(coll, { wait: true, points: [chunkId] }).catch(() => undefined);
+    return res.json({ ok: true, deleted: chunkId });
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || "Chunk delete failed" });
+  }
+});
+
+app.delete("/assistants/:id/knowledge/topic", requireAuth, async (req, res) => {
+  try {
+    const asst = await prisma.assistant.findUnique({ where: { id: req.params.id } });
+    if (!asst) return res.status(404).json({ error: "Not found" });
+    const category = String(req.body?.category || "").trim();
+    const section = String(req.body?.section || "").trim();
+    const tag = String(req.body?.tag || "").trim();
+    if (!category && !section && !tag) {
+      return res.status(400).json({ error: "Pass at least one filter: category, section, or tag" });
+    }
+    const client = getQdrantClient();
+    const graphColl = collectionNameForKnowledgeGraph(asst.id);
+    const chunkColl = collectionNameForAssistant(asst.id);
+
+    // Remove from graph collection (real nodes/edges)
+    let graphPoints = [];
+    try {
+      const out = await client.scroll(graphColl, { limit: 4000, with_payload: true, with_vector: false });
+      graphPoints = Array.isArray(out?.points) ? out.points : [];
+    } catch {
+      graphPoints = [];
+    }
+    const matchNode = (p) => {
+      if (p?.kind !== "node") return false;
+      const pTags = Array.isArray(p?.tags) ? p.tags.map((x) => String(x)) : [];
+      if (category && String(p?.category || "") !== category) return false;
+      if (section && String(p?.section || "") !== section) return false;
+      if (tag && !pTags.includes(tag)) return false;
+      return true;
+    };
+    const nodeSlugs = new Set(
+      graphPoints.map((x) => x?.payload || null).filter(matchNode).map((p) => String(p.slug || "")).filter(Boolean),
+    );
+    const graphIdsToDelete = graphPoints
+      .map((x) => x?.payload || null)
+      .filter((p) => {
+        if (!p) return false;
+        if (p.kind === "node" && nodeSlugs.has(String(p.slug || ""))) return true;
+        if (p.kind === "edge" && (nodeSlugs.has(String(p.from || "")) || nodeSlugs.has(String(p.to || "")))) return true;
+        return false;
+      })
+      .map((p) => (p.kind === "node" ? `node:${String(p.slug || "")}` : `edge:${String(p.from || "")}->${String(p.to || "")}`));
+    if (graphIdsToDelete.length) {
+      await client.delete(graphColl, { wait: true, points: graphIdsToDelete }).catch(() => undefined);
+    }
+
+    // Remove matching fallback chunks from chunk collection as well
+    let chunkPoints = [];
+    try {
+      const out = await client.scroll(chunkColl, { limit: 4000, with_payload: true, with_vector: false });
+      chunkPoints = Array.isArray(out?.points) ? out.points : [];
+    } catch {
+      chunkPoints = [];
+    }
+    const chunkIdsToDelete = chunkPoints
+      .map((p, idx) => ({ p, idx, payload: p?.payload || {} }))
+      .filter(({ payload }) => {
+        const inf = inferKnowledgeTaxonomyFromText(payload?.source, payload?.text);
+        if (category && inf.category !== category) return false;
+        if (section && inf.section !== section) return false;
+        if (tag && !inf.tags.includes(tag)) return false;
+        return true;
+      })
+      .map(({ p }) => p?.id)
+      .filter(Boolean);
+    if (chunkIdsToDelete.length) {
+      await client.delete(chunkColl, { wait: true, points: chunkIdsToDelete }).catch(() => undefined);
+    }
+
+    return res.json({
+      ok: true,
+      deleted_graph_points: graphIdsToDelete.length,
+      deleted_chunks: chunkIdsToDelete.length,
+    });
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || "Topic delete failed" });
   }
 });
 

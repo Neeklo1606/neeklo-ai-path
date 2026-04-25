@@ -9,6 +9,8 @@ import { adminApi } from "@/lib/admin-api";
 import type { CmsAssistant } from "@/lib/cms-api";
 import {
   askKnowledgeCoach,
+  deleteKnowledgeChunk,
+  deleteKnowledgeTopic,
   getKnowledgeGraph,
   getKnowledgeStats,
   ingestKnowledgeText,
@@ -202,6 +204,45 @@ export default function AdminKnowledgeGraphPage() {
     }
   };
 
+  const removeSelectedChunk = async () => {
+    if (!assistantId) return toast.error("Выберите ассистента");
+    if (!selectedNode?.chunk_id) return toast.error("У этого узла нет прямой привязки к чанку");
+    try {
+      await deleteKnowledgeChunk(assistantId, selectedNode.chunk_id);
+      toast.success("Чанк удален");
+      setSelectedNodeId("");
+      await refreshAll(assistantId);
+    } catch (e) {
+      const msg = axios.isAxiosError(e)
+        ? (e.response?.data as { error?: string })?.error || e.message
+        : (e as Error).message;
+      toast.error(msg);
+    }
+  };
+
+  const removeTopicByFilters = async () => {
+    if (!assistantId) return toast.error("Выберите ассистента");
+    if (!categoryFilter && !sectionFilter && !tagFilter) {
+      return toast.error("Выберите категорию/раздел/тег для удаления темы");
+    }
+    if (!window.confirm("Удалить все чанки и узлы по текущим фильтрам? Действие необратимо.")) return;
+    try {
+      const out = await deleteKnowledgeTopic(assistantId, {
+        category: categoryFilter || undefined,
+        section: sectionFilter || undefined,
+        tag: tagFilter || undefined,
+      });
+      toast.success(`Удалено: chunks ${out.deleted_chunks}, graph ${out.deleted_graph_points}`);
+      setSelectedNodeId("");
+      await refreshAll(assistantId);
+    } catch (e) {
+      const msg = axios.isAxiosError(e)
+        ? (e.response?.data as { error?: string })?.error || e.message
+        : (e as Error).message;
+      toast.error(msg);
+    }
+  };
+
   if (loading) return <p className="text-muted-foreground">Загрузка…</p>;
 
   return (
@@ -253,6 +294,11 @@ export default function AdminKnowledgeGraphPage() {
               <option value="">Все теги</option>
               {facets.tags.map((x) => <option key={x} value={x}>{x}</option>)}
             </select>
+          </div>
+          <div className="mb-3 flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={removeTopicByFilters}>
+              Удалить тему по фильтрам
+            </Button>
           </div>
 
           <div
@@ -368,6 +414,7 @@ export default function AdminKnowledgeGraphPage() {
               <>
                 <p className="mt-1 text-xs text-muted-foreground">Название: {selectedNode.title}</p>
                 <p className="mt-1 text-xs text-muted-foreground">Slug: {selectedNode.id}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Chunk ID: {selectedNode.chunk_id || "—"}</p>
                 <p className="mt-1 text-xs text-muted-foreground">Источник: {selectedNode.source}</p>
                 <p className="mt-1 text-xs text-muted-foreground">Категория: {selectedNode.category || "—"}</p>
                 <p className="mt-1 text-xs text-muted-foreground">Раздел: {selectedNode.section || "—"}</p>
@@ -378,6 +425,9 @@ export default function AdminKnowledgeGraphPage() {
                   <p className="mb-1 text-xs text-muted-foreground">Содержимое чанка:</p>
                   {selectedNode.snippet?.trim() ? selectedNode.snippet : "Для этого узла текст пока недоступен."}
                 </div>
+                <Button type="button" variant="outline" size="sm" className="mt-2" onClick={removeSelectedChunk}>
+                  Удалить выбранный чанк
+                </Button>
               </>
             ) : (
               <p className="mt-1 text-xs text-muted-foreground">Кликните на узел графа.</p>

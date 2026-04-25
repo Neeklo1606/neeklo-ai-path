@@ -90,8 +90,27 @@ export async function listKnowledgeChunks(assistantId: string, limit = 24): Prom
   return data;
 }
 
+export async function deleteKnowledgeChunk(assistantId: string, chunkId: string): Promise<{ ok: boolean; deleted: string }> {
+  const { data } = await adminApi.delete<{ ok: boolean; deleted: string }>(
+    `/assistants/${assistantId}/knowledge/chunks/${encodeURIComponent(chunkId)}`,
+  );
+  return data;
+}
+
+export async function deleteKnowledgeTopic(
+  assistantId: string,
+  filters: { category?: string; section?: string; tag?: string },
+): Promise<{ ok: boolean; deleted_graph_points: number; deleted_chunks: number }> {
+  const { data } = await adminApi.delete<{ ok: boolean; deleted_graph_points: number; deleted_chunks: number }>(
+    `/assistants/${assistantId}/knowledge/topic`,
+    { data: filters },
+  );
+  return data;
+}
+
 export type KnowledgeGraphNode = {
   id: string;
+  chunk_id?: string;
   title: string;
   source: string;
   category: string;

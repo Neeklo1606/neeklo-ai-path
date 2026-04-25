@@ -51,6 +51,10 @@ function slugifyTitle(text) {
     .slice(0, 120) || "untitled";
 }
 
+function shortHash(text) {
+  return crypto.createHash("sha1").update(String(text || ""), "utf8").digest("hex").slice(0, 10);
+}
+
 function parseFrontmatter(raw) {
   const src = String(raw || "").replace(/\r\n/g, "\n");
   if (!src.startsWith("---\n")) {
@@ -106,7 +110,12 @@ export function parseKnowledgeNoteFromMarkdown(rawText, source = "manual") {
     .trim();
   const sourceBase = String(source || "manual").replace(/^file:/, "").replace(/\.md$/i, "").trim();
   const title = firstHeading || String(meta.title || sourceBase || "Untitled");
-  const slug = slugifyTitle(String(meta.slug || title));
+  let slug = slugifyTitle(String(meta.slug || title));
+  // Prevent collisions for repeated "manual"/"untitled" notes:
+  // keep stable uniqueness by content hash when source/title is generic.
+  if (!meta.slug && /^(manual|untitled)$/i.test(slug)) {
+    slug = `${slug}-${shortHash(src)}`;
+  }
   const category = String(meta.category || meta.topic || "").trim() || null;
   const section = String(meta.section || meta.group || "").trim() || null;
   const tags = Array.isArray(meta.tags)
