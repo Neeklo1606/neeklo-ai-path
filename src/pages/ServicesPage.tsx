@@ -1,211 +1,164 @@
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { usePageTitle } from "@/hooks/usePageTitle";
-import { ArrowRight } from "lucide-react";
-import { cmsPageBySlug } from "@/lib/cms-api";
-import { parseServicesGrid } from "@/lib/cms-parsers";
-import { useLanguage } from "@/hooks/useLanguage";
-import { pick } from "@/lib/cms-blocks";
-import { mediaDebugClassName } from "@/lib/cms-media";
-import { cn } from "@/lib/utils";
 
-const ServicesPage = () => {
+interface ServiceCard {
+  slug: string;
+  emoji: string;
+  badge?: string;
+  title: string;
+  desc: string;
+  includes: string[];
+  tags: string[];
+  price: string;
+  duration: string;
+}
+
+const services: ServiceCard[] = [
+  {
+    slug: "ai-video",
+    emoji: "🎬",
+    badge: "ХИТ",
+    title: "AI-видеоролики",
+    desc: "Рекламные ролики, reels и презентации с нейросетями без съёмочной группы.",
+    includes: ["Сценарий и раскадровка", "Генерация (Runway / Kling / HeyGen)", "Монтаж и озвучка"],
+    tags: ["Runway", "HeyGen", "Kling"],
+    price: "от 25 000 ₽",
+    duration: "от 3 дней",
+  },
+  {
+    slug: "web",
+    emoji: "🌐",
+    title: "Сайт с админ-панелью",
+    desc: "Лендинг или корпоративный сайт с AI-ассистентом, SEO и удобной CMS.",
+    includes: ["Дизайн и вёрстка (React)", "AI-ассистент на сайте", "CMS для редактирования"],
+    tags: ["React", "Next.js", "Tailwind"],
+    price: "от 95 000 ₽",
+    duration: "от 14 дней",
+  },
+  {
+    slug: "ai-assistant",
+    emoji: "🤖",
+    title: "AI-ассистент",
+    desc: "Отвечает на вопросы, обрабатывает заявки и работает 24/7 вместо менеджера.",
+    includes: ["GPT-4 / Claude база", "Квалификация лидов", "CRM-интеграция"],
+    tags: ["GPT-4", "Claude", "RAG"],
+    price: "от 50 000 ₽",
+    duration: "от 7 дней",
+  },
+  {
+    slug: "telegram",
+    emoji: "✈️",
+    badge: "POPULAR",
+    title: "Telegram-бот / Mini App",
+    desc: "AI-продавец в Telegram, который квалифицирует заявки и не теряет клиентов.",
+    includes: ["AI-ответы в диалоге", "Квалификация лидов", "Mini App (опционально)"],
+    tags: ["Telegram", "Python", "Mini App"],
+    price: "от 40 000 ₽",
+    duration: "от 7 дней",
+  },
+  {
+    slug: "education",
+    emoji: "🧠",
+    title: "Обучение по нейросетям",
+    desc: "Практический курс для предпринимателей и команд. Внедряешь AI — сразу в работу.",
+    includes: ["Под вашу нишу и задачи", "ChatGPT, Claude, Midjourney", "Промпты и шаблоны"],
+    tags: ["ChatGPT", "Claude", "Midjourney"],
+    price: "от 8 900 ₽",
+    duration: "от 1 дня",
+  },
+];
+
+export default function ServicesPage() {
   const navigate = useNavigate();
-  const { lang } = useLanguage();
-  const locale = lang === "en" ? "en" : "ru";
-
-  const q = useQuery({
-    queryKey: ["cms", "page", "services", locale],
-    queryFn: () => cmsPageBySlug("services", locale),
-  });
-
-  const grid = q.data ? parseServicesGrid(q.data) : null;
-  const services = grid?.length ? grid : null;
-  const meta = q.data?.meta ?? {};
-  const pageTitle = (q.data?.title ?? "").trim();
-  const pageSubtitle = pick(meta.subtitle, lang).trim();
-  const footerTitle = pick(meta.footerTitle, lang).trim();
-  const footerSubtitle = pick(meta.footerSubtitle, lang).trim();
-  const footerButton = pick(meta.footerButton, lang).trim();
-  const orderLabel = pick(meta.orderLabel, lang).trim();
-
-  const rowInvalid =
-    services?.some((s) => {
-      const iconSrc = s.iconSrc;
-      return (
-        !iconSrc ||
-        !pick(s.name, lang).trim() ||
-        !pick(s.shortDesc, lang).trim() ||
-        !pick(s.priceLine, lang).trim() ||
-        !pick(s.durationLine, lang).trim()
-      );
-    }) ?? true;
-
-  const cmsIncomplete =
-    !!q.data &&
-    !!services?.length &&
-    (!pageTitle ||
-      !pageSubtitle ||
-      !footerTitle ||
-      !footerSubtitle ||
-      !footerButton ||
-      !orderLabel ||
-      rowInvalid);
-
-  usePageTitle(q.data?.title ?? "");
-
-  if (q.isLoading) {
-    return (
-      <div className="min-h-screen bg-white px-5 pt-12 pb-[100px] md:px-10 flex items-center justify-center" aria-busy="true">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E0E0E0] border-t-[#0D0D0B]" />
-      </div>
-    );
-  }
-
-  if (q.isError || !services?.length || cmsIncomplete) {
-    return (
-      <div className="min-h-screen bg-white px-5 pt-12 pb-[100px] md:px-10">
-        <p className="font-body text-destructive break-words">{q.isError ? (q.error as Error).message : "CMS"}</p>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white" style={{ paddingBottom: 100 }}>
-      <div className="px-5 pt-8 pb-2 max-w-[1280px] mx-auto md:px-10">
-        <h1 className="font-heading" style={{ fontSize: 28, fontWeight: 800, color: "#0D0D0B" }}>
-          {pageTitle}
-        </h1>
-        <p className="font-body mt-1" style={{ fontSize: 15, color: "#6A6860" }}>
-          {pageSubtitle}
-        </p>
-      </div>
+    <div style={{ background: "#0A0A0A", color: "#F0EFE9", minHeight: "100vh" }}>
+      {/* Hero */}
+      <section style={{ padding: "80px 0 60px", position: "relative" }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)", backgroundSize: "60px 60px", pointerEvents: "none" }} />
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", position: "relative" }}>
+          <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: "0.14em", color: "rgba(240,239,233,0.4)", textTransform: "uppercase", marginBottom: 16 }}>УСЛУГИ</p>
+          <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(36px, 6vw, 64px)", letterSpacing: "-1.5px", lineHeight: 1.05, color: "#F0EFE9", marginBottom: 16 }}>
+            Делаем AI-продукты<br /><span style={{ color: "#C5F04A" }}>под ключ</span>
+          </h1>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontWeight: 300, fontSize: 17, color: "rgba(240,239,233,0.55)", maxWidth: 500, lineHeight: 1.6 }}>
+            Сайты, боты, AI-ассистенты и видео с нейросетями. От идеи до результата.
+          </p>
+        </div>
+      </section>
 
-      <div className="px-5 mt-6 max-w-[1280px] mx-auto md:px-10">
-        <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
-          {services.map((s) => {
-            const iconSrc = s.iconSrc;
-            return (
+      {/* Grid */}
+      <section style={{ padding: "0 0 80px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 12 }}>
+            {services.map((s) => (
               <div
-                key={s.id}
-                className="relative rounded-2xl cursor-pointer hover:-translate-y-[2px] active:scale-[0.98] transition-all duration-200"
-                style={{ background: "#F7F6F3", padding: "20px", border: "1px solid #EDECE8" }}
-                onClick={() => navigate("/chat")}
+                key={s.slug}
+                onClick={() => navigate(`/services/${s.slug}`)}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") navigate("/chat");
-                }}
+                onKeyDown={(e) => { if (e.key === "Enter") navigate(`/services/${s.slug}`); }}
+                style={{ background: "#111214", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 4, padding: "28px", cursor: "pointer", transition: "border-color 0.2s, background 0.2s", position: "relative", display: "flex", flexDirection: "column", gap: 16 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(197,240,74,0.25)"; (e.currentTarget as HTMLElement).style.background = "rgba(197,240,74,0.04)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)"; (e.currentTarget as HTMLElement).style.background = "#111214"; }}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="flex items-center justify-center rounded-2xl flex-shrink-0 overflow-hidden"
-                      style={{ width: 52, height: 52, background: "#EDECE8" }}
-                    >
-                      <img
-                        src={iconSrc}
-                        alt=""
-                        className={cn("w-7 h-7 object-contain", mediaDebugClassName(!!s.iconMissing))}
-                        loading="lazy"
-                      />
-                    </div>
-                    <div>
-                      <p className="font-heading" style={{ fontSize: 16, fontWeight: 700, color: "#0D0D0B" }}>
-                        {pick(s.name, lang)}
-                      </p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="font-body" style={{ fontSize: 14, fontWeight: 600, color: "#0052FF" }}>
-                          {pick(s.priceLine, lang)}
-                        </span>
-                        <span className="font-body" style={{ fontSize: 12, color: "#8A8880" }}>
-                          · {pick(s.durationLine, lang)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  {s.badge && (
-                    <span
-                      className="font-body text-white flex-shrink-0"
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        padding: "3px 8px",
-                        borderRadius: 9999,
-                        background: s.badgeColor,
-                      }}
-                    >
-                      {s.badge}
-                    </span>
-                  )}
-                </div>
-
-                <p className="font-body mt-3" style={{ fontSize: 13, color: "#6A6860", lineHeight: 1.5 }}>
-                  {pick(s.shortDesc, lang)}
-                </p>
-
-                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3">
-                  {s.includes.slice(0, 4).map((item) => (
-                    <span key={item} className="font-body flex items-center gap-1" style={{ fontSize: 11, color: "#6A6860" }}>
-                      <span style={{ color: "#00B341", fontSize: 10 }}>✓</span> {item}
-                    </span>
-                  ))}
-                  {s.includes.length > 4 && (
-                    <span className="font-body" style={{ fontSize: 11, color: "#8A8880" }}>
-                      +{s.includes.length - 4}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between mt-4">
-                  <div className="flex gap-1.5">
-                    {s.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="font-body rounded-full"
-                        style={{
-                          background: "#E8E6E0",
-                          fontSize: 10,
-                          fontWeight: 600,
-                          color: "#6A6860",
-                          padding: "3px 8px",
-                        }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                  <span className="font-body flex items-center gap-1" style={{ fontSize: 13, fontWeight: 600, color: "#0D0D0B" }}>
-                    {orderLabel} <ArrowRight size={13} />
+                {s.badge && (
+                  <span style={{ position: "absolute", top: 20, right: 20, fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: "0.14em", padding: "3px 8px", borderRadius: 2, border: "1px solid rgba(197,240,74,0.25)", background: "rgba(197,240,74,0.1)", color: "#C5F04A" }}>
+                    {s.badge}
                   </span>
+                )}
+
+                <div style={{ fontSize: 32 }}>{s.emoji}</div>
+
+                <div>
+                  <h3 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, color: "#F0EFE9", marginBottom: 8 }}>{s.title}</h3>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: "rgba(240,239,233,0.45)", lineHeight: 1.5 }}>{s.desc}</p>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {s.includes.map((item, i) => (
+                    <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none" style={{ flexShrink: 0, marginTop: 4 }}><path d="M1 4L3.5 6.5L9 1" stroke="#C5F04A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: "rgba(240,239,233,0.6)" }}>{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {s.tags.map((tag) => (
+                    <span key={tag} style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: "0.1em", padding: "3px 7px", borderRadius: 2, border: "1px solid rgba(255,255,255,0.1)", color: "rgba(240,239,233,0.4)" }}>{tag}</span>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 16, marginTop: "auto" }}>
+                  <div>
+                    <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 18, color: "#C5F04A" }}>{s.price}</div>
+                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "rgba(240,239,233,0.4)", marginTop: 2 }}>{s.duration}</div>
+                  </div>
+                  <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13, color: "rgba(240,239,233,0.6)" }}>Заказать →</span>
                 </div>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div
-        className="mx-5 mt-8 rounded-2xl px-5 py-12 text-center max-w-[1280px] md:mx-auto md:px-10"
-        style={{ background: "#0D0D0B" }}
-      >
-        <h2 className="font-heading text-white" style={{ fontSize: 22, fontWeight: 800 }}>
-          {footerTitle}
-        </h2>
-        <p className="font-body mt-2 mb-6" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)" }}>
-          {footerSubtitle}
-        </p>
-        <button
-          type="button"
-          onClick={() => navigate("/chat")}
-          className="font-body rounded-2xl px-8 py-4 active:scale-[0.97] hover:-translate-y-[1px] transition-all duration-150 cursor-pointer"
-          style={{ background: "#fff", color: "#0D0D0B", fontSize: 15, fontWeight: 700 }}
-        >
-          {footerButton}
-        </button>
-      </div>
+      {/* Bottom CTA */}
+      <section style={{ padding: "0 0 80px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
+          <div style={{ background: "#111214", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 4, padding: "48px", textAlign: "center" }}>
+            <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(24px, 4vw, 40px)", letterSpacing: "-1px", color: "#F0EFE9", marginBottom: 12 }}>
+              Не знаешь что выбрать?
+            </h2>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, color: "rgba(240,239,233,0.5)", marginBottom: 28 }}>
+              Опишите задачу — подберём решение и сделаем смету за 24 часа. Бесплатно.
+            </p>
+            <a href="https://t.me/neeeekn" target="_blank" rel="noopener noreferrer"
+              style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, padding: "16px 40px", borderRadius: 2, background: "#C5F04A", color: "#0A0A0A", textDecoration: "none", display: "inline-block" }}>
+              Написать в Telegram →
+            </a>
+          </div>
+        </div>
+      </section>
     </div>
   );
-};
-
-export default ServicesPage;
+}

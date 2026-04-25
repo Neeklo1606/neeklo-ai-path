@@ -36,3 +36,6 @@ prisma/*.sqlite-journal
 # Playwright / Vitest artifacts
 test-results/
 playwright-report/
+
+# Production secrets (never commit)
+.env.secrets

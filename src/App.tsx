@@ -52,6 +52,11 @@ const AdminBillingPage = lazy(() => import("./pages/admin/AdminBillingPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const KpShowcasePage = lazy(() => import("./pages/kp/KpShowcasePage"));
 const KpSlugPage = lazy(() => import("./pages/kp/KpSlugPage"));
+const ServiceAiVideo = lazy(() => import("./pages/services/ServiceAiVideo"));
+const ServiceWeb = lazy(() => import("./pages/services/ServiceWeb"));
+const ServiceAiAssistant = lazy(() => import("./pages/services/ServiceAiAssistant"));
+const ServiceTelegram = lazy(() => import("./pages/services/ServiceTelegram"));
+const ServiceEducation = lazy(() => import("./pages/services/ServiceEducation"));
 
 const queryClient = new QueryClient();
 
@@ -258,6 +263,11 @@ const AppContent = ({
             <Route path="/projects/:id" element={<P><ProjectDetailPage /></P>} />
             <Route path="/profile" element={<P><ProfilePage /></P>} />
             <Route path="/settings" element={<P><SettingsPage /></P>} />
+            <Route path="/services/ai-video" element={<P><ServiceAiVideo /></P>} />
+            <Route path="/services/web" element={<P><ServiceWeb /></P>} />
+            <Route path="/services/ai-assistant" element={<P><ServiceAiAssistant /></P>} />
+            <Route path="/services/telegram" element={<P><ServiceTelegram /></P>} />
+            <Route path="/services/education" element={<P><ServiceEducation /></P>} />
             <Route path="/services/:slug" element={<P><ServiceDetailPage /></P>} />
             <Route path="/order/:serviceId" element={<P><OrderPage /></P>} />
             <Route path="/manager-chat" element={<ManagerChatPage />} />

@@ -34,6 +34,8 @@ rm -rf "$PREV"
 echo "=== LOAD ENV ==="
 set -a
 [ -f .env ] && . ./.env
+# .env.secrets contains DB credentials and secrets not tracked in git
+[ -f .env.secrets ] && . ./.env.secrets
 set +a
 
 echo "=== PRISMA ==="

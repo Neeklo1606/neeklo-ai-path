@@ -1,0 +1,154 @@
+/* Service pages — responsive overrides */
+/* All components use inline styles; this file adds media queries on top */
+
+.svc-root {
+  background: #0A0A0A;
+  color: #F0EFE9;
+  min-height: 100vh;
+}
+
+/* Layout: sidebar + main */
+.svc-layout {
+  display: flex;
+  align-items: flex-start;
+}
+
+.svc-sidebar {
+  position: sticky;
+  top: 80px;
+  width: 200px;
+  flex-shrink: 0;
+  padding: 32px 0 32px 24px;
+}
+
+.svc-sidebar-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.svc-sidebar-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: rgba(240,239,233,0.3);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.svc-sidebar-link {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: rgba(240,239,233,0.4);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 2px;
+  border-left: 1px solid transparent;
+  transition: all 0.15s;
+  display: block;
+}
+
+.svc-sidebar-link:hover,
+.svc-sidebar-link.active {
+  color: #C5F04A;
+  border-left-color: #C5F04A;
+  background: rgba(197,240,74,0.05);
+}
+
+.svc-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Section spacing */
+.svc-section {
+  padding: 120px 24px;
+}
+
+.svc-section-sm {
+  padding: 80px 24px;
+}
+
+/* Hero number label */
+.svc-hero-meta {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.svc-hero-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Case metrics grid */
+.svc-case-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.svc-case-metrics-item:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+/* CTA form */
+.svc-cta-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 480px;
+}
+
+.svc-cta-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 2px;
+  padding: 14px 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #F0EFE9;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.svc-cta-input::placeholder {
+  color: rgba(240,239,233,0.3);
+}
+
+.svc-cta-input:focus {
+  border-color: rgba(197,240,74,0.4);
+}
+
+.svc-cta-textarea {
+  resize: none;
+  min-height: 100px;
+}
+
+/* ─── Mobile ────────────────────────── */
+@media (max-width: 900px) {
+  .svc-sidebar {
+    display: none;
+  }
+
+  .svc-section {
+    padding: 64px 20px;
+  }
+
+  .svc-section-sm {
+    padding: 56px 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .svc-case-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .svc-cta-form {
+    max-width: 100%;
+  }
+}
