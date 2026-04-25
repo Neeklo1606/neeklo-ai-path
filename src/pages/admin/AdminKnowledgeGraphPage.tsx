@@ -106,23 +106,33 @@ export default function AdminKnowledgeGraphPage() {
 
   const runChunkAgent = async () => {
     if (!assistantId) return toast.error("Выберите ассистента");
-    if (!agentSource.trim()) return toast.error("Добавьте исходные данные для агента");
+    const sourceText = agentSource.trim();
+    if (!sourceText) return toast.error("Добавьте исходные данные для агента");
     setAgentBusy(true);
     setAgentStatus("Агент анализирует данные...");
     try {
       const out = await askKnowledgeCoach({
         assistantId,
         goal: "Сформируй готовые чанки базы знаний для сайта. Верни связный markdown без лишней воды.",
-        answers: { "Исходные данные": agentSource.trim() },
+        answers: { "Исходные данные": sourceText },
       });
-      if (!out.draft?.trim()) {
-        setAgentStatus(out.next_question || "Недостаточно данных. Уточните ввод.");
+      const draft = out.draft?.trim();
+      if (draft) {
+        setAgentStatus("Черновик сформирован, загружаю в индекс...");
+        const ingest = await ingestKnowledgeText(assistantId, draft);
+        setAgentStatus(`Готово. Добавлено чанков: ${ingest.upserted}`);
+        await refreshAll(assistantId);
+        setAgentSource("");
         return;
       }
-      setAgentStatus("Черновик сформирован, загружаю в индекс...");
-      const ingest = await ingestKnowledgeText(assistantId, out.draft);
-      setAgentStatus(`Готово. Добавлено чанков: ${ingest.upserted}`);
+
+      // Fallback: если LLM-коуч не вернул draft, индексируем исходный текст напрямую.
+      setAgentStatus("Коуч не вернул готовый черновик, загружаю исходный текст напрямую...");
+      const ingest = await ingestKnowledgeText(assistantId, sourceText);
+      const note = out.next_question?.trim() ? ` Подсказка коуча: ${out.next_question.trim()}` : "";
+      setAgentStatus(`Готово. Добавлено чанков: ${ingest.upserted}.${note}`);
       await refreshAll(assistantId);
+      setAgentSource("");
     } catch (e) {
       const msg = axios.isAxiosError(e)
         ? (e.response?.data as { error?: string })?.error || e.message
