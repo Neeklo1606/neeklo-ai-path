@@ -64,7 +64,9 @@ export default function AdminKnowledgeGraphPage() {
     const onWheel = (ev: WheelEvent) => {
       ev.preventDefault();
       const step = ev.shiftKey ? 0.2 : 0.12;
-      const next = ev.deltaY < 0 ? zoom + step : zoom - step;
+      const dominantDelta = Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX;
+      if (dominantDelta === 0) return;
+      const next = dominantDelta < 0 ? zoom + step : zoom - step;
       setZoom(Math.max(0.6, Math.min(2.6, Number(next.toFixed(2)))));
     };
     el.addEventListener("wheel", onWheel, { passive: false });
