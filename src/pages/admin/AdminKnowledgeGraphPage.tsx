@@ -374,6 +374,10 @@ export default function AdminKnowledgeGraphPage() {
                 <div className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg border border-[#E8E6E0] bg-[#FAFAF8] p-2 text-sm">
                   Теги: {selectedNode.tags?.length ? selectedNode.tags.join(", ") : "—"}
                 </div>
+                <div className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap rounded-lg border border-[#E8E6E0] bg-[#FAFAF8] p-2 text-sm">
+                  <p className="mb-1 text-xs text-muted-foreground">Содержимое чанка:</p>
+                  {selectedNode.snippet?.trim() ? selectedNode.snippet : "Для этого узла текст пока недоступен."}
+                </div>
               </>
             ) : (
               <p className="mt-1 text-xs text-muted-foreground">Кликните на узел графа.</p>

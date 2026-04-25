@@ -97,6 +97,7 @@ export type KnowledgeGraphNode = {
   category: string;
   section: string;
   tags: string[];
+  snippet?: string;
 };
 
 export type KnowledgeGraphEdge = {

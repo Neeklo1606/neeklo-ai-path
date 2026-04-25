@@ -1389,6 +1389,7 @@ app.get("/assistants/:id/knowledge/graph", requireAuth, async (req, res) => {
         category: p.category ? String(p.category) : "",
         section: p.section ? String(p.section) : "",
         tags: Array.isArray(p.tags) ? p.tags.map((t) => String(t || "")).filter(Boolean) : [],
+        snippet: "",
       }))
       .filter((n) => n.id);
 
@@ -1461,6 +1462,7 @@ app.get("/assistants/:id/knowledge/graph", requireAuth, async (req, res) => {
           category,
           section,
           tags: [...new Set(tags)],
+          snippet: text.slice(0, 900).trim(),
         };
       };
 
