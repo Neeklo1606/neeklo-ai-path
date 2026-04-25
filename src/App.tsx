@@ -50,6 +50,7 @@ const AdminCrmPage = lazy(() => import("./pages/admin/AdminCrmPage"));
 const AdminAiAnalyticsPage = lazy(() => import("./pages/admin/AdminAiAnalyticsPage"));
 const AdminBillingPage = lazy(() => import("./pages/admin/AdminBillingPage"));
 const AdminKnowledgePage = lazy(() => import("./pages/admin/AdminKnowledgePage"));
+const AdminKnowledgeGraphPage = lazy(() => import("./pages/admin/AdminKnowledgeGraphPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const KpShowcasePage = lazy(() => import("./pages/kp/KpShowcasePage"));
 const KpSlugPage = lazy(() => import("./pages/kp/KpSlugPage"));
@@ -389,6 +390,14 @@ const AppContent = ({
                     element={
                       <Suspense fallback={<RouteLoadingFallback />}>
                         <AdminKnowledgePage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="knowledge/graph"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <AdminKnowledgeGraphPage />
                       </Suspense>
                     }
                   />

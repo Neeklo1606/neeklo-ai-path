@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -829,6 +830,11 @@ export default function AdminKnowledgePage() {
             collectionName={stats?.collection || ""}
             embedModelName={embedModel}
           />
+          <div className="flex justify-end">
+            <Link to="/admin/knowledge/graph" className="text-sm underline underline-offset-4">
+              Открыть граф на отдельной странице →
+            </Link>
+          </div>
           <div className="rounded-2xl border border-[#E8E6E0] bg-white p-4">
             <p className="text-sm font-semibold">Выбранный chunk</p>
             {selectedChunk ? (
