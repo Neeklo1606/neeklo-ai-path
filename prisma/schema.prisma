@@ -125,6 +125,7 @@ model Assistant {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
   chats          Chat[]
+  prototypeJobs  PrototypeJob[]
   billingKey     ApiKey?
 
   @@map("cms_assistants")
@@ -208,6 +209,7 @@ model Chat {
   lead        Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
   assistantId String?    @map("assistant_id")
   assistant   Assistant? @relation(fields: [assistantId], references: [id], onDelete: SetNull)
+  prototypeJobs PrototypeJob[]
   messages    Json       @default("[]")
   status      String     @default("active")
   createdAt   DateTime   @default(now()) @map("created_at")
@@ -217,4 +219,29 @@ model Chat {
   @@index([assistantId])
   @@index([updatedAt])
   @@map("crm_chats")
+}
+
+/// Async prototype generation job for public chat users
+model PrototypeJob {
+  id               String     @id @default(uuid())
+  chatId           String?    @map("chat_id")
+  chat             Chat?      @relation(fields: [chatId], references: [id], onDelete: SetNull)
+  assistantId      String     @map("assistant_id")
+  assistant        Assistant  @relation(fields: [assistantId], references: [id], onDelete: Cascade)
+  status           String     @default("queued")
+  progress         Int        @default(0)
+  briefText        String     @map("brief_text")
+  normalizedBrief  Json?      @map("normalized_brief")
+  resultSlug       String?    @map("result_slug")
+  resultUrl        String?    @map("result_url")
+  resultHtml       String?    @map("result_html")
+  error            String?
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  @@index([chatId])
+  @@index([assistantId, createdAt])
+  @@index([status, updatedAt])
+  @@unique([resultSlug])
+  @@map("prototype_jobs")
 }

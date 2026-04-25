@@ -593,6 +593,76 @@ function clientIp(req) {
   return String(req.socket?.remoteAddress || "unknown").slice(0, 128);
 }
 
+function detectPrototypeIntent(text) {
+  const q = String(text || "").toLowerCase();
+  return /(прототип|лендинг|landing|показать\s+решение|пример\s+сайта|собери\s+сайт|создай\s+сайт|макет\s+сайта)/i.test(q);
+}
+
+function getPublicSiteBase() {
+  const raw = String(process.env.PUBLIC_SITE_BASE || "https://neeklo.ru").trim();
+  return raw.replace(/\/$/, "");
+}
+
+function sanitizeSlugPart(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 42) || "landing";
+}
+
+function renderPrototypeHtml({ title, subtitle, offer, audience, cta, blocks }) {
+  const esc = (v) =>
+    String(v ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  const listHtml = Array.isArray(blocks)
+    ? blocks
+        .map(
+          (b) => `<section class="card"><h3>${esc(b?.title || "")}</h3><p>${esc(b?.text || "")}</p></section>`,
+        )
+        .join("\n")
+    : "";
+  return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${esc(title || "Прототип лендинга")}</title>
+  <style>
+    body{font-family:Inter,Arial,sans-serif;background:#f8fafc;color:#0f172a;margin:0}
+    .wrap{max-width:980px;margin:0 auto;padding:28px 18px 64px}
+    .hero{background:#0f172a;color:#fff;border-radius:18px;padding:28px}
+    .hero h1{font-size:38px;line-height:1.1;margin:0 0 12px}
+    .hero p{font-size:18px;opacity:.9;margin:0 0 18px}
+    .badge{display:inline-block;padding:7px 10px;border-radius:999px;background:#1e293b;font-size:12px}
+    .cta{display:inline-block;margin-top:18px;padding:12px 18px;border-radius:12px;background:#22c55e;color:#fff;text-decoration:none;font-weight:700}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:20px}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px}
+    .card h3{margin:0 0 8px}
+    .footer{margin-top:26px;color:#475569;font-size:14px}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <span class="badge">AI-прототип</span>
+      <h1>${esc(title || "Лендинг под вашу задачу")}</h1>
+      <p>${esc(subtitle || "Черновой вариант страницы, собранный ассистентом.")}</p>
+      <p><strong>Оффер:</strong> ${esc(offer || "Уточнить на созвоне")}</p>
+      <p><strong>Для кого:</strong> ${esc(audience || "Целевая аудитория по вашему описанию")}</p>
+      <a class="cta" href="#">${esc(cta || "Оставить заявку")}</a>
+    </section>
+    <section class="grid">${listHtml}</section>
+    <p class="footer">Это прототип-черновик. Контент и дизайн можно доработать перед запуском.</p>
+  </main>
+</body>
+</html>`;
+}
+
 /** Single public chat assistant: newest active row. */
 async function getActiveAssistant() {
   return prisma.assistant.findFirst({
@@ -631,6 +701,80 @@ async function resolveAssistantForPublicChat() {
   );
   const bestWithKb = withPoints.find((x) => x.points > 0);
   return (bestWithKb?.assistant || activeRows[0]) ?? null;
+}
+
+async function buildPrototypeLandingJob(jobId) {
+  const job = await prisma.prototypeJob.findUnique({
+    where: { id: jobId },
+    include: { assistant: true },
+  });
+  if (!job) return;
+  const asst = job.assistant;
+  const patch = (data) => prisma.prototypeJob.update({ where: { id: job.id }, data });
+  try {
+    await patch({ status: "analyzing", progress: 15 });
+    const systemPrompt =
+      "Ты генератор прототипов лендинга. Верни строго JSON с полями: title, subtitle, offer, audience, cta, blocks[]. " +
+      "blocks[]: минимум 5 объектов, каждый объект: {title, text}. Только русский язык.";
+    const userPrompt = `Собери контент для лендинга по брифу пользователя:\n${job.briefText}`;
+    let raw = "";
+    if (isOllamaAssistant(asst)) {
+      const out = await generateResponse(getOllamaBase(asst), asst.model || "qwen2.5:7b", [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ]);
+      raw = String(out.text || "");
+    } else {
+      const token = getAssistantProviderToken(asst);
+      if (!token) throw new Error("Provider API key not configured for prototype generation");
+      raw = await chatOpenAiCompatible({
+        baseUrl: asst.baseUrl,
+        apiKey: token,
+        model: asst.model || "gpt-4o-mini",
+        systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+      });
+    }
+    await patch({ status: "generating_copy", progress: 45 });
+    let parsed = null;
+    try {
+      const maybeJson = String(raw).match(/\{[\s\S]*\}/);
+      parsed = maybeJson ? JSON.parse(maybeJson[0]) : JSON.parse(raw);
+    } catch {
+      parsed = {
+        title: "Лендинг под ваш запрос",
+        subtitle: "Подготовили черновой прототип на основе вашего описания.",
+        offer: "Решение под задачу бизнеса",
+        audience: "Целевая аудитория по вашему брифу",
+        cta: "Получить предложение",
+        blocks: [
+          { title: "Проблема клиента", text: "Опишем ключевую боль и контекст." },
+          { title: "Наше решение", text: "Покажем, как решаем задачу быстро и прозрачно." },
+          { title: "Этапы работ", text: "Бриф -> прототип -> согласование -> запуск." },
+          { title: "Сроки и бюджет", text: "Фиксируем сроки и предлагаем пакет под цель." },
+          { title: "Следующий шаг", text: "Оставьте заявку и получите КП в течение 24 часов." },
+        ],
+      };
+    }
+    await patch({ normalizedBrief: parsed, status: "assembling_layout", progress: 70 });
+    const slug = `prototype-${Date.now()}-${sanitizeSlugPart(parsed?.title || "landing")}`.slice(0, 90);
+    const html = renderPrototypeHtml(parsed || {});
+    const publicUrl = `${getPublicSiteBase()}/prototype/${encodeURIComponent(slug)}`;
+    await patch({
+      status: "publishing",
+      progress: 88,
+      resultSlug: slug,
+      resultUrl: publicUrl,
+      resultHtml: html,
+    });
+    await patch({ status: "done", progress: 100 });
+  } catch (e) {
+    await patch({
+      status: "failed",
+      progress: 100,
+      error: String(e?.message || e || "Prototype generation failed"),
+    });
+  }
 }
 
 app.get("/chat/bootstrap", async (req, res) => {
@@ -1776,6 +1920,40 @@ function parseChatMessagesJson(json) {
   return [];
 }
 
+app.get("/prototype/:slug", async (req, res) => {
+  try {
+    const slug = String(req.params.slug || "").trim();
+    if (!slug) return res.status(404).send("Not found");
+    const row = await prisma.prototypeJob.findFirst({
+      where: { resultSlug: slug, status: "done" },
+      orderBy: { updatedAt: "desc" },
+    });
+    if (!row?.resultHtml) return res.status(404).send("Prototype not found");
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.status(200).send(row.resultHtml);
+  } catch {
+    return res.status(500).send("Prototype unavailable");
+  }
+});
+
+app.get("/prototype-jobs/:id", async (req, res) => {
+  try {
+    const id = String(req.params.id || "");
+    if (!isUuid(id)) return res.status(400).json({ error: "Invalid id" });
+    const row = await prisma.prototypeJob.findUnique({ where: { id } });
+    if (!row) return res.status(404).json({ error: "Not found" });
+    return res.json({
+      id: row.id,
+      status: row.status,
+      progress: row.progress,
+      result_url: row.resultUrl || null,
+      error: row.error || null,
+    });
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || "Failed" });
+  }
+});
+
 /** Первое сообщение пользователя — для заголовка лида/чата, если имя в БД пустое */
 function firstUserSnippetFromMessages(json, max = 90) {
   const arr = parseChatMessagesJson(json);
@@ -1889,6 +2067,44 @@ app.post("/chat", async (req, res) => {
       } catch (persistErr) {
         console.error("[crm] persist user/lead", crmChatId, persistErr);
       }
+    }
+
+    if (detectPrototypeIntent(userText)) {
+      const job = await prisma.prototypeJob.create({
+        data: {
+          chatId: crmChatId && isUuid(crmChatId) ? crmChatId : null,
+          assistantId: asst.id,
+          status: "queued",
+          progress: 5,
+          briefText: userText,
+        },
+      });
+      setTimeout(() => {
+        buildPrototypeLandingJob(job.id).catch((err) => {
+          console.error("[prototype-job] failed", job.id, err);
+        });
+      }, 10);
+
+      const ack =
+        "Принял задачу. Запускаю сборку прототипа лендинга по вашему описанию. " +
+        "Это займет примерно 30-90 секунд. Я сообщу ссылку, как только страница будет готова.";
+      if (crmChatId && isUuid(crmChatId)) {
+        try {
+          await persistCrmAssistantReply(crmChatId, ack);
+        } catch (persistErr) {
+          console.error("[crm] persist assistant prototype ack", crmChatId, persistErr);
+        }
+      }
+      return res.json({
+        reply: ack,
+        used_context: false,
+        provider: "prototype_builder",
+        prototype_job: {
+          id: job.id,
+          status: job.status,
+          progress: job.progress,
+        },
+      });
     }
 
     const useOllama = isOllamaAssistant(asst);

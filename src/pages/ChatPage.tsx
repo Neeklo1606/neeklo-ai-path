@@ -9,6 +9,7 @@ import {
   chatComplete,
   createCrmChatSession,
   fetchChatTranscript,
+  getPrototypeJobStatus,
   type CrmTranscriptEntry,
 } from "@/lib/cms-api";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -109,6 +110,7 @@ const ChatPage = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [crmChatId, setCrmChatId] = useState<string | null>(null);
   const [crmSessionReady, setCrmSessionReady] = useState(false);
+  const prototypePollRef = useRef<number | null>(null);
   const msgIdRef = useRef(0);
   const nextId = () => {
     msgIdRef.current += 1;
@@ -181,6 +183,59 @@ const ChatPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const stopPrototypePolling = useCallback(() => {
+    if (prototypePollRef.current != null) {
+      window.clearInterval(prototypePollRef.current);
+      prototypePollRef.current = null;
+    }
+  }, []);
+
+  const startPrototypePolling = useCallback((jobId: string) => {
+    stopPrototypePolling();
+    let lastStatus = "";
+    prototypePollRef.current = window.setInterval(async () => {
+      try {
+        const s = await getPrototypeJobStatus(jobId);
+        if (s.status !== lastStatus) {
+          lastStatus = s.status;
+          const stepText =
+            s.status === "queued"
+              ? "Заявка на прототип принята, ставлю в очередь..."
+              : s.status === "analyzing"
+                ? "Анализирую вашу задачу и структуру будущего лендинга..."
+                : s.status === "generating_copy"
+                  ? "Генерирую тексты и оффер для блоков лендинга..."
+                  : s.status === "assembling_layout"
+                    ? "Собираю структуру страницы и наполнение блоков..."
+                    : s.status === "publishing"
+                      ? "Публикую прототип, еще немного..."
+                      : "";
+          if (stepText) {
+            setMessages((prev) => [...prev, { id: nextId(), role: "ai", text: stepText, timestamp: new Date() }]);
+          }
+        }
+        if (s.status === "done") {
+          stopPrototypePolling();
+          const url = s.result_url || "";
+          const finalMsg = url
+            ? `Готово! Прототип собран. Ссылка для просмотра: ${url}`
+            : "Готово! Прототип собран, но ссылка пока не получена.";
+          setMessages((prev) => [...prev, { id: nextId(), role: "ai", text: finalMsg, timestamp: new Date() }]);
+          return;
+        }
+        if (s.status === "failed") {
+          stopPrototypePolling();
+          const finalMsg = s.error
+            ? `Не удалось собрать прототип: ${s.error}`
+            : "Не удалось собрать прототип. Попробуйте уточнить задачу и повторить.";
+          setMessages((prev) => [...prev, { id: nextId(), role: "ai", text: finalMsg, timestamp: new Date() }]);
+        }
+      } catch {
+        // silent polling retries; no UI spam
+      }
+    }, 2500);
+  }, [stopPrototypePolling]);
+
   useEffect(() => {
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
@@ -189,6 +244,8 @@ const ChatPage = () => {
       document.documentElement.style.overflow = "";
     };
   }, []);
+
+  useEffect(() => () => stopPrototypePolling(), [stopPrototypePolling]);
 
   useEffect(() => {
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
@@ -224,6 +281,9 @@ const ChatPage = () => {
         .then((r) => {
           setIsTyping(false);
           setMessages((p) => [...p, { id: nextId(), role: "ai", text: r.reply, timestamp: new Date() }]);
+          if (r.prototype_job?.id) {
+            startPrototypePolling(r.prototype_job.id);
+          }
         })
         .catch((err: unknown) => {
           setIsTyping(false);
@@ -232,7 +292,7 @@ const ChatPage = () => {
         });
       return combined;
     });
-  }, [hasText, inputValue, hasAssistant, crmChatId, crmSessionReady, c.noAssistantSend]);
+  }, [hasText, inputValue, hasAssistant, crmChatId, crmSessionReady, c.noAssistantSend, startPrototypePolling]);
 
   if (boot.isLoading) {
     return (

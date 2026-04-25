@@ -90,12 +90,25 @@ export async function chatComplete(body: {
   messages: { role: string; content: string }[];
   /** Persist transcript to CRM when set */
   chatId?: string;
-}): Promise<{ reply: string }> {
+}): Promise<{
+  reply: string;
+  prototype_job?: { id: string; status: string; progress: number };
+}> {
   return cmsJson("/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+}
+
+export async function getPrototypeJobStatus(jobId: string): Promise<{
+  id: string;
+  status: string;
+  progress: number;
+  result_url: string | null;
+  error: string | null;
+}> {
+  return cmsJson(`/prototype-jobs/${encodeURIComponent(jobId)}`);
 }
 
 /** Public: create or resume anonymous CRM chat session */
