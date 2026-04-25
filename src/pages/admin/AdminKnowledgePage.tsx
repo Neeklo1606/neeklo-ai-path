@@ -44,6 +44,21 @@ function GraphPreview({
   const [dragging, setDragging] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<string>("");
   const dragStart = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const onWheel = (ev: WheelEvent) => {
+      ev.preventDefault();
+      const next = ev.deltaY < 0 ? zoom + 0.1 : zoom - 0.1;
+      setZoom(Math.max(0.6, Math.min(2.4, Number(next.toFixed(2)))));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+    };
+  }, [zoom]);
 
   return (
     <div className="rounded-2xl border border-[#E8E6E0] bg-[#0E1016] p-4 text-white">
@@ -52,12 +67,8 @@ function GraphPreview({
         <p className="text-xs text-white/70">Узлы: {graph.nodes.length - 1}</p>
       </div>
       <div
+        ref={wrapRef}
         className="relative overflow-hidden rounded-xl border border-white/10 bg-[#0A0C12]"
-        onWheel={(e) => {
-          e.preventDefault();
-          const next = e.deltaY < 0 ? zoom + 0.1 : zoom - 0.1;
-          setZoom(Math.max(0.6, Math.min(2.4, Number(next.toFixed(2)))));
-        }}
         onMouseDown={(e) => {
           setDragging(true);
           dragStart.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
@@ -179,6 +190,9 @@ export default function AdminKnowledgePage() {
   const [coachInput, setCoachInput] = useState("");
   const [coachDraft, setCoachDraft] = useState("");
   const [coachLoading, setCoachLoading] = useState(false);
+  const [showManualFields, setShowManualFields] = useState(false);
+  const [wizardInput, setWizardInput] = useState("");
+  const [wizardMessages, setWizardMessages] = useState<Array<{ role: "assistant" | "user"; text: string }>>([]);
 
   const current = useMemo(() => assistants.find((a) => a.id === assistantId) || null, [assistants, assistantId]);
   const step1Done = Boolean(model && embedModel && (provider !== "openai" || providerApiKey.trim()));
@@ -234,6 +248,17 @@ export default function AdminKnowledgePage() {
         setOpenaiBaseUrl(data.base_url || "");
         await refreshStats(assistantId);
         await refreshChunks(assistantId);
+        const firstQuestion = "Опишите вашу нишу, продукт и целевую аудиторию одним сообщением.";
+        setCoachAnswers({});
+        setCoachDraft("");
+        setCoachQuestion(firstQuestion);
+        setWizardMessages([
+          {
+            role: "assistant",
+            text: "Привет! Я мастер базы знаний. Отвечайте на мои вопросы, и я сам соберу готовый текст для базы.",
+          },
+          { role: "assistant", text: firstQuestion },
+        ]);
       } catch (e) {
         toast.error(axios.isAxiosError(e) ? e.message : "Не удалось загрузить ассистента");
       }
@@ -447,6 +472,42 @@ export default function AdminKnowledgePage() {
     }
   };
 
+  const submitWizardAnswer = async () => {
+    const answer = wizardInput.trim();
+    if (!assistantId) return toast.error("Сначала выберите ассистента");
+    if (!answer) return;
+    const questionKey = coachQuestion || `question_${Object.keys(coachAnswers).length + 1}`;
+    const nextAnswers = { ...coachAnswers, [questionKey]: answer };
+    setWizardMessages((prev) => [...prev, { role: "user", text: answer }]);
+    setWizardInput("");
+    setCoachLoading(true);
+    try {
+      const out = await askKnowledgeCoach({
+        assistantId,
+        answers: nextAnswers,
+      });
+      setCoachAnswers(nextAnswers);
+      setCoachQuestion(out.next_question || "");
+      setCoachDraft(out.draft || "");
+      if (out.draft) {
+        setWizardMessages((prev) => [
+          ...prev,
+          { role: "assistant", text: "Черновик базы знаний готов. Проверьте и нажмите «Сформировать и загрузить базу знаний»." },
+        ]);
+      } else if (out.next_question) {
+        setWizardMessages((prev) => [...prev, { role: "assistant", text: out.next_question }]);
+      }
+    } catch (e) {
+      const msg = axios.isAxiosError(e)
+        ? (e.response?.data as { error?: string })?.error || e.message
+        : (e as Error).message;
+      toast.error(msg);
+      setWizardMessages((prev) => [...prev, { role: "assistant", text: `Ошибка: ${msg}` }]);
+    } finally {
+      setCoachLoading(false);
+    }
+  };
+
   const selectedChunk = useMemo(
     () => chunks.find((c) => c.id === selectedChunkId) || null,
     [chunks, selectedChunkId],
@@ -468,9 +529,54 @@ export default function AdminKnowledgePage() {
         </ol>
       </div>
 
+      <div className="rounded-2xl border border-[#E8E6E0] bg-white p-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-heading text-lg font-extrabold">Мастер-диалог: создание базы знаний</h2>
+          <Button type="button" variant="outline" onClick={() => setShowManualFields((v) => !v)}>
+            {showManualFields ? "Скрыть тех. поля" : "Показать тех. поля"}
+          </Button>
+        </div>
+        <div className="max-h-[280px] space-y-2 overflow-auto rounded-xl border border-[#E8E6E0] bg-[#FAFAF8] p-3">
+          {wizardMessages.map((m, idx) => (
+            <div key={`${m.role}-${idx}`} className={`flex ${m.role === "assistant" ? "justify-start" : "justify-end"}`}>
+              <div
+                className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap ${
+                  m.role === "assistant" ? "bg-white border border-[#E8E6E0] text-[#0D0D0B]" : "bg-[#0D0D0B] text-white"
+                }`}
+              >
+                {m.text}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 space-y-2">
+          <Label>Ваш ответ</Label>
+          <textarea
+            className="min-h-[86px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+            value={wizardInput}
+            onChange={(e) => setWizardInput(e.target.value)}
+            placeholder="Ответьте на вопрос мастера..."
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={submitWizardAnswer} disabled={coachLoading}>
+              {coachLoading ? "Обрабатываю..." : "Отправить ответ"}
+            </Button>
+            <Button type="button" variant="secondary" onClick={saveCoachDraftToKb} disabled={!coachDraft.trim() || busy}>
+              Сформировать и загрузить базу знаний
+            </Button>
+          </div>
+          {coachDraft && (
+            <div className="rounded-xl border border-[#E8E6E0] bg-[#FAFAF8] p-3">
+              <p className="text-xs font-semibold text-muted-foreground">Черновик для загрузки</p>
+              <div className="mt-1 max-h-[120px] overflow-auto whitespace-pre-wrap text-sm">{coachDraft}</div>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
-          <div className="grid gap-4 rounded-2xl border border-[#E8E6E0] bg-white p-6">
+          {showManualFields && <div className="grid gap-4 rounded-2xl border border-[#E8E6E0] bg-white p-6">
             <h2 className="font-heading text-lg font-extrabold">Шаг 1. Модель и доступ</h2>
             <div className="space-y-2">
               <Label>Ассистент</Label>
@@ -558,9 +664,9 @@ export default function AdminKnowledgePage() {
             <Button type="button" className="rounded-xl bg-[#0D0D0B]" onClick={saveProviderConfig} disabled={busy || !assistantId}>
               Сохранить шаг 1
             </Button>
-          </div>
+          </div>}
 
-          <div className="grid gap-4 rounded-2xl border border-[#E8E6E0] bg-white p-6">
+          {showManualFields && <div className="grid gap-4 rounded-2xl border border-[#E8E6E0] bg-white p-6">
             <h2 className="font-heading text-lg font-extrabold">Шаг 2. Контент базы знаний</h2>
             <div className="space-y-2">
               <Label>Добавить текст</Label>
@@ -618,7 +724,7 @@ export default function AdminKnowledgePage() {
             <Button type="button" variant="outline" className="rounded-xl border-red-200 text-red-800" onClick={wipe} disabled={busy}>
               Очистить базу знаний
             </Button>
-          </div>
+          </div>}
         </div>
 
         <div className="space-y-6">
@@ -659,7 +765,7 @@ export default function AdminKnowledgePage() {
             )}
           </div>
 
-          <div className="rounded-2xl border border-[#E8E6E0] bg-white p-6">
+          {showManualFields && <div className="rounded-2xl border border-[#E8E6E0] bg-white p-6">
             <h2 className="font-heading text-lg font-extrabold">LLM-конструктор базы знаний</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Помощник задаёт вопросы по шагам и сам формирует черновик базы знаний.
@@ -692,9 +798,9 @@ export default function AdminKnowledgePage() {
                 Добавить черновик в базу знаний (создать chunk)
               </Button>
             </div>
-          </div>
+          </div>}
 
-          <div className="rounded-2xl border border-[#E8E6E0] bg-white p-6">
+          {showManualFields && <div className="rounded-2xl border border-[#E8E6E0] bg-white p-6">
             <h2 className="font-heading text-lg font-extrabold">LLM-помощник по настройке</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Задайте вопрос простыми словами. Помощник подскажет следующий шаг именно для текущего ассистента.
@@ -732,7 +838,7 @@ export default function AdminKnowledgePage() {
             >
               Открыть документацию для пользователя
             </a>
-          </div>
+          </div>}
         </div>
       </div>
     </div>
