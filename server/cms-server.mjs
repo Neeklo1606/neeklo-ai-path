@@ -2008,8 +2008,9 @@ app.post("/assistants/:id/rag/search", requireAuth, async (req, res) => {
 // ─── CRM: public chat session (no auth) ───
 app.post("/crm/chat-session", async (req, res) => {
   try {
+    const forceNew = Boolean(req.body?.force_new);
     const existing = req.body?.chatId;
-    if (existing && isUuid(existing)) {
+    if (!forceNew && existing && isUuid(existing)) {
       const ch = await prisma.chat.findUnique({ where: { id: existing } });
       if (ch) return res.json({ chatId: ch.id });
     }

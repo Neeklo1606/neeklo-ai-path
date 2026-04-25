@@ -62,10 +62,16 @@ export default function AdminOperatorPage() {
     },
   });
 
-  const waiting = useMemo(
-    () => (chatsQ.data || []).filter((c) => c.operator_requested || c.operator_connected),
-    [chatsQ.data],
-  );
+  const waiting = useMemo(() => {
+    const rows = [...(chatsQ.data || [])];
+    rows.sort((a, b) => {
+      const prioA = a.operator_connected ? 3 : a.operator_requested ? 2 : 1;
+      const prioB = b.operator_connected ? 3 : b.operator_requested ? 2 : 1;
+      if (prioA !== prioB) return prioB - prioA;
+      return String(b.updated_at).localeCompare(String(a.updated_at));
+    });
+    return rows.slice(0, 50);
+  }, [chatsQ.data]);
 
   const err = (e: unknown) =>
     axios.isAxiosError(e) ? (e.response?.data as { error?: string })?.error || e.message : (e as Error).message;
@@ -92,7 +98,7 @@ export default function AdminOperatorPage() {
                 </div>
               </button>
             ))}
-            {!waiting.length && <p className="text-sm text-muted-foreground">Нет чатов, ожидающих оператора.</p>}
+            {!waiting.length && <p className="text-sm text-muted-foreground">Пока нет чатов.</p>}
           </div>
         </div>
 

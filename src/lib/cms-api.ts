@@ -113,11 +113,14 @@ export async function getPrototypeJobStatus(jobId: string): Promise<{
 }
 
 /** Public: create or resume anonymous CRM chat session */
-export async function createCrmChatSession(existingChatId?: string | null): Promise<{ chatId: string }> {
+export async function createCrmChatSession(
+  existingChatId?: string | null,
+  forceNew = false,
+): Promise<{ chatId: string }> {
   return cmsJson("/crm/chat-session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chatId: existingChatId || undefined }),
+    body: JSON.stringify({ chatId: existingChatId || undefined, force_new: forceNew || undefined }),
   });
 }
 

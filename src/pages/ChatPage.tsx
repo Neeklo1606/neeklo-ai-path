@@ -8,9 +8,7 @@ import {
   fetchChatBootstrap,
   chatComplete,
   createCrmChatSession,
-  fetchChatTranscript,
   getPrototypeJobStatus,
-  type CrmTranscriptEntry,
 } from "@/lib/cms-api";
 import { useLanguage } from "@/hooks/useLanguage";
 
@@ -40,24 +38,6 @@ function renderTextWithLinks(text: string) {
     }
     return <span key={`txt-${idx}`}>{part}</span>;
   });
-}
-
-function mapTranscriptToUiMessages(rows: CrmTranscriptEntry[]): { msgs: Message[]; maxId: number } {
-  const msgs: Message[] = [];
-  let nid = 0;
-  for (const e of rows) {
-    const content = String(e.content ?? "");
-    const ts = e.at ? new Date(String(e.at)) : new Date();
-    nid += 1;
-    if (e.role === "user") {
-      msgs.push({ id: nid, role: "user", text: content, timestamp: ts });
-    } else if (e.role === "assistant") {
-      msgs.push({ id: nid, role: "ai", text: content, timestamp: ts });
-    } else if (e.role === "manager") {
-      msgs.push({ id: nid, role: "ai", text: `Менеджер: ${content}`, timestamp: ts });
-    }
-  }
-  return { msgs, maxId: nid };
 }
 
 const AIAvatar = ({ size = 28 }: { size?: number }) => (
@@ -160,30 +140,14 @@ const ChatPage = () => {
     (async () => {
       try {
         const existing = localStorage.getItem("neeklo_crm_chat_id");
-        const r = await createCrmChatSession(existing);
+        // Full accounting mode: each new page visit starts a fresh CRM dialog.
+        const r = await createCrmChatSession(existing, true);
         if (cancelled) return;
         localStorage.setItem("neeklo_crm_chat_id", r.chatId);
         setCrmChatId(r.chatId);
 
-        let transcriptRows: CrmTranscriptEntry[] = [];
-        try {
-          const tr = await fetchChatTranscript(r.chatId);
-          if (tr?.messages?.length) transcriptRows = tr.messages;
-        } catch {
-          /* сеть / временная ошибка — показываем приветствие */
-        }
-        if (cancelled) return;
-
-        if (transcriptRows.length > 0) {
-          const { msgs, maxId } = mapTranscriptToUiMessages(transcriptRows);
-          if (msgs.length > 0) {
-            msgIdRef.current = maxId;
-            setMessages(msgs);
-          } else if (w) {
-            msgIdRef.current = 0;
-            setMessages([{ id: nextId(), role: "ai", text: w, timestamp: new Date() }]);
-          }
-        } else if (w) {
+        // For a new session always start from welcome state.
+        if (w) {
           msgIdRef.current = 0;
           setMessages([{ id: nextId(), role: "ai", text: w, timestamp: new Date() }]);
         }
