@@ -1,5 +1,5 @@
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { FileStack, ImageIcon, Bot, Settings, LogOut, Users, BarChart3, CreditCard } from "lucide-react";
+import { FileStack, ImageIcon, Bot, Settings, LogOut, Users, BarChart3, CreditCard, Network } from "lucide-react";
 import { clearAuthToken } from "@/lib/auth-token";
 
 const linkCls = (active: boolean) =>
@@ -45,6 +45,11 @@ export default function AdminCmsShell() {
           <Link to="/admin/assistants" className={linkCls(pathname.startsWith("/admin/assistants"))}>
             <span className="inline-flex items-center gap-1.5">
               <Bot size={16} /> Ассистенты
+            </span>
+          </Link>
+          <Link to="/admin/knowledge" className={linkCls(pathname.startsWith("/admin/knowledge"))}>
+            <span className="inline-flex items-center gap-1.5">
+              <Network size={16} /> База знаний
             </span>
           </Link>
           <Link to="/admin/ai-analytics" className={linkCls(pathname.startsWith("/admin/ai-analytics"))}>
