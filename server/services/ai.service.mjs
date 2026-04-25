@@ -431,14 +431,54 @@ export async function chatWithRag({
   let contextBlock = "";
   let contextError = "";
   let contextHitsCount = 0;
+  let retrievalMode = "vector";
   try {
+    const lexicalFallback = async () => {
+      const out = await client.scroll(coll, {
+        limit: 200,
+        with_payload: true,
+        with_vector: false,
+      });
+      const rows = Array.isArray(out?.points) ? out.points : [];
+      const tokens = String(queryText || "")
+        .toLowerCase()
+        .split(/[^a-zA-Zа-яА-Я0-9]+/u)
+        .map((t) => t.trim())
+        .filter((t) => t.length >= 4);
+      if (!tokens.length) return [];
+      const scored = rows
+        .map((p) => String(p?.payload?.text || ""))
+        .filter(Boolean)
+        .map((text) => {
+          const low = text.toLowerCase();
+          let score = 0;
+          for (const t of tokens) {
+            if (low.includes(t)) score += 1;
+          }
+          return { text, score };
+        })
+        .filter((x) => x.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5)
+        .map((x) => x.text);
+      return scored;
+    };
+
     const loadRagContext = async () => {
       const qv = embedText
         ? await embedText(queryText)
         : await createEmbedding(ollamaBase, embedModel, queryText);
       const hits = await searchContext(client, coll, qv, 5);
       contextHitsCount = Array.isArray(hits) ? hits.length : 0;
-      const texts = hits.map((h) => h.text).filter(Boolean);
+      let texts = hits.map((h) => h.text).filter(Boolean);
+      if (!texts.length) {
+        const lexicalTexts = await lexicalFallback();
+        if (lexicalTexts.length) {
+          retrievalMode = "lexical_fallback";
+          texts = lexicalTexts;
+          contextHitsCount = lexicalTexts.length;
+        }
+      }
       return texts.join("\n---\n");
     };
     const loadWithTimeout = async () => Promise.race([
@@ -455,6 +495,41 @@ export async function chatWithRag({
   } catch (e) {
     contextError = e?.message || String(e);
     console.warn("[ai-rag] context search skipped:", contextError);
+    try {
+      const out = await client.scroll(coll, {
+        limit: 200,
+        with_payload: true,
+        with_vector: false,
+      });
+      const rows = Array.isArray(out?.points) ? out.points : [];
+      const tokens = String(queryText || "")
+        .toLowerCase()
+        .split(/[^a-zA-Zа-яА-Я0-9]+/u)
+        .map((t) => t.trim())
+        .filter((t) => t.length >= 4);
+      const lexicalTexts = rows
+        .map((p) => String(p?.payload?.text || ""))
+        .filter(Boolean)
+        .map((text) => {
+          const low = text.toLowerCase();
+          let score = 0;
+          for (const t of tokens) {
+            if (low.includes(t)) score += 1;
+          }
+          return { text, score };
+        })
+        .filter((x) => x.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5)
+        .map((x) => x.text);
+      if (lexicalTexts.length) {
+        retrievalMode = "lexical_fallback_after_error";
+        contextHitsCount = lexicalTexts.length;
+        contextBlock = lexicalTexts.join("\n---\n");
+      }
+    } catch (fallbackErr) {
+      console.warn("[ai-rag] lexical fallback failed:", fallbackErr?.message || String(fallbackErr));
+    }
   }
 
   console.log("RAG CONTEXT:", contextBlock.trim() ? contextBlock.slice(0, 4000) : "(empty)");
@@ -518,6 +593,7 @@ ${queryText}
       assistantId: assistant.id,
       collection: coll,
       contextHits: contextHitsCount,
+      retrievalMode,
       contextError: contextError || null,
       embedModel,
       chatModel,
