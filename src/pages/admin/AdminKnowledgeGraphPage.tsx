@@ -296,7 +296,13 @@ export default function AdminKnowledgeGraphPage() {
             </select>
           </div>
           <div className="mb-3 flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={removeTopicByFilters}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+              onClick={removeTopicByFilters}
+            >
               Удалить тему по фильтрам
             </Button>
           </div>
