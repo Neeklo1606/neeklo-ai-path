@@ -8,7 +8,9 @@ import {
   fetchChatBootstrap,
   chatComplete,
   createCrmChatSession,
+  fetchCurrentChatTranscript,
   getPrototypeJobStatus,
+  type CrmTranscriptEntry,
 } from "@/lib/cms-api";
 import { useLanguage } from "@/hooks/useLanguage";
 
@@ -17,6 +19,24 @@ interface Message {
   role: "user" | "ai";
   text: string;
   timestamp: Date;
+}
+
+function mapTranscriptToUiMessages(rows: CrmTranscriptEntry[]): { msgs: Message[]; maxId: number } {
+  const msgs: Message[] = [];
+  let nid = 0;
+  for (const e of rows) {
+    const content = String(e.content ?? "");
+    const ts = e.at ? new Date(String(e.at)) : new Date();
+    nid += 1;
+    if (e.role === "user") {
+      msgs.push({ id: nid, role: "user", text: content, timestamp: ts });
+    } else if (e.role === "assistant") {
+      msgs.push({ id: nid, role: "ai", text: content, timestamp: ts });
+    } else if (e.role === "manager") {
+      msgs.push({ id: nid, role: "ai", text: `Менеджер: ${content}`, timestamp: ts });
+    }
+  }
+  return { msgs, maxId: nid };
 }
 
 function renderTextWithLinks(text: string) {
@@ -112,6 +132,8 @@ const ChatPage = () => {
   const [crmChatId, setCrmChatId] = useState<string | null>(null);
   const [crmSessionReady, setCrmSessionReady] = useState(false);
   const prototypePollRef = useRef<number | null>(null);
+  const transcriptPollRef = useRef<number | null>(null);
+  const transcriptSigRef = useRef("");
   const msgIdRef = useRef(0);
   const nextId = () => {
     msgIdRef.current += 1;
@@ -132,28 +154,34 @@ const ChatPage = () => {
     setCrmSessionReady(false);
   }, [locale]);
 
-  /** Сессия CRM + подгрузка истории с сервера (тот же chatId в localStorage) */
+  /** Сессия CRM хранится на сервере (cookie + БД), без localStorage */
   useEffect(() => {
     if (!boot.data) return;
     let cancelled = false;
     const w = welcomeText;
     (async () => {
       try {
-        const existing = localStorage.getItem("neeklo_crm_chat_id");
-        // Full accounting mode: each new page visit starts a fresh CRM dialog.
-        const r = await createCrmChatSession(existing, true);
+        const r = await createCrmChatSession();
         if (cancelled) return;
-        localStorage.setItem("neeklo_crm_chat_id", r.chatId);
-        setCrmChatId(r.chatId);
-
-        // For a new session always start from welcome state.
-        if (w) {
+        const current = await fetchCurrentChatTranscript();
+        if (cancelled) return;
+        setCrmChatId(current?.id || r.chatId);
+        const rows = Array.isArray(current?.messages) ? current.messages : [];
+        if (rows.length > 0) {
+          const sig = rows.map((m) => `${m.role}|${m.at || ""}|${m.content || ""}`).join("||");
+          transcriptSigRef.current = sig;
+          const { msgs, maxId } = mapTranscriptToUiMessages(rows);
+          msgIdRef.current = Math.max(msgIdRef.current, maxId);
+          setMessages(msgs);
+        } else if (w) {
           msgIdRef.current = 0;
+          transcriptSigRef.current = "";
           setMessages([{ id: nextId(), role: "ai", text: w, timestamp: new Date() }]);
         }
       } catch {
         if (!cancelled && w) {
           msgIdRef.current = 0;
+          transcriptSigRef.current = "";
           setMessages([{ id: nextId(), role: "ai", text: w, timestamp: new Date() }]);
         }
       } finally {
@@ -172,6 +200,13 @@ const ChatPage = () => {
     if (prototypePollRef.current != null) {
       window.clearInterval(prototypePollRef.current);
       prototypePollRef.current = null;
+    }
+  }, []);
+
+  const stopTranscriptPolling = useCallback(() => {
+    if (transcriptPollRef.current != null) {
+      window.clearInterval(transcriptPollRef.current);
+      transcriptPollRef.current = null;
     }
   }, []);
 
@@ -231,6 +266,32 @@ const ChatPage = () => {
   }, []);
 
   useEffect(() => () => stopPrototypePolling(), [stopPrototypePolling]);
+  useEffect(() => () => stopTranscriptPolling(), [stopTranscriptPolling]);
+
+  useEffect(() => {
+    if (!crmSessionReady) return;
+    stopTranscriptPolling();
+    const syncTranscript = async () => {
+      try {
+        const tr = await fetchCurrentChatTranscript();
+        const rows = Array.isArray(tr?.messages) ? tr.messages : [];
+        if (!rows.length) return;
+        if (tr?.id && tr.id !== crmChatId) setCrmChatId(tr.id);
+        const sig = rows.map((m) => `${m.role}|${m.at || ""}|${m.content || ""}`).join("||");
+        if (sig === transcriptSigRef.current) return;
+        transcriptSigRef.current = sig;
+        const { msgs, maxId } = mapTranscriptToUiMessages(rows);
+        msgIdRef.current = Math.max(msgIdRef.current, maxId);
+        setMessages(msgs);
+        setIsTyping(false);
+      } catch {
+        // keep silent; next poll retry
+      }
+    };
+    syncTranscript();
+    transcriptPollRef.current = window.setInterval(syncTranscript, 2000);
+    return () => stopTranscriptPolling();
+  }, [crmSessionReady, crmChatId, stopTranscriptPolling]);
 
   useEffect(() => {
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
@@ -267,9 +328,11 @@ const ChatPage = () => {
           setIsTyping(false);
           if (r.chat_id && !crmChatId) {
             setCrmChatId(r.chat_id);
-            localStorage.setItem("neeklo_crm_chat_id", r.chat_id);
           }
-          setMessages((p) => [...p, { id: nextId(), role: "ai", text: r.reply, timestamp: new Date() }]);
+          // Transcript polling is the single source of truth for AI/operator messages.
+          if (!r.chat_id && !crmChatId) {
+            setMessages((p) => [...p, { id: nextId(), role: "ai", text: r.reply, timestamp: new Date() }]);
+          }
           if (r.prototype_job?.id) {
             startPrototypePolling(r.prototype_job.id);
           }

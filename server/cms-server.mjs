@@ -131,6 +131,45 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(ROOT, "public")));
 
+const PUBLIC_CHAT_COOKIE = "neeklo_crm_chat_id";
+const PUBLIC_CHAT_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+
+function parseCookieHeader(cookieHeader) {
+  const out = {};
+  const raw = String(cookieHeader || "");
+  if (!raw) return out;
+  for (const chunk of raw.split(";")) {
+    const i = chunk.indexOf("=");
+    if (i <= 0) continue;
+    const key = chunk.slice(0, i).trim();
+    const value = chunk.slice(i + 1).trim();
+    if (!key) continue;
+    out[key] = decodeURIComponent(value);
+  }
+  return out;
+}
+
+function getPublicChatCookie(req) {
+  const all = parseCookieHeader(req.headers?.cookie);
+  const val = String(all[PUBLIC_CHAT_COOKIE] || "").trim();
+  return isUuid(val) ? val : null;
+}
+
+function setPublicChatCookie(req, res, chatId) {
+  if (!isUuid(chatId)) return;
+  const protoHdr = String(req.headers?.["x-forwarded-proto"] || "");
+  const secure = req.secure || protoHdr.split(",")[0].trim() === "https";
+  const attrs = [
+    `${PUBLIC_CHAT_COOKIE}=${encodeURIComponent(chatId)}`,
+    "Path=/",
+    `Max-Age=${PUBLIC_CHAT_COOKIE_MAX_AGE_SECONDS}`,
+    "HttpOnly",
+    "SameSite=Lax",
+  ];
+  if (secure) attrs.push("Secure");
+  res.setHeader("Set-Cookie", attrs.join("; "));
+}
+
 await fs.mkdir(UPLOAD_DIR, { recursive: true });
 
 const storage = multer.diskStorage({
@@ -2009,21 +2048,26 @@ app.post("/assistants/:id/rag/search", requireAuth, async (req, res) => {
 app.post("/crm/chat-session", async (req, res) => {
   try {
     const forceNew = Boolean(req.body?.force_new);
-    const existing = req.body?.chatId;
+    const bodyChatId = String(req.body?.chatId || "").trim();
+    const existing = (isUuid(bodyChatId) ? bodyChatId : null) || getPublicChatCookie(req);
     if (!forceNew && existing && isUuid(existing)) {
       const ch = await prisma.chat.findUnique({ where: { id: existing } });
-      if (ch) return res.json({ chatId: ch.id });
+      if (ch) {
+        setPublicChatCookie(req, res, ch.id);
+        return res.json({ chatId: ch.id });
+      }
     }
     const chat = await prisma.chat.create({
       data: { messages: [] },
     });
+    setPublicChatCookie(req, res, chat.id);
     res.json({ chatId: chat.id });
   } catch (e) {
     res.status(500).json({ error: e.message || "Session failed" });
   }
 });
 
-/** Публичная выгрузка истории чата (UUID в localStorage — секрет ссылки) */
+/** Публичная выгрузка истории чата по ID */
 app.get("/crm/chat-transcript/:id", async (req, res) => {
   try {
     const id = req.params.id;
@@ -2039,6 +2083,25 @@ app.get("/crm/chat-transcript/:id", async (req, res) => {
     res.json({ id: chat.id, messages });
   } catch (e) {
     res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
+/** Публичная выгрузка истории чата по cookie-сессии */
+app.get("/crm/chat-transcript-current", async (req, res) => {
+  try {
+    const id = getPublicChatCookie(req);
+    if (!id) return res.status(404).json({ error: "Not found" });
+    const billCfg = getBillingConfig();
+    const ipKey = `transcript:${clientIp(req)}`;
+    if (!rateLimitByKeyHash(ipKey, Math.max(30, billCfg.rateLimitPerMin * 2))) {
+      return res.status(429).json({ error: "Rate limit exceeded", retry_after_seconds: 60 });
+    }
+    const chat = await prisma.chat.findUnique({ where: { id } });
+    if (!chat) return res.status(404).json({ error: "Not found" });
+    const messages = parseChatMessagesJson(chat.messages);
+    return res.json({ id: chat.id, messages });
+  } catch (e) {
+    return res.status(500).json({ error: e.message || "Failed" });
   }
 });
 
@@ -2225,6 +2288,11 @@ app.post("/chat", async (req, res) => {
     }
 
     if (!crmChatId || !isUuid(crmChatId)) {
+      const fromCookie = getPublicChatCookie(req);
+      if (fromCookie) crmChatId = fromCookie;
+    }
+
+    if (!crmChatId || !isUuid(crmChatId)) {
       try {
         const created = await prisma.chat.create({
           data: { messages: [], assistantId: asst.id, status: "active" },
@@ -2233,6 +2301,9 @@ app.post("/chat", async (req, res) => {
       } catch (sessionErr) {
         console.error("[crm] auto-create chat session failed", sessionErr);
       }
+    }
+    if (crmChatId && isUuid(crmChatId)) {
+      setPublicChatCookie(req, res, crmChatId);
     }
 
     if (crmChatId && isUuid(crmChatId)) {
