@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,11 @@ const OPENAI_MODEL_PRESETS = ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4.1", "o4-mini
 function GraphPreview({ points, seed }: { points: number; seed: string }) {
   const graph = useMemo(() => buildKnowledgeGraph(points, seed), [points, seed]);
   const byId = useMemo(() => Object.fromEntries(graph.nodes.map((n) => [n.id, n])), [graph.nodes]);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const [hoveredNode, setHoveredNode] = useState<string>("");
+  const dragStart = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
 
   return (
     <div className="rounded-2xl border border-[#E8E6E0] bg-[#0E1016] p-4 text-white">
@@ -30,9 +35,43 @@ function GraphPreview({ points, seed }: { points: number; seed: string }) {
         <p className="text-sm font-semibold">Граф знаний (как в Obsidian)</p>
         <p className="text-xs text-white/70">Узлы: {graph.nodes.length - 1}</p>
       </div>
-      <div className="relative overflow-hidden rounded-xl border border-white/10 bg-[#0A0C12]">
-        <svg viewBox="-100 -100 200 200" className="h-[280px] w-full">
-          <g style={{ transformOrigin: "50% 50%", animation: "kb-rotate 26s linear infinite" }}>
+      <div
+        className="relative overflow-hidden rounded-xl border border-white/10 bg-[#0A0C12]"
+        onWheel={(e) => {
+          e.preventDefault();
+          const next = e.deltaY < 0 ? zoom + 0.1 : zoom - 0.1;
+          setZoom(Math.max(0.6, Math.min(2.4, Number(next.toFixed(2)))));
+        }}
+        onMouseDown={(e) => {
+          setDragging(true);
+          dragStart.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
+        }}
+        onMouseMove={(e) => {
+          if (!dragging || !dragStart.current) return;
+          const dx = e.clientX - dragStart.current.x;
+          const dy = e.clientY - dragStart.current.y;
+          setPan({
+            x: dragStart.current.panX + dx / 2.5,
+            y: dragStart.current.panY + dy / 2.5,
+          });
+        }}
+        onMouseUp={() => {
+          setDragging(false);
+          dragStart.current = null;
+        }}
+        onMouseLeave={() => {
+          setDragging(false);
+          dragStart.current = null;
+        }}
+      >
+        <svg viewBox="-100 -100 200 200" className="h-[280px] w-full cursor-grab active:cursor-grabbing">
+          <g
+            style={{
+              transformOrigin: "50% 50%",
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              transition: dragging ? "none" : "transform 120ms ease-out",
+            }}
+          >
             {graph.edges.map((e, idx) => {
               const a = byId[e.from];
               const b = byId[e.to];
@@ -57,14 +96,28 @@ function GraphPreview({ points, seed }: { points: number; seed: string }) {
                 cy={n.y}
                 r={n.id === "core" ? 4.2 : n.size}
                 fill={n.id === "core" ? "#f8f9ff" : "rgba(224,230,255,0.92)"}
-                style={{ filter: n.id === "core" ? "drop-shadow(0 0 8px rgba(122,142,255,0.8))" : undefined, animation: `kb-pulse 2.1s ease-in-out ${idx * 55}ms infinite` }}
+                style={{
+                  filter: n.id === "core" ? "drop-shadow(0 0 8px rgba(122,142,255,0.8))" : undefined,
+                  animation: `kb-pulse 2.1s ease-in-out ${idx * 55}ms infinite`,
+                  cursor: "pointer",
+                  opacity: hoveredNode && hoveredNode !== n.id ? 0.5 : 1,
+                }}
+                onMouseEnter={() => setHoveredNode(n.id)}
+                onMouseLeave={() => setHoveredNode("")}
               />
             ))}
           </g>
         </svg>
+        {hoveredNode && (
+          <div className="pointer-events-none absolute right-2 top-2 rounded-md bg-black/70 px-2 py-1 text-xs text-white">
+            {graph.nodes.find((n) => n.id === hoveredNode)?.label || hoveredNode}
+          </div>
+        )}
+        <div className="pointer-events-none absolute bottom-2 right-2 rounded-md bg-black/60 px-2 py-1 text-[11px] text-white/85">
+          Колесо: зум, мышь: перетаскивание
+        </div>
       </div>
       <style>{`
-        @keyframes kb-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes kb-pulse { 0%,100% { opacity: .65; } 50% { opacity: 1; } }
         @keyframes kb-fade { 0%,100% { opacity: .2; } 50% { opacity: .8; } }
       `}</style>
@@ -92,6 +145,9 @@ export default function AdminKnowledgePage() {
   const [helperQuestion, setHelperQuestion] = useState("");
   const [helperAnswer, setHelperAnswer] = useState("");
   const [helperLoading, setHelperLoading] = useState(false);
+  const [importProgress, setImportProgress] = useState("");
+  const [dragOver, setDragOver] = useState(false);
+  const folderInputRef = useRef<HTMLInputElement | null>(null);
 
   const current = useMemo(() => assistants.find((a) => a.id === assistantId) || null, [assistants, assistantId]);
   const step1Done = Boolean(model && embedModel && (provider !== "openai" || providerApiKey.trim()));
@@ -223,16 +279,20 @@ export default function AdminKnowledgePage() {
     }
   };
 
-  const onObsidianFolder = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    e.target.value = "";
+  const importObsidianFiles = async (files: File[]) => {
     if (!assistantId || !files.length) return;
     const mdFiles = files.filter((f) => f.name.toLowerCase().endsWith(".md"));
-    if (!mdFiles.length) return toast.error("В папке нет .md файлов");
+    if (!mdFiles.length) {
+      toast.error("Не найдено .md файлов. Выберите папку Obsidian vault или несколько .md файлов.");
+      return;
+    }
     setBusy(true);
+    setImportProgress(`Старт импорта: ${mdFiles.length} файлов`);
     let ok = 0;
     let fail = 0;
-    for (const file of mdFiles) {
+    for (let i = 0; i < mdFiles.length; i += 1) {
+      const file = mdFiles[i];
+      setImportProgress(`Импорт ${i + 1}/${mdFiles.length}: ${file.name}`);
       try {
         await ingestKnowledgeFile(assistantId, file);
         ok += 1;
@@ -242,8 +302,15 @@ export default function AdminKnowledgePage() {
     }
     await refreshStats(assistantId);
     setBusy(false);
+    setImportProgress(`Готово: успешно ${ok}, ошибок ${fail}`);
     if (!fail) toast.success(`Импортировано Obsidian файлов: ${ok}`);
     else toast.warning(`Импортировано: ${ok}, ошибок: ${fail}`);
+  };
+
+  const onObsidianFolder = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    await importObsidianFiles(files);
   };
 
   const wipe = async () => {
@@ -413,16 +480,41 @@ export default function AdminKnowledgePage() {
               <Input type="file" accept=".pdf,.txt,.md,.docx" onChange={onFile} />
             </div>
             <div className="space-y-2">
-              <Label>Импорт Obsidian vault (папка с .md)</Label>
-              <Input
-                type="file"
-                // @ts-expect-error chromium-only attribute
-                webkitdirectory=""
-                // @ts-expect-error chromium-only attribute
-                directory=""
-                multiple
-                onChange={onObsidianFolder}
-              />
+              <Label>Импорт Obsidian vault (.md)</Label>
+              <div
+                className={`rounded-xl border p-3 text-sm transition-colors ${dragOver ? "border-[#3B82F6] bg-blue-50" : "border-[#E8E6E0] bg-[#FAFAF8]"}`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  const files = Array.from(e.dataTransfer.files || []);
+                  await importObsidianFiles(files);
+                }}
+              >
+                <p className="text-muted-foreground">Перетащите папку/файлы .md сюда или выберите вручную.</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <input
+                    ref={folderInputRef}
+                    type="file"
+                    style={{ display: "none" }}
+                    // @ts-expect-error chromium-only attribute
+                    webkitdirectory=""
+                    // @ts-expect-error chromium-only attribute
+                    directory=""
+                    multiple
+                    onChange={onObsidianFolder}
+                  />
+                  <Button type="button" variant="outline" onClick={() => folderInputRef.current?.click()}>
+                    Выбрать папку Obsidian
+                  </Button>
+                  <Input type="file" accept=".md" multiple onChange={onObsidianFolder} />
+                </div>
+                {importProgress && <p className="mt-2 text-xs text-muted-foreground">{importProgress}</p>}
+              </div>
             </div>
             <Button type="button" variant="outline" className="rounded-xl border-red-200 text-red-800" onClick={wipe} disabled={busy}>
               Очистить базу знаний
