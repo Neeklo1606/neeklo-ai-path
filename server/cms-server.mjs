@@ -606,7 +606,7 @@ function getPublicSiteBase() {
 function sanitizeSlugPart(text) {
   return String(text || "")
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .replace(/[^a-z0-9\s-]/g, " ")
     .trim()
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
@@ -759,7 +759,7 @@ async function buildPrototypeLandingJob(jobId) {
     await patch({ normalizedBrief: parsed, status: "assembling_layout", progress: 70 });
     const slug = `prototype-${Date.now()}-${sanitizeSlugPart(parsed?.title || "landing")}`.slice(0, 90);
     const html = renderPrototypeHtml(parsed || {});
-    const publicUrl = `${getPublicSiteBase()}/prototype/${encodeURIComponent(slug)}`;
+    const publicUrl = `${getPublicSiteBase()}/cms-api/prototype/${encodeURIComponent(slug)}`;
     await patch({
       status: "publishing",
       progress: 88,

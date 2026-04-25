@@ -21,6 +21,27 @@ interface Message {
   timestamp: Date;
 }
 
+function renderTextWithLinks(text: string) {
+  const urlRe = /(https?:\/\/[^\s]+)/g;
+  const parts = String(text || "").split(urlRe);
+  return parts.map((part, idx) => {
+    if (/^https?:\/\/\S+$/i.test(part)) {
+      return (
+        <a
+          key={`${part}-${idx}`}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "#2563eb", textDecoration: "underline", wordBreak: "break-all" }}
+        >
+          {part}
+        </a>
+      );
+    }
+    return <span key={`txt-${idx}`}>{part}</span>;
+  });
+}
+
 function mapTranscriptToUiMessages(rows: CrmTranscriptEntry[]): { msgs: Message[]; maxId: number } {
   const msgs: Message[] = [];
   let nid = 0;
@@ -419,7 +440,7 @@ const ChatPage = () => {
                     color: "#0D0D0B",
                   }}
                 >
-                  {msg.text}
+                  {renderTextWithLinks(msg.text)}
                 </div>
               </motion.div>
             ) : (
