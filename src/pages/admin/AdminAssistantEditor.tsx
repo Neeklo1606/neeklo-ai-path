@@ -42,6 +42,7 @@ export default function AdminAssistantEditor() {
   const [providerApiKey, setProviderApiKey] = useState("");
   const [openAiModels, setOpenAiModels] = useState<string[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
+  const [showAdvancedOpenAi, setShowAdvancedOpenAi] = useState(false);
   const [active, setActive] = useState(true);
   const [loading, setLoading] = useState(!isNew);
   const [shownKey, setShownKey] = useState<string | null>(null);
@@ -88,6 +89,16 @@ export default function AdminAssistantEditor() {
       cancelled = true;
     };
   }, [id, isNew, navigate]);
+
+  useEffect(() => {
+    if (provider !== "openai") return;
+    if (!model || model === "qwen2.5:7b") {
+      setModel("gpt-4o-mini");
+    }
+    if (!embedModel || embedModel === "nomic-embed-text") {
+      setEmbedModel("text-embedding-3-small");
+    }
+  }, [provider, model, embedModel]);
 
   const save = async () => {
     try {
@@ -285,12 +296,17 @@ export default function AdminAssistantEditor() {
               onChange={(e) => setProvider(e.target.value)}
             >
               <option value="ollama">Ollama (локально, RAG)</option>
-              <option value="openai">OpenAI-совместимый API</option>
+              <option value="openai">OpenAI API (рекомендуется)</option>
             </select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="md">Модель чата</Label>
             <Input id="md" value={model} onChange={(e) => setModel(e.target.value)} className="rounded-xl" list="chat-models" />
+            {!ollamaMode && (
+              <p className="text-xs text-muted-foreground">
+                Нажмите «Загрузить доступные модели», чтобы выбрать модель из вашего аккаунта автоматически.
+              </p>
+            )}
             <datalist id="chat-models">
               {(ollamaMode ? MODEL_PRESETS : [...OPENAI_MODEL_PRESETS, ...openAiModels]).map((m) => (
                 <option key={m} value={m} />
@@ -329,18 +345,6 @@ export default function AdminAssistantEditor() {
         )}
         {!ollamaMode && (
           <div className="space-y-2">
-            <Label htmlFor="base">Base URL (OpenAI-совместимый API)</Label>
-            <Input
-              id="base"
-              value={openaiBaseUrl}
-              onChange={(e) => setOpenaiBaseUrl(e.target.value)}
-              className="rounded-xl"
-              placeholder="https://api.openai.com/v1"
-            />
-          </div>
-        )}
-        {!ollamaMode && (
-          <div className="space-y-2">
             <Label htmlFor="pk">Ключ провайдера</Label>
             <Input
               id="pk"
@@ -351,6 +355,9 @@ export default function AdminAssistantEditor() {
               className="rounded-xl"
               placeholder="sk-..."
             />
+            <p className="text-xs text-muted-foreground">
+              Для OpenAI просто укажите ключ. Адрес API менять не нужно в большинстве случаев.
+            </p>
           </div>
         )}
         {!ollamaMode && (
@@ -360,6 +367,32 @@ export default function AdminAssistantEditor() {
             </Button>
             {openAiModels.length > 0 && (
               <p className="text-sm text-muted-foreground self-center">Доступно: {openAiModels.length}</p>
+            )}
+          </div>
+        )}
+        {!ollamaMode && (
+          <div className="space-y-2 rounded-xl border border-[#E8E6E0] bg-[#FAFAF8] p-3">
+            <button
+              type="button"
+              className="text-sm font-medium underline underline-offset-4"
+              onClick={() => setShowAdvancedOpenAi((v) => !v)}
+            >
+              {showAdvancedOpenAi ? "Скрыть расширенные настройки API" : "Показать расширенные настройки API"}
+            </button>
+            {showAdvancedOpenAi && (
+              <div className="space-y-2">
+                <Label htmlFor="base">Адрес API (опционально)</Label>
+                <Input
+                  id="base"
+                  value={openaiBaseUrl}
+                  onChange={(e) => setOpenaiBaseUrl(e.target.value)}
+                  className="rounded-xl"
+                  placeholder="https://api.openai.com/v1"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Нужен только для сторонних OpenAI-совместимых сервисов (OpenRouter, Together, Groq и т.д.).
+                </p>
+              </div>
             )}
           </div>
         )}
@@ -388,11 +421,12 @@ export default function AdminAssistantEditor() {
         </div>
       </div>
 
-      {!isNew && ollamaMode && (
+      {!isNew && (
         <div className="grid gap-6 rounded-2xl border border-[#E8E6E0] bg-white p-6">
-          <h2 className="font-heading text-lg font-extrabold">База знаний (Qdrant + RAG)</h2>
+          <h2 className="font-heading text-lg font-extrabold">База знаний (Obsidian / файлы / RAG)</h2>
           <p className="text-sm text-muted-foreground">
-            Текст режется на чанки → эмбеддинги ({embedModel}) → коллекция <code className="text-xs">{statsQ.data?.collection ?? "…"}</code>.
+            Добавляйте заметки из Obsidian или файлы: текст режется на чанки, индексируется и используется в ответах.
+            Эмбеддинги: <code className="text-xs">{embedModel}</code>. Коллекция: <code className="text-xs">{statsQ.data?.collection ?? "…"}</code>.
             Точек: <strong>{statsQ.isLoading ? "…" : statsQ.data?.points ?? 0}</strong>
           </p>
           <div className="space-y-2">

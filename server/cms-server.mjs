@@ -19,6 +19,7 @@ import {
   getOllamaBase,
   collectionNameForAssistant,
   createEmbedding,
+  createOpenAiCompatibleEmbedding,
   chunkText,
   extractTextFromFile,
   upsertChunks,
@@ -52,6 +53,29 @@ const MAX_FILE_BYTES = Math.min(
 const PORT = Number(process.env.PORT || process.env.CMS_SERVER_PORT || 8787);
 const JWT_SECRET = process.env.JWT_SECRET;
 const OPENAI_FALLBACK = process.env.OPENAI_API_KEY || "";
+function isOllamaAssistant(assistant) {
+  const p = String(assistant?.provider || "").toLowerCase();
+  return p === "ollama" || p === "local";
+}
+
+function getAssistantProviderToken(assistant) {
+  return assistant?.providerApiKey || OPENAI_FALLBACK;
+}
+
+async function createAssistantEmbedding(assistant, text) {
+  if (isOllamaAssistant(assistant)) {
+    return createEmbedding(getOllamaBase(assistant), assistant.embedModel || "nomic-embed-text", text);
+  }
+  const token = getAssistantProviderToken(assistant);
+  if (!token) throw new Error("Provider API key not configured");
+  return createOpenAiCompatibleEmbedding({
+    baseUrl: assistant.baseUrl,
+    apiKey: token,
+    model: assistant.embedModel || "text-embedding-3-small",
+    text,
+  });
+}
+
 
 const prisma = new PrismaClient();
 
@@ -1196,8 +1220,6 @@ app.post("/assistants/:id/knowledge/text", requireAuth, async (req, res) => {
   try {
     const asst = await prisma.assistant.findUnique({ where: { id: req.params.id } });
     if (!asst) return res.status(404).json({ error: "Not found" });
-    const ollamaBase = getOllamaBase(asst);
-    const embedModel = asst.embedModel || "nomic-embed-text";
     const coll = collectionNameForAssistant(asst.id);
     const chunks = chunkText(text);
     if (!chunks.length) return res.status(400).json({ error: "No chunks after split" });
@@ -1205,11 +1227,12 @@ app.post("/assistants/:id/knowledge/text", requireAuth, async (req, res) => {
     const out = await upsertChunks({
       client,
       collectionName: coll,
-      ollamaBase,
-      embedModel,
+      ollamaBase: getOllamaBase(asst),
+      embedModel: asst.embedModel || "nomic-embed-text",
       assistantId: asst.id,
       chunks,
       source: "manual",
+      embedText: (t) => createAssistantEmbedding(asst, t),
     });
     res.json({ ok: true, ...out });
   } catch (e) {
@@ -1227,18 +1250,17 @@ app.post("/assistants/:id/knowledge/upload", requireAuth, uploadKb.single("file"
     const raw = await extractTextFromFile(f.buffer, f.mimetype, f.originalname);
     const chunks = chunkText(raw);
     if (!chunks.length) return res.status(400).json({ error: "No text extracted or empty" });
-    const ollamaBase = getOllamaBase(asst);
-    const embedModel = asst.embedModel || "nomic-embed-text";
     const coll = collectionNameForAssistant(asst.id);
     const client = getQdrantClient();
     const out = await upsertChunks({
       client,
       collectionName: coll,
-      ollamaBase,
-      embedModel,
+      ollamaBase: getOllamaBase(asst),
+      embedModel: asst.embedModel || "nomic-embed-text",
       assistantId: asst.id,
       chunks,
       source: `file:${f.originalname}`,
+      embedText: (t) => createAssistantEmbedding(asst, t),
     });
     res.json({ ok: true, ...out, filename: f.originalname });
   } catch (e) {
@@ -1292,7 +1314,7 @@ app.post("/assistants/:id/rag/embed", requireAuth, async (req, res) => {
     if (!asst) return res.status(404).json({ error: "Not found" });
     const text = (req.body?.text || "").toString();
     if (!text.trim()) return res.status(400).json({ error: "text required" });
-    const emb = await createEmbedding(getOllamaBase(asst), asst.embedModel || "nomic-embed-text", text);
+    const emb = await createAssistantEmbedding(asst, text);
     res.json({ embedding: emb });
   } catch (e) {
     res.status(500).json({ error: e.message || "Embed failed" });
@@ -1307,7 +1329,7 @@ app.post("/assistants/:id/rag/search", requireAuth, async (req, res) => {
     if (!text.trim()) return res.status(400).json({ error: "text required" });
     const client = getQdrantClient();
     const coll = collectionNameForAssistant(asst.id);
-    const qv = await createEmbedding(getOllamaBase(asst), asst.embedModel || "nomic-embed-text", text);
+    const qv = await createAssistantEmbedding(asst, text);
     const hits = await searchContext(client, coll, qv, 5);
     res.json({ hits });
   } catch (e) {
@@ -1479,7 +1501,7 @@ app.post("/chat", async (req, res) => {
       }
     }
 
-    const useOllama = (asst.provider || "").toLowerCase() === "ollama" || (asst.provider || "").toLowerCase() === "local";
+    const useOllama = isOllamaAssistant(asst);
 
     if (useOllama) {
       const ollamaStarted = Date.now();
@@ -1514,18 +1536,33 @@ app.post("/chat", async (req, res) => {
       return res.json({ reply, used_context: usedContext, provider: "ollama", billing });
     }
 
-    const apiToken = asst.providerApiKey || OPENAI_FALLBACK;
+    const apiToken = getAssistantProviderToken(asst);
     if (!apiToken) {
       return res.status(503).json({ error: "Provider API key not configured (or switch assistant provider to ollama)" });
     }
 
-    const text = await chatOpenAiCompatible({
-      baseUrl: asst.baseUrl,
-      apiKey: apiToken,
-      model: asst.model,
-      systemPrompt: asst.systemPrompt,
+    const result = await chatWithRag({
+      assistant: asst,
       messages,
+      embedText: (t) =>
+        createOpenAiCompatibleEmbedding({
+          baseUrl: asst.baseUrl,
+          apiKey: apiToken,
+          model: asst.embedModel || "text-embedding-3-small",
+          text: t,
+        }),
+      generateText: async ({ systemContent, queryText }) => {
+        const text = await chatOpenAiCompatible({
+          baseUrl: asst.baseUrl,
+          apiKey: apiToken,
+          model: asst.model,
+          systemPrompt: systemContent,
+          messages: [{ role: "user", content: queryText }],
+        });
+        return { text };
+      },
     });
+    const text = result.reply;
     if (crmChatId && isUuid(crmChatId)) {
       try {
         await persistCrmAssistantReply(crmChatId, text);
@@ -1550,7 +1587,7 @@ app.post("/chat", async (req, res) => {
     } catch (be) {
       console.error("[billing] deduct", be);
     }
-    res.json({ reply: text, provider: "openai_compatible", billing });
+    res.json({ reply: text, used_context: result.usedContext, provider: "openai_compatible", billing });
   } catch (e) {
     res.status(502).json({ error: e.message || "Fetch failed" });
   }

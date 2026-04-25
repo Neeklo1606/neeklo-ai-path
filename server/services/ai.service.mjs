@@ -84,6 +84,30 @@ export async function createEmbedding(ollamaBase, embedModel, text) {
   }
 }
 
+export async function createOpenAiCompatibleEmbedding({ baseUrl, apiKey, model, text }) {
+  const base = (baseUrl || "https://api.openai.com/v1").replace(/\/$/, "");
+  const r = await fetch(`${base}/embeddings`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: model || "text-embedding-3-small",
+      input: String(text || "").slice(0, 8000),
+    }),
+  });
+  const json = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    throw new Error(typeof json?.error?.message === "string" ? json.error.message : json?.error || "Embedding upstream failed");
+  }
+  const emb = json?.data?.[0]?.embedding;
+  if (!Array.isArray(emb) || !emb.length) {
+    throw new Error("Invalid embedding response from OpenAI-compatible provider");
+  }
+  return emb;
+}
+
 /**
  * @param {import('@qdrant/js-client-rest').QdrantClient} client
  * @param {string} name
@@ -324,17 +348,20 @@ export async function extractTextFromFile(buffer, mime, originalname = "") {
  * @param {string[]} opts.chunks
  * @param {string} opts.source
  */
-export async function upsertChunks({ client, collectionName, ollamaBase, embedModel, assistantId, chunks, source }) {
+export async function upsertChunks({ client, collectionName, ollamaBase, embedModel, assistantId, chunks, source, embedText }) {
   console.log("RAG CHUNKS:", chunks.length);
   if (!chunks.length) return { upserted: 0 };
   try {
-    const firstEmb = await createEmbedding(ollamaBase, embedModel, chunks[0]);
+    const embedFn = typeof embedText === "function"
+      ? embedText
+      : (text) => createEmbedding(ollamaBase, embedModel, text);
+    const firstEmb = await embedFn(chunks[0]);
     await ensureCollection(client, collectionName, firstEmb);
 
     const points = [];
     for (let i = 0; i < chunks.length; i++) {
       const text = chunks[i];
-      const vector = i === 0 ? firstEmb : await createEmbedding(ollamaBase, embedModel, text);
+      const vector = i === 0 ? firstEmb : await embedFn(text);
       const id = crypto.randomUUID();
       points.push({
         id,
@@ -384,6 +411,8 @@ export async function chatWithRag({
   assistant,
   messages,
   client = getQdrantClient(),
+  embedText,
+  generateText,
 }) {
   const ollamaBase = getOllamaBase(assistant);
   const chatModel = assistant.model || "qwen2.5:7b";
@@ -402,7 +431,9 @@ export async function chatWithRag({
   let contextBlock = "";
   try {
     const loadRagContext = async () => {
-      const qv = await createEmbedding(ollamaBase, embedModel, queryText);
+      const qv = embedText
+        ? await embedText(queryText)
+        : await createEmbedding(ollamaBase, embedModel, queryText);
       const hits = await searchContext(client, coll, qv, 5);
       const texts = hits.map((h) => h.text).filter(Boolean);
       return texts.join("\n---\n");
@@ -447,9 +478,17 @@ ${queryText}
     { role: "user", content: queryText },
   ];
 
-  const gen = await generateResponse(ollamaBase, chatModel, ollamaMessages, {
-    temperature: Number.isFinite(temperature) ? temperature : 0.7,
-  });
+  const gen = generateText
+    ? await generateText({
+      systemContent,
+      queryText,
+      chatModel,
+      temperature,
+      assistant,
+    })
+    : await generateResponse(ollamaBase, chatModel, ollamaMessages, {
+      temperature: Number.isFinite(temperature) ? temperature : 0.7,
+    });
   let promptTokens = gen.promptTokens;
   let completionTokens = gen.completionTokens;
   if (!promptTokens && !completionTokens) {
