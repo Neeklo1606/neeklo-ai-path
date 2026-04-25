@@ -1379,7 +1379,7 @@ app.get("/assistants/:id/knowledge/graph", requireAuth, async (req, res) => {
     const sectionFilter = String(req.query?.section || "").trim();
     const tagFilter = String(req.query?.tag || "").trim();
 
-    const nodesAll = points
+    let nodesAll = points
       .map((p) => p?.payload || null)
       .filter((p) => p?.kind === "node")
       .map((p) => ({
@@ -1391,6 +1391,51 @@ app.get("/assistants/:id/knowledge/graph", requireAuth, async (req, res) => {
         tags: Array.isArray(p.tags) ? p.tags.map((t) => String(t || "")).filter(Boolean) : [],
       }))
       .filter((n) => n.id);
+
+    // Backward-compatible fallback:
+    // if dedicated graph collection has no nodes yet, derive nodes from existing chunk collection.
+    let fallbackEdges = [];
+    if (!nodesAll.length) {
+      const chunkColl = collectionNameForAssistant(asst.id);
+      let chunkPoints = [];
+      try {
+        const out = await client.scroll(chunkColl, {
+          limit: 1000,
+          with_payload: true,
+          with_vector: false,
+        });
+        chunkPoints = Array.isArray(out?.points) ? out.points : [];
+      } catch {
+        chunkPoints = [];
+      }
+      const derived = chunkPoints
+        .map((p, idx) => {
+          const payload = p?.payload || {};
+          const source = String(payload.source || "manual");
+          const title = source.startsWith("file:") ? source.replace(/^file:/, "") : `chunk-${idx + 1}`;
+          const slug = title
+            .toLowerCase()
+            .replace(/[^\p{L}\p{N}\s_-]/gu, " ")
+            .trim()
+            .replace(/\s+/g, "-")
+            .slice(0, 120) || `chunk-${idx + 1}`;
+          return {
+            id: `${slug}-${idx + 1}`,
+            title,
+            source,
+            category: "",
+            section: "",
+            tags: [],
+          };
+        });
+      nodesAll = derived;
+      // simple chain edges so nodes are visible connected
+      fallbackEdges = derived.slice(1).map((n, i) => ({
+        id: `${derived[i].id}->${n.id}`,
+        from: derived[i].id,
+        to: n.id,
+      }));
+    }
 
     const nodes = nodesAll.filter((n) => {
       if (categoryFilter && n.category !== categoryFilter) return false;
@@ -1409,12 +1454,13 @@ app.get("/assistants/:id/knowledge/graph", requireAuth, async (req, res) => {
         to: String(p.to || ""),
       }))
       .filter((e) => e.from && e.to && nodeIds.has(e.from) && nodeIds.has(e.to));
+    const outEdges = edges.length ? edges : fallbackEdges.filter((e) => nodeIds.has(e.from) && nodeIds.has(e.to));
 
     const categories = [...new Set(nodesAll.map((n) => n.category).filter(Boolean))].sort();
     const sections = [...new Set(nodesAll.map((n) => n.section).filter(Boolean))].sort();
     const tags = [...new Set(nodesAll.flatMap((n) => n.tags || []).filter(Boolean))].sort();
 
-    return res.json({ nodes, edges, facets: { categories, sections, tags } });
+    return res.json({ nodes, edges: outEdges, facets: { categories, sections, tags } });
   } catch (e) {
     return res.status(500).json({ error: e?.message || "Failed to load graph" });
   }
