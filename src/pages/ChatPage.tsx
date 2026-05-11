@@ -62,8 +62,8 @@ function renderTextWithLinks(text: string) {
 
 const AIAvatar = ({ size = 28 }: { size?: number }) => (
   <div
-    className="flex-shrink-0 rounded-full bg-[#0D0D0B]"
-    style={{ width: size, height: size }}
+    className="flex-shrink-0 rounded-full"
+    style={{ width: size, height: size, background: "var(--surface-3)" }}
     aria-hidden
   />
 );
@@ -74,8 +74,8 @@ const TypingDots = () => (
     <div
       className="flex items-center gap-1"
       style={{
-        background: "white",
-        border: "1px solid #F0F0F0",
+        background: "var(--surface)",
+        border: "1px solid var(--bd)",
         borderRadius: "4px 16px 16px 16px",
         padding: "14px 18px",
       }}
@@ -84,7 +84,7 @@ const TypingDots = () => (
         <motion.div
           key={i}
           className="rounded-full"
-          style={{ width: 6, height: 6, background: "#D0D0D0" }}
+          style={{ width: 6, height: 6, background: "var(--bd-hover)" }}
           animate={{ y: [0, -5, 0] }}
           transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
         />
@@ -348,22 +348,22 @@ const ChatPage = () => {
 
   if (boot.isLoading) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-white" aria-busy="true">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-foreground" />
+      <div className="flex min-h-[100dvh] items-center justify-center" style={{ background: "var(--bg)" }} aria-busy="true">
+        <div className="h-8 w-8 animate-spin rounded-full border-2" style={{ borderColor: "var(--bd)", borderTopColor: "var(--tx)" }} />
       </div>
     );
   }
 
   if (boot.isError) {
     return (
-      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-white px-6 text-center">
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 px-6 text-center" style={{ background: "var(--bg)" }}>
         <p className="font-body text-destructive break-words max-w-md">
           {(boot.error as Error).message}
         </p>
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="rounded-xl bg-[#0D0D0B] px-6 py-3 font-body text-sm font-semibold text-white"
+          className="rounded-xl px-6 py-3 font-body text-sm font-semibold btn-primary"
         >
           ←
         </button>
@@ -380,7 +380,7 @@ const ChatPage = () => {
         height: "100dvh",
         maxHeight: "-webkit-fill-available",
         overflow: "hidden",
-        background: "white",
+        background: "var(--bg)",
         position: "fixed",
         inset: 0,
         zIndex: 50,
@@ -390,25 +390,25 @@ const ChatPage = () => {
         style={{
           height: 64,
           flexShrink: 0,
-          borderBottom: "1px solid #F0F0F0",
+          borderBottom: "1px solid var(--bd)",
           display: "flex",
           alignItems: "center",
           gap: 12,
           padding: "0 16px",
-          background: "white",
+          background: "var(--surface)",
         }}
       >
         <button
           type="button"
           onClick={() => navigate(-1)}
           className="flex items-center justify-center hover:bg-[#F5F5F5] transition-colors"
-          style={{ width: 36, height: 36, borderRadius: 12, flexShrink: 0, background: "transparent", border: "none", cursor: "pointer" }}
+          style={{ width: 36, height: 36, borderRadius: 12, flexShrink: 0, background: "var(--surface-2)", border: "1px solid var(--bd)", cursor: "pointer", color: "var(--tx)" }}
         >
           <ArrowLeft size={18} />
         </button>
         <AIAvatar size={36} />
         <div style={{ minWidth: 0, flex: 1 }}>
-          <p className="font-body" style={{ fontSize: 15, fontWeight: 600, color: "#0D0D0B", lineHeight: 1, marginBottom: 3 }}>
+          <p className="font-body" style={{ fontSize: 15, fontWeight: 600, color: "var(--tx)", lineHeight: 1, marginBottom: 3 }}>
             {headerTitle}
           </p>
           <div className="flex items-center gap-1.5">
@@ -432,7 +432,7 @@ const ChatPage = () => {
       {!hasAssistant ? (
         <div
           className="font-body shrink-0 px-4 py-2.5 text-center text-[13px]"
-          style={{ background: "#FFF8E6", color: "#5C4A00", borderBottom: "1px solid #F5E6C0" }}
+          style={{ background: "rgba(138,106,42,0.12)", color: "var(--warning)", borderBottom: "1px solid var(--bd)" }}
         >
           {c.noAssistantBanner}
         </div>
@@ -443,7 +443,7 @@ const ChatPage = () => {
           flex: 1,
           minHeight: 0,
           overflowY: "auto",
-          background: "#F9F9F9",
+          background: "var(--bg)",
           padding: "20px 16px 8px",
         }}
       >
@@ -461,14 +461,14 @@ const ChatPage = () => {
                 <div
                   className="font-body"
                   style={{
-                    background: "white",
-                    border: "1px solid #F0F0F0",
+                    background: "var(--surface)",
+                    border: "1px solid var(--bd)",
                     borderRadius: "4px 16px 16px 16px",
                     padding: "12px 16px",
                     fontSize: 15,
                     maxWidth: "78%",
                     lineHeight: 1.55,
-                    color: "#0D0D0B",
+                    color: "var(--tx)",
                   }}
                 >
                   {renderTextWithLinks(msg.text)}
@@ -485,8 +485,8 @@ const ChatPage = () => {
                 <div
                   className="font-body"
                   style={{
-                    background: "#0D0D0B",
-                    color: "#fff",
+                    background: "var(--tx)",
+                    color: "var(--bg)",
                     borderRadius: "16px 4px 16px 16px",
                     padding: "12px 16px",
                     fontSize: 15,
@@ -507,8 +507,8 @@ const ChatPage = () => {
       <div
         style={{
           flexShrink: 0,
-          background: "white",
-          borderTop: "1px solid #F0F0F0",
+          background: "var(--surface)",
+          borderTop: "1px solid var(--bd)",
           padding: "12px 16px",
           paddingBottom: "max(12px, env(safe-area-inset-bottom))",
         }}
@@ -526,14 +526,14 @@ const ChatPage = () => {
               minHeight: 44,
               maxHeight: 120,
               padding: "11px 16px",
-              background: "#F5F4F0",
-              border: "1px solid transparent",
+              background: "var(--surface-2)",
+              border: "1px solid var(--bd)",
               borderRadius: 14,
               fontSize: 15,
               resize: "none",
               outline: "none",
               lineHeight: 1.5,
-              color: "#0D0D0B",
+              color: "var(--tx)",
             }}
             onInput={(e) => {
               const t = e.currentTarget;

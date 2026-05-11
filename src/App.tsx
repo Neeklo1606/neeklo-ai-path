@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, lazy, Suspense, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { MotionConfig } from "framer-motion";
@@ -13,8 +13,10 @@ import Onboarding from "@/components/Onboarding";
 import CookieBanner from "@/components/CookieBanner";
 import BrandLogo from "@/components/BrandLogo";
 import TelegramManagerButton from "@/components/TelegramManagerButton";
+import ThemeToggle from "@/components/ThemeToggle";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LanguageProvider, useLanguage } from "@/hooks/useLanguage";
+import { useTheme } from "@/hooks/useTheme";
 import Index from "./pages/Index";
 import { Menu, X, Home, MessageSquare, Sparkles, Image, FolderOpen, User, Settings, Bell } from "lucide-react";
 
@@ -77,8 +79,8 @@ const RouteLoadingFallback = () => (
       style={{
         width: 28,
         height: 28,
-        border: "2.5px solid #E0E0E0",
-        borderTopColor: "#0D0D0B",
+        border: "2.5px solid var(--bd)",
+        borderTopColor: "var(--tx)",
         animation: "spin 0.6s linear infinite",
       }}
     />
@@ -112,28 +114,31 @@ const MobileHeader = () => {
       className="sm:hidden sticky top-0 z-50 flex items-center justify-between px-4"
       style={{
         height: 52,
-        background: "rgba(255,255,255,0.92)",
+        background: "color-mix(in srgb, var(--bg) 88%, transparent)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        borderBottom: "1px solid #F0F0F0",
+        borderBottom: "1px solid var(--bd)",
       }}
     >
       <button onClick={() => navigate("/")} className="flex items-center">
         <BrandLogo variant="header" className="h-8 w-auto" />
       </button>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
+        <ThemeToggle size="sm" />
         {/* Lang toggle */}
         <button
           onClick={toggleLang}
-          className="flex items-center justify-center h-7 px-2 rounded-md text-[11px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-150 font-body uppercase tracking-wide"
+          className="flex items-center justify-center h-7 px-2 rounded-md text-[11px] font-semibold uppercase tracking-wide transition-colors duration-150"
+          style={{ color: "var(--tx-muted)", background: "var(--surface-2)", border: "1px solid var(--bd)" }}
         >
           {lang === "ru" ? "EN" : "RU"}
         </button>
 
         <button
           onClick={() => setOpen(true)}
-          className="flex items-center justify-center w-9 h-9 rounded-lg text-foreground hover:bg-muted transition-colors"
+          className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors"
+          style={{ color: "var(--tx)" }}
         >
           <Menu size={22} strokeWidth={1.8} />
         </button>
@@ -148,20 +153,22 @@ const MobileHeader = () => {
       )}
 
       <div
-        className="fixed top-0 right-0 z-[70] bg-white"
+        className="fixed top-0 right-0 z-[70]"
         style={{
           width: "min(75vw, 280px)",
           height: "auto",
           maxHeight: "100dvh",
           padding: "24px 20px",
+          background: "var(--surface)",
+          borderLeft: "1px solid var(--bd)",
           transform: open ? "translateX(0)" : "translateX(100%)",
           transition: "transform 0.25s cubic-bezier(0.16,1,0.3,1)",
           borderRadius: "0 0 0 16px",
-          boxShadow: open ? "-4px 0 24px rgba(0,0,0,0.08)" : "none",
+          boxShadow: "var(--shadow-modal)",
         }}
       >
-        <button onClick={() => setOpen(false)} className="absolute top-5 right-5 w-9 h-9 flex items-center justify-center">
-          <X size={24} strokeWidth={1.6} className="text-[#0D0D0B]" />
+        <button onClick={() => setOpen(false)} className="absolute top-5 right-5 w-9 h-9 flex items-center justify-center" style={{ color: "var(--tx)" }}>
+          <X size={24} strokeWidth={1.6} />
         </button>
 
         <nav className="mt-8">
@@ -174,11 +181,11 @@ const MobileHeader = () => {
                 className="flex items-center gap-3 w-full text-left"
                 style={{
                   padding: "13px 0",
-                  borderBottom: "1px solid #F5F5F5",
+                  borderBottom: "1px solid var(--bd)",
                   fontFamily: "'Onest', sans-serif",
                   fontSize: 17,
                   fontWeight: active ? 700 : 600,
-                  color: active ? "#0D0D0B" : "#6A6860",
+                  color: active ? "var(--tx)" : "var(--tx-muted)",
                   transition: "color 0.15s",
                 }}
               >
@@ -189,9 +196,9 @@ const MobileHeader = () => {
           })}
         </nav>
 
-        <div style={{ height: 1, background: "#F0F0F0", margin: "16px 0" }} />
+        <div style={{ height: 1, background: "var(--bd)", margin: "16px 0" }} />
 
-        <p style={{ fontFamily: "'Onest', sans-serif", fontSize: 11, fontWeight: 600, color: "#B0B0B0", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+        <p style={{ fontFamily: "'Onest', sans-serif", fontSize: 11, fontWeight: 600, color: "var(--tx-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
           {t("nav.account")}
         </p>
         <nav>
@@ -200,7 +207,7 @@ const MobileHeader = () => {
               key={path}
               onClick={() => { setOpen(false); navigate(path); }}
               className="flex items-center gap-3 w-full text-left"
-              style={{ padding: "11px 0", fontFamily: "'Onest', sans-serif", fontSize: 15, fontWeight: 500, color: "#6A6860", transition: "color 0.15s" }}
+              style={{ padding: "11px 0", fontFamily: "'Onest', sans-serif", fontSize: 15, fontWeight: 500, color: "var(--tx-muted)", transition: "color 0.15s" }}
             >
               <Icon size={18} strokeWidth={1.6} />
               {label}
@@ -441,6 +448,12 @@ const AppContent = ({
   );
 };
 
+const ThemeInitializer = () => {
+  // init theme on mount — applies class to <html>
+  useTheme();
+  return null;
+};
+
 const App = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -449,6 +462,7 @@ const App = () => {
       <TooltipProvider>
         <LanguageProvider>
           <MotionConfig reducedMotion="user">
+            <ThemeInitializer />
             <Toaster />
             <Sonner />
             <BrowserRouter>

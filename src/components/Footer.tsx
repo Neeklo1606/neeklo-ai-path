@@ -31,11 +31,12 @@ const Footer = () => {
   ];
 
   return (
-    <footer style={{ background: "#0D0D0B", color: "#fff", position: "relative", overflow: "hidden" }}>
+    <footer style={{ background: "var(--surface)", color: "var(--tx)", borderTop: "1px solid var(--bd)", position: "relative", overflow: "hidden" }}>
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: "linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)",
+          backgroundImage: "linear-gradient(var(--bd) 1px, transparent 1px), linear-gradient(90deg, var(--bd) 1px, transparent 1px)",
+        opacity: 0.4,
           backgroundSize: "40px 40px",
           maskImage: "radial-gradient(circle at center, black, transparent 80%)",
           WebkitMaskImage: "radial-gradient(circle at center, black, transparent 80%)",
@@ -49,17 +50,17 @@ const Footer = () => {
             <div className="flex items-center">
               <BrandLogo variant="footer" className="h-12 w-auto opacity-90" />
             </div>
-            <p className="font-body whitespace-pre-line" style={{ fontSize: 14, color: "rgba(255,255,255,0.55)", lineHeight: 1.65, maxWidth: 300 }}>
+            <p className="font-body whitespace-pre-line" style={{ fontSize: 14, color: "var(--tx-muted)", lineHeight: 1.65, maxWidth: 300 }}>
               {t("footer.desc")}
             </p>
-            <p className="font-body" style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>
+            <p className="font-body" style={{ fontSize: 12, color: "var(--tx-faint)" }}>
               ИП Клочко Н.Н. · ИНН 263520430560
             </p>
 
             <button
               onClick={() => navigate("/chat")}
-              className="flex items-center justify-center gap-2 font-body cursor-pointer hover:bg-[#F0EEE8] hover:-translate-y-[1px] active:scale-[0.97] transition-all duration-200 mt-2"
-              style={{ width: "100%", maxWidth: 280, padding: "14px 20px", borderRadius: 12, background: "#fff", color: "#0D0D0B", fontSize: 15, fontWeight: 700, border: "none" }}
+              className="flex items-center justify-center gap-2 font-body cursor-pointer hover:-translate-y-[1px] active:scale-[0.97] transition-all duration-200 mt-2 btn-primary"
+              style={{ width: "100%", maxWidth: 280, border: "none" }}
             >
               {t("footer.startProject")} <ArrowRight size={16} />
             </button>
@@ -87,20 +88,20 @@ const Footer = () => {
                 </a>
               </div>
               <div className="flex gap-3 mt-4">
-                <a href="https://t.me/neeekn" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors duration-150" style={{ color: "rgba(255,255,255,0.4)" }}><Send size={18} /></a>
-                <a href="https://neeklo.ru" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors duration-150" style={{ color: "rgba(255,255,255,0.4)" }}><Globe size={18} /></a>
+                <a href="https://t.me/neeekn" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors duration-150" style={{ color: "var(--tx-faint)" }}><Send size={18} /></a>
+                <a href="https://neeklo.ru" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors duration-150" style={{ color: "var(--tx-faint)" }}><Globe size={18} /></a>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mt-12 pt-6" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-          <span className="font-mono font-body text-center md:text-left" style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mt-12 pt-6" style={{ borderTop: "1px solid var(--bd)" }}>
+          <span className="font-mono font-body text-center md:text-left" style={{ fontSize: 12, color: "var(--tx-faint)" }}>
             © 2026 Neeklo Studio
           </span>
           <div className="flex flex-wrap justify-center md:justify-end gap-4">
             {legalLinks.map((l) => (
-              <Link key={l.path} to={l.path} className="font-body hover:text-[rgba(255,255,255,0.6)] transition-colors duration-150" style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>
+              <Link key={l.path} to={l.path} className="font-body transition-colors duration-150" style={{ fontSize: 11, color: "var(--tx-faint)" }}>
                 {l.label}
               </Link>
             ))}
@@ -121,7 +122,7 @@ const FooterLink = ({ to, children }: { to: string; children: React.ReactNode })
   <Link
     to={to}
     className="group flex items-center gap-2 font-body transition-colors duration-150"
-    style={{ fontSize: 14, color: "rgba(255,255,255,0.5)" }}
+    style={{ fontSize: 14, color: "var(--tx-muted)" }}
   >
     <span className="rounded-full flex-shrink-0 transition-all duration-200 group-hover:bg-white" style={{ width: 6, height: 6, background: "rgba(255,255,255,0.2)" }} />
     <span className="group-hover:text-white transition-colors duration-150">{children}</span>
@@ -129,7 +130,7 @@ const FooterLink = ({ to, children }: { to: string; children: React.ReactNode })
 );
 
 const ColumnTitle = ({ children }: { children: React.ReactNode }) => (
-  <p className="font-body uppercase mb-4" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", color: "rgba(255,255,255,0.35)" }}>
+  <p className="font-body uppercase mb-4" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", color: "var(--tx-faint)" }}>
     {children}
   </p>
 );

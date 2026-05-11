@@ -15,11 +15,13 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Onest", "Inter", "system-ui", "sans-serif"],
+        display: ["Onest", "system-ui", "sans-serif"],
         heading: ["Unbounded", "system-ui", "sans-serif"],
         body: ["Onest", "Inter", "system-ui", "sans-serif"],
         syne: ["Syne", "system-ui", "sans-serif"],
         space: ["Space Mono", "monospace"],
         inter: ["Inter", "system-ui", "sans-serif"],
+        mono: ["Space Mono", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",

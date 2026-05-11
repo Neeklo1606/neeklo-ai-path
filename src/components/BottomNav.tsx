@@ -19,10 +19,10 @@ const BottomNav = () => {
       className="fixed bottom-0 left-0 right-0 sm:hidden"
       style={{
         minHeight: 64,
-        background: "rgba(255,255,255,0.96)",
+        background: "color-mix(in srgb, var(--surface) 95%, transparent)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        borderTop: "1px solid hsl(var(--border))",
+        borderTop: "1px solid var(--bd)",
         zIndex: 100,
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
@@ -39,12 +39,24 @@ const BottomNav = () => {
               aria-current={active ? "page" : undefined}
             >
               {active && (
-                <div className="absolute top-1.5 w-1 h-1 rounded-full transition-all duration-200" style={{ background: "#0D0D0B" }} />
+                <div
+                  className="absolute top-1.5 w-1 h-1 rounded-full"
+                  style={{ background: "var(--ac-b)", transition: "all 0.2s" }}
+                />
               )}
-              <Icon size={22} strokeWidth={active ? 2 : 1.5} style={{ color: active ? "#0D0D0B" : "#888", transition: "color 0.15s" }} />
+              <Icon
+                size={22}
+                strokeWidth={active ? 2 : 1.5}
+                style={{ color: active ? "var(--tx)" : "var(--tx-faint)", transition: "color 0.15s" }}
+              />
               <span
                 className="font-body leading-tight text-center px-0.5"
-                style={{ fontSize: 13, fontWeight: active ? 600 : 500, color: active ? "#0D0D0B" : "#888", transition: "color 0.15s" }}
+                style={{
+                  fontSize: 11,
+                  fontWeight: active ? 600 : 500,
+                  color: active ? "var(--tx)" : "var(--tx-faint)",
+                  transition: "color 0.15s",
+                }}
               >
                 {label}
               </span>

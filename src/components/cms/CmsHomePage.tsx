@@ -37,7 +37,7 @@ function titleLines(text: string): React.ReactNode {
   ));
 }
 
-const Divider = () => <div className="w-full" style={{ height: 1, background: "#E8E6E0" }} />;
+const Divider = () => <div className="w-full" style={{ height: 1, background: "var(--bd)" }} />;
 
 type HeroBlock = {
   type: "hero";
@@ -232,9 +232,9 @@ export default function CmsHomePage() {
       <section
           className="relative overflow-hidden flex flex-col items-center justify-center text-center"
           style={{
-            backgroundColor: "#F0EEE8",
+            backgroundColor: "var(--bg)",
             minHeight: "calc(100dvh - 64px)",
-            backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.055) 1px, transparent 1px)",
+            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)",
             backgroundSize: "28px 28px",
           }}
         >
@@ -275,13 +275,13 @@ export default function CmsHomePage() {
             </motion.div>
             <motion.h1
               className="font-heading"
-              style={{ fontWeight: 800, fontSize: "clamp(30px, 5.5vw, 56px)", lineHeight: 1.08, letterSpacing: "-0.03em", color: "#0D0D0B" }}
+              style={{ fontWeight: 800, fontSize: "clamp(30px, 5.5vw, 56px)", lineHeight: 1.08, letterSpacing: "-0.03em", color: "var(--tx)" }}
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
             >
               {titleLines(pick(hero.title, lang))}
             </motion.h1>
-            <motion.p className="font-body" style={{ fontSize: 16, color: "#807B72", lineHeight: 1.6, marginTop: 14, marginBottom: 28 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <motion.p className="font-body" style={{ fontSize: 16, color: "rgba(240,239,237,0.5)", lineHeight: 1.6, marginTop: 14, marginBottom: 28 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               {pick(hero.subtitle, lang)}
             </motion.p>
             <motion.div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -289,7 +289,7 @@ export default function CmsHomePage() {
                 type="button"
                 onClick={() => navigate("/chat")}
                 className="flex items-center justify-center gap-2 font-body w-full sm:w-auto cursor-pointer"
-                style={{ fontSize: 15, fontWeight: 600, padding: "14px 28px", background: "#0D0D0B", color: "#fff", border: "none", borderRadius: 14 }}
+                style={{ fontSize: 15, fontWeight: 600, padding: "14px 28px", background: "var(--tx)", color: "var(--bg)", border: "none", borderRadius: 6 }}
               >
                 {pick(hero.ctaLabel, lang)} <ArrowRight size={16} />
               </button>
@@ -297,7 +297,7 @@ export default function CmsHomePage() {
                 type="button"
                 onClick={() => document.getElementById("works")?.scrollIntoView({ behavior: "smooth" })}
                 className="font-body cursor-pointer"
-                style={{ fontSize: 14, fontWeight: 500, padding: "13px 16px", background: "transparent", color: "#6A6860", border: "none" }}
+                style={{ fontSize: 14, fontWeight: 500, padding: "13px 16px", background: "transparent", color: "rgba(240,239,237,0.4)", border: "none" }}
               >
                 {pick(hero.secondaryLabel, lang)} <ChevronDown size={14} className="inline ml-1" />
               </button>
@@ -316,9 +316,9 @@ export default function CmsHomePage() {
       </section>
       <Divider />
       {services ? (
-        <section className="bg-white" style={{ padding: "48px 20px" }}>
+        <section style={{ background: "var(--bg)", padding: "48px 20px" }}>
           <div className="max-w-[1280px] mx-auto md:px-10">
-            <motion.h2 className="font-heading" style={{ fontSize: "clamp(28px,3.5vw,36px)", fontWeight: 800, color: "#0D0D0B" }} {...fadeUp(0)}>
+            <motion.h2 className="font-heading" style={{ fontSize: "clamp(28px,3.5vw,36px)", fontWeight: 800, color: "var(--tx)" }} {...fadeUp(0)}>
               {servicesHeading}
             </motion.h2>
             <div className="grid grid-cols-3 md:grid-cols-6 mt-6" style={{ gap: 10 }}>
@@ -328,11 +328,11 @@ export default function CmsHomePage() {
                 <motion.div
                   key={i}
                   className="relative flex flex-col items-center text-center cursor-pointer hover:-translate-y-[3px] transition-all"
-                  style={{ background: "#F7F6F3", borderRadius: 16, padding: "20px 8px 16px" }}
+                  style={{ background: "var(--surface)", borderRadius: 6, padding: "20px 8px 16px", border: "1px solid var(--bd)" }}
                   onClick={() => navigate("/chat")}
                   {...fadeUp(i * 0.05)}
                 >
-                  <div className="flex items-center justify-center rounded-2xl" style={{ width: 56, height: 56, background: "#EDECE8" }}>
+                  <div className="flex items-center justify-center rounded-2xl" style={{ width: 56, height: 56, background: "var(--surface-3)" }}>
                     <img
                       src={displayImageUrl(prev) || MEDIA_PLACEHOLDER_URL}
                       alt=""
@@ -340,10 +340,10 @@ export default function CmsHomePage() {
                       loading="lazy"
                     />
                   </div>
-                  <p className="font-heading mt-3" style={{ fontSize: 13, fontWeight: 700, color: "#0D0D0B" }}>
+                  <p className="font-heading mt-3" style={{ fontSize: 13, fontWeight: 700, color: "var(--tx)" }}>
                     {pick(s.name, lang)}
                   </p>
-                  <p className="font-body mt-1" style={{ fontSize: 12, color: "#8A8880" }}>
+                  <p className="font-body mt-1" style={{ fontSize: 12, color: "#666" }}>
                     {pick(s.priceLabel, lang)}
                   </p>
                 </motion.div>
@@ -355,7 +355,7 @@ export default function CmsHomePage() {
       ) : null}
       <Divider />
       {casesPreview ? (
-        <section id="works" className="bg-white" style={{ padding: "72px 0" }}>
+        <section id="works" style={{ background: "var(--bg)", padding: "72px 0" }}>
           <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
             <div className="flex items-center justify-between mb-5">
               <motion.h2 className="font-heading" style={{ fontSize: 32, fontWeight: 800 }} {...fadeUp(0)}>
@@ -365,7 +365,7 @@ export default function CmsHomePage() {
                 type="button"
                 onClick={() => (casesPathsOk ? navigate(seeAllPath) : undefined)}
                 className="hidden sm:flex items-center gap-1.5 font-body text-[13px] font-semibold"
-                style={{ color: "#6A6860", background: "none", border: "none" }}
+                style={{ color: "#888", background: "none", border: "none" }}
                 disabled={!casesPathsOk}
               >
                 {pick(casesPreview.seeAllLabel, lang)} <ArrowRight size={14} />
@@ -444,28 +444,28 @@ export default function CmsHomePage() {
         <ReviewsFromCms reviews={{ ...reviews, items: reviewItems }} lang={lang} />
       ) : null}
       {how && howSteps.length ? (
-        <section style={{ background: "#F0EEE8", padding: "72px 0" }}>
+        <section style={{ background: "var(--bg)", padding: "72px 0", borderTop: "1px solid var(--bd)" }}>
           <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
-            <h2 className="font-heading mb-10" style={{ fontSize: "clamp(28px,3.5vw,36px)", fontWeight: 800, color: "#0D0D0B" }}>
+            <h2 className="font-heading mb-10" style={{ fontSize: "clamp(28px,3.5vw,36px)", fontWeight: 800, color: "var(--tx)" }}>
               {pick(how.title, lang)}
             </h2>
             <div className="flex flex-col gap-6 md:flex-row md:justify-between">
               {howSteps.map((s, i) => (
                 <div key={i} className="flex-1 md:text-center cursor-pointer" onClick={() => navigate("/chat")}>
-                  <span className="font-heading" style={{ fontSize: 48, fontWeight: 800, color: "#D0CCC4" }}>
+                  <span className="font-heading" style={{ fontSize: 48, fontWeight: 800, color: "#333" }}>
                     {s.num}
                   </span>
-                  <p className="font-body mt-2" style={{ fontSize: 17, fontWeight: 700, color: "#0D0D0B" }}>
+                  <p className="font-body mt-2" style={{ fontSize: 17, fontWeight: 700, color: "var(--tx)" }}>
                     {pick(s.title, lang)}
                   </p>
-                  <p className="font-body mt-1" style={{ fontSize: 14, color: "#6A6860", lineHeight: 1.55 }}>
+                  <p className="font-body mt-1" style={{ fontSize: 14, color: "#666", lineHeight: 1.55 }}>
                     {pick(s.desc, lang)}
                   </p>
                 </div>
               ))}
             </div>
             {how.footerNote ? (
-              <p className="font-body mt-8" style={{ fontSize: 14, color: "#0D0D0B", fontWeight: 600 }}>
+              <p className="font-body mt-8" style={{ fontSize: 14, color: "#C5F04A", fontWeight: 600 }}>
                 {pick(how.footerNote, lang)}
               </p>
             ) : null}
@@ -473,16 +473,17 @@ export default function CmsHomePage() {
         </section>
       ) : null}
       {ctaOk && cta ? (
-        <section style={{ background: "#0D0D0B", padding: "56px 20px", textAlign: "center" }}>
-          <h2 className="font-heading text-white" style={{ fontWeight: 800, fontSize: "clamp(22px,4vw,26px)", marginBottom: 8 }}>
+        <section style={{ background: "var(--surface)", padding: "56px 20px", textAlign: "center", borderTop: "1px solid var(--bd)" }}>
+          <h2 className="font-heading" style={{ fontWeight: 800, fontSize: "clamp(22px,4vw,26px)", marginBottom: 8, color: "var(--tx)" }}>
             {pick(cta.title, lang)}
           </h2>
-          <p className="font-body mx-auto text-white/50" style={{ fontSize: 14, maxWidth: 340, marginBottom: 28 }}>
+          <p className="font-body mx-auto" style={{ fontSize: 14, maxWidth: 340, marginBottom: 28, color: "rgba(240,239,237,0.45)" }}>
             {pick(cta.subtitle, lang)}
           </p>
           <a
             href={ctaHref}
-            className="font-body inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3 text-[#0D0D0B] font-semibold"
+            className="font-body inline-flex items-center gap-2 px-8 py-3 font-semibold"
+            style={{ background: "var(--tx)", color: "var(--bg)", borderRadius: 6 }}
             onClick={(e) => {
               if (ctaHref.startsWith("/")) {
                 e.preventDefault();
@@ -523,37 +524,37 @@ function ReviewsFromCms({
   }, [check]);
   const items = reviews.items || [];
   return (
-    <section style={{ background: "#F0EEE8", padding: "clamp(40px,5vw,56px) 0" }}>
+    <section style={{ background: "var(--bg)", padding: "clamp(40px,5vw,56px) 0", borderTop: "1px solid var(--bd)" }}>
       <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
         <div className="flex items-center justify-between mb-4">
-          <motion.h2 className="font-heading" style={{ fontSize: "clamp(22px,3vw,26px)", fontWeight: 800, color: "#0D0D0B" }} {...fadeUp(0)}>
+          <motion.h2 className="font-heading" style={{ fontSize: "clamp(22px,3vw,26px)", fontWeight: 800, color: "var(--tx)" }} {...fadeUp(0)}>
             {pick(reviews.title, lang)}
           </motion.h2>
           <div className="hidden sm:flex gap-2">
-            <button type="button" onClick={() => scrollRef.current?.scrollBy({ left: -240, behavior: "smooth" })} className="w-8 h-8 rounded-full border-none" style={{ background: "#E8E6E0" }} disabled={!canL}>
+            <button type="button" onClick={() => scrollRef.current?.scrollBy({ left: -240, behavior: "smooth" })} className="w-8 h-8 rounded-full border-none" style={{ background: "var(--surface-3)", color: "#888" }} disabled={!canL}>
               <ChevronLeft size={14} />
             </button>
-            <button type="button" onClick={() => scrollRef.current?.scrollBy({ left: 240, behavior: "smooth" })} className="w-8 h-8 rounded-full border-none" style={{ background: "#E8E6E0" }} disabled={!canR}>
+            <button type="button" onClick={() => scrollRef.current?.scrollBy({ left: 240, behavior: "smooth" })} className="w-8 h-8 rounded-full border-none" style={{ background: "var(--surface-3)", color: "#888" }} disabled={!canR}>
               <ChevronRight size={14} />
             </button>
           </div>
         </div>
         <div ref={scrollRef} className="flex gap-2.5 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
           {items.map((r, i) => (
-            <div key={i} className="bg-white flex-shrink-0" style={{ borderRadius: 16, padding: 14, width: 220 }}>
+            <div key={i} className="flex-shrink-0" style={{ borderRadius: 6, padding: 14, width: 220, background: "var(--surface)", border: "1px solid var(--bd)" }}>
               <div className="flex items-center gap-2 mb-2">
                 <div
-                  className="rounded-full flex items-center justify-center font-heading flex-shrink-0 bg-muted text-muted-foreground"
-                  style={{ width: 30, height: 30, fontSize: 12, fontWeight: 700 }}
+                  className="rounded-full flex items-center justify-center font-heading flex-shrink-0"
+                  style={{ width: 30, height: 30, fontSize: 12, fontWeight: 700, background: "var(--surface-3)", color: "#888" }}
                 >
                   {(r.name ?? "").toString().charAt(0)}
                 </div>
                 <div>
-                  <p className="font-body font-semibold text-[13px]">{r.name}</p>
-                  <p className="font-body text-[11px] text-muted-foreground">{pick(r.date, lang)}</p>
+                  <p className="font-body font-semibold text-[13px]" style={{ color: "var(--tx)" }}>{r.name}</p>
+                  <p className="font-body text-[11px]" style={{ color: "#555" }}>{pick(r.date, lang)}</p>
                 </div>
               </div>
-              <p className="font-body text-[12px] leading-relaxed text-[#3A3A3A] line-clamp-3">{pick(r.text, lang)}</p>
+              <p className="font-body text-[12px] leading-relaxed line-clamp-3" style={{ color: "rgba(240,239,237,0.6)" }}>{pick(r.text, lang)}</p>
             </div>
           ))}
         </div>
