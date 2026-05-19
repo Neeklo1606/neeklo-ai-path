@@ -3,7 +3,7 @@
 const body = JSON.stringify({
   messages: [{ role: "user", content: "что вы продаете?" }],
 });
-const r = await fetch("http://127.0.0.1:8787/chat", {
+const r = await fetch("http://127.0.0.1:3001/chat", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body,

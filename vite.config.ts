@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
     },
     proxy: {
       "/cms-api": {
-        target: "http://127.0.0.1:8787",
+        target: "http://127.0.0.1:3001",
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/cms-api/, ""),
       },

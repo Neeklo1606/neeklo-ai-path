@@ -54,7 +54,7 @@ const MAX_FILE_BYTES = Math.min(
   MAX_UPLOAD_CAP,
 );
 
-const PORT = Number(process.env.PORT || process.env.CMS_SERVER_PORT || 8787);
+const PORT = Number(process.env.PORT || process.env.CMS_SERVER_PORT || 3001);
 const JWT_SECRET = process.env.JWT_SECRET;
 const OPENAI_FALLBACK = process.env.OPENAI_API_KEY || "";
 function isOllamaAssistant(assistant) {
