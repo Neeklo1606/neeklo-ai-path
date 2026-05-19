@@ -1,24 +1,23 @@
-import { useState, lazy, Suspense, useEffect } from "react";
+import { useState, lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { MotionConfig } from "framer-motion";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import DesktopNav from "@/components/DesktopNav";
-import BottomNav from "@/components/BottomNav";
+import Header from "@/components/layout/Header";
+import MobileHeader from "@/components/layout/MobileHeader";
+import BottomNav from "@/components/layout/BottomNav";
+import StickyCTA from "@/components/layout/StickyCTA";
 import ScrollToTop from "@/components/ScrollToTop";
 import PageTransition from "@/components/PageTransition";
 import Onboarding from "@/components/Onboarding";
 import CookieBanner from "@/components/CookieBanner";
-import BrandLogo from "@/components/BrandLogo";
 import TelegramManagerButton from "@/components/TelegramManagerButton";
-import ThemeToggle from "@/components/ThemeToggle";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { LanguageProvider, useLanguage } from "@/hooks/useLanguage";
+import { LanguageProvider } from "@/hooks/useLanguage";
 import { useTheme } from "@/hooks/useTheme";
 import Index from "./pages/Index";
-import { Menu, X, Home, MessageSquare, Sparkles, Image, FolderOpen, User, Settings, Bell } from "lucide-react";
 
 import ChatPage from "./pages/ChatPage";
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
@@ -62,6 +61,9 @@ const ServiceWeb = lazy(() => import("./pages/services/ServiceWeb"));
 const ServiceAiAssistant = lazy(() => import("./pages/services/ServiceAiAssistant"));
 const ServiceTelegram = lazy(() => import("./pages/services/ServiceTelegram"));
 const ServiceEducation = lazy(() => import("./pages/services/ServiceEducation"));
+const PrivacyPage = lazy(() => import("./routes/privacy"));
+const OfferPage = lazy(() => import("./routes/offer"));
+const CookiesPage = lazy(() => import("./routes/cookies"));
 
 const queryClient = new QueryClient();
 
@@ -89,142 +91,14 @@ const RouteLoadingFallback = () => (
 
 const HIDE_NAV_ROUTES = ["/chat", "/manager-chat", "/kp"];
 
-const MobileHeader = () => {
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
-  const [open, setOpen] = useState(false);
-  const { t, lang, toggleLang } = useLanguage();
-
-  const navItems = [
-    { icon: Home, label: t("nav.home"), path: "/" },
-    { icon: MessageSquare, label: t("nav.chat"), path: "/chat" },
-    { icon: Sparkles, label: t("nav.services"), path: "/services" },
-    { icon: Image, label: t("nav.works"), path: "/cases" },
-    { icon: FolderOpen, label: t("nav.projects"), path: "/projects" },
-  ];
-
-  const accountItems = [
-    { icon: User, label: t("nav.profile"), path: "/profile" },
-    { icon: Bell, label: t("nav.notifications"), path: "/notifications" },
-    { icon: Settings, label: t("nav.settings"), path: "/settings" },
-  ];
-
-  return (
-    <header
-      className="sm:hidden sticky top-0 z-50 flex items-center justify-between px-4"
-      style={{
-        height: 52,
-        background: "color-mix(in srgb, var(--bg) 88%, transparent)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderBottom: "1px solid var(--bd)",
-      }}
-    >
-      <button onClick={() => navigate("/")} className="flex items-center">
-        <BrandLogo variant="header" className="h-8 w-auto" />
-      </button>
-
-      <div className="flex items-center gap-1.5">
-        <ThemeToggle size="sm" />
-        {/* Lang toggle */}
-        <button
-          onClick={toggleLang}
-          className="flex items-center justify-center h-7 px-2 rounded-md text-[11px] font-semibold uppercase tracking-wide transition-colors duration-150"
-          style={{ color: "var(--tx-muted)", background: "var(--surface-2)", border: "1px solid var(--bd)" }}
-        >
-          {lang === "ru" ? "EN" : "RU"}
-        </button>
-
-        <button
-          onClick={() => setOpen(true)}
-          className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors"
-          style={{ color: "var(--tx)" }}
-        >
-          <Menu size={22} strokeWidth={1.8} />
-        </button>
-      </div>
-
-      {open && (
-        <div
-          className="fixed inset-0 z-[60]"
-          style={{ background: "rgba(0,0,0,0.4)", transition: "opacity 0.2s" }}
-          onClick={() => setOpen(false)}
-        />
-      )}
-
-      <div
-        className="fixed top-0 right-0 z-[70]"
-        style={{
-          width: "min(75vw, 280px)",
-          height: "auto",
-          maxHeight: "100dvh",
-          padding: "24px 20px",
-          background: "var(--surface)",
-          borderLeft: "1px solid var(--bd)",
-          transform: open ? "translateX(0)" : "translateX(100%)",
-          transition: "transform 0.25s cubic-bezier(0.16,1,0.3,1)",
-          borderRadius: "0 0 0 16px",
-          boxShadow: "var(--shadow-modal)",
-        }}
-      >
-        <button onClick={() => setOpen(false)} className="absolute top-5 right-5 w-9 h-9 flex items-center justify-center" style={{ color: "var(--tx)" }}>
-          <X size={24} strokeWidth={1.6} />
-        </button>
-
-        <nav className="mt-8">
-          {navItems.map(({ icon: Icon, label, path }) => {
-            const active = pathname === path;
-            return (
-              <button
-                key={path}
-                onClick={() => { setOpen(false); navigate(path); }}
-                className="flex items-center gap-3 w-full text-left"
-                style={{
-                  padding: "13px 0",
-                  borderBottom: "1px solid var(--bd)",
-                  fontFamily: "'Onest', sans-serif",
-                  fontSize: 17,
-                  fontWeight: active ? 700 : 600,
-                  color: active ? "var(--tx)" : "var(--tx-muted)",
-                  transition: "color 0.15s",
-                }}
-              >
-                <Icon size={20} strokeWidth={active ? 2 : 1.6} />
-                {label}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div style={{ height: 1, background: "var(--bd)", margin: "16px 0" }} />
-
-        <p style={{ fontFamily: "'Onest', sans-serif", fontSize: 11, fontWeight: 600, color: "var(--tx-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
-          {t("nav.account")}
-        </p>
-        <nav>
-          {accountItems.map(({ icon: Icon, label, path }) => (
-            <button
-              key={path}
-              onClick={() => { setOpen(false); navigate(path); }}
-              className="flex items-center gap-3 w-full text-left"
-              style={{ padding: "11px 0", fontFamily: "'Onest', sans-serif", fontSize: 15, fontWeight: 500, color: "var(--tx-muted)", transition: "color 0.15s" }}
-            >
-              <Icon size={18} strokeWidth={1.6} />
-              {label}
-            </button>
-          ))}
-        </nav>
-      </div>
-    </header>
-  );
-};
-
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { pathname } = useLocation();
-  const hideNav = HIDE_NAV_ROUTES.includes(pathname) || pathname.startsWith("/admin");
+  const hideNav =
+    HIDE_NAV_ROUTES.some((r) => pathname.startsWith(r)) ||
+    pathname.startsWith("/admin");
   const showManagerFab = !pathname.startsWith("/admin");
 
-  if (hideNav || pathname.startsWith("/kp")) {
+  if (hideNav) {
     return (
       <div className="min-h-screen flex flex-col">
         <div className="flex-1 flex flex-col">{children}</div>
@@ -236,9 +110,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="min-h-screen flex flex-col">
       <MobileHeader />
-      <DesktopNav />
+      <Header />
       <div className="flex-1 flex flex-col">{children}</div>
       <BottomNav />
+      <StickyCTA />
       {showManagerFab && <TelegramManagerButton />}
     </div>
   );
@@ -283,6 +158,9 @@ const AppContent = ({
             <Route path="/manager-chat" element={<ManagerChatPage />} />
             <Route path="/notifications" element={<P><NotificationsPage /></P>} />
             <Route path="/legal/:slug" element={<P><LegalPage /></P>} />
+            <Route path="/privacy" element={<P><PrivacyPage /></P>} />
+            <Route path="/offer" element={<P><OfferPage /></P>} />
+            <Route path="/cookies" element={<P><CookiesPage /></P>} />
             <Route
               path="/admin/login"
               element={

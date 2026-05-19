@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Send } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 
@@ -7,6 +8,8 @@ const TG_URL = "https://t.me/neeekn";
 const TelegramManagerButton = () => {
   const [hovered, setHovered] = useState(false);
   const { t } = useLanguage();
+  const { pathname } = useLocation();
+  const isHome = pathname === "/";
 
   return (
     <>
@@ -17,7 +20,7 @@ const TelegramManagerButton = () => {
         aria-label={t("tg.writeManager")}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="fixed z-[105] hidden md:flex items-center gap-2.5 font-body select-none pointer-events-auto"
+        className={`fixed z-[105] hidden md:flex items-center gap-2.5 font-body select-none pointer-events-auto transition-opacity duration-200${isHome ? " opacity-60 hover:opacity-100" : ""}`}
         style={{
           right: "max(28px, env(safe-area-inset-right, 0px))",
           bottom: "max(28px, env(safe-area-inset-bottom, 0px))",
@@ -39,7 +42,7 @@ const TelegramManagerButton = () => {
         target="_blank"
         rel="noopener noreferrer"
         aria-label={t("tg.writeManager")}
-        className="fixed z-[105] md:hidden flex items-center justify-center pointer-events-auto"
+        className={`fixed z-[105] md:hidden flex items-center justify-center pointer-events-auto transition-opacity duration-200${isHome ? " opacity-60 hover:opacity-100" : ""}`}
         style={{
           right: "max(16px, env(safe-area-inset-right, 0px))",
           bottom: "calc(72px + env(safe-area-inset-bottom, 0px))",

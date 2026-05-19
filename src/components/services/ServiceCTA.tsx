@@ -28,7 +28,7 @@ export default function ServiceCTA({ service }: { service: string }) {
               Нужен<br /><span style={{ color: "#C5F04A" }}>{service}?</span>
             </h2>
             <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, color: "rgba(240,239,233,0.5)", lineHeight: 1.7, marginBottom: 32 }}>
-              Опишите задачу — ответим в течение часа и подготовим смету за 24 часа. Бесплатно.
+              Опишите задачу, ответим в течение часа и подготовим смету за 24 часа. Бесплатно.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {[

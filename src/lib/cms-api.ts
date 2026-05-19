@@ -3,20 +3,29 @@
 export const CMS_BASE = (import.meta.env.VITE_CMS_API_BASE as string | undefined) || "/cms-api";
 
 export async function cmsJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${CMS_BASE}${path.startsWith("/") ? path : `/${path}`}`, init);
-  if (res.status === 204) return undefined as T;
-  const text = await res.text();
-  let body: unknown = null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 4000);
   try {
-    body = text ? JSON.parse(text) : null;
-  } catch {
-    body = { error: text };
+    const res = await fetch(`${CMS_BASE}${path.startsWith("/") ? path : `/${path}`}`, {
+      signal: controller.signal,
+      ...init,
+    });
+    if (res.status === 204) return undefined as T;
+    const text = await res.text();
+    let body: unknown = null;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      body = { error: text };
+    }
+    if (!res.ok) {
+      const err = (body as { error?: string })?.error || res.statusText;
+      throw new Error(err);
+    }
+    return body as T;
+  } finally {
+    clearTimeout(timer);
   }
-  if (!res.ok) {
-    const err = (body as { error?: string })?.error || res.statusText;
-    throw new Error(err);
-  }
-  return body as T;
 }
 
 export type CmsPage = {

@@ -134,6 +134,7 @@ const ChatPage = () => {
   const prototypePollRef = useRef<number | null>(null);
   const transcriptPollRef = useRef<number | null>(null);
   const transcriptSigRef = useRef("");
+  const pendingBriefRef = useRef<string | null>(null);
   const msgIdRef = useRef(0);
   const nextId = () => {
     msgIdRef.current += 1;
@@ -153,6 +154,23 @@ const ChatPage = () => {
     setCrmChatId(null);
     setCrmSessionReady(false);
   }, [locale]);
+
+  // Read wizard brief from sessionStorage on first mount
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("neeklo_wizard_brief");
+      if (raw) {
+        const d = JSON.parse(raw) as { serviceId?: string; budget?: string; name?: string; contact?: string };
+        sessionStorage.removeItem("neeklo_wizard_brief");
+        const parts: string[] = [];
+        if (d.name) parts.push(`Меня зовут ${d.name}.`);
+        if (d.serviceId) parts.push(`Интересует: ${d.serviceId}.`);
+        if (d.budget) parts.push(`Бюджет: ${d.budget}.`);
+        if (d.contact) parts.push(`Контакт: ${d.contact}.`);
+        if (parts.length) pendingBriefRef.current = parts.join(" ");
+      }
+    } catch {}
+  }, []);
 
   /** Сессия CRM хранится на сервере (cookie + БД), без localStorage */
   useEffect(() => {
@@ -345,6 +363,43 @@ const ChatPage = () => {
       return combined;
     });
   }, [hasText, inputValue, hasAssistant, crmChatId, crmSessionReady, c.noAssistantSend, startPrototypePolling]);
+
+  const sendDirectMessage = useCallback((text: string) => {
+    if (!crmSessionReady || !hasAssistant || !text.trim()) return;
+    setMessages((prev) => {
+      const userMsg = { id: nextId(), role: "user" as const, text: text.trim(), timestamp: new Date() };
+      const combined = [...prev, userMsg];
+      const apiMsgs = combined.map((m) => ({
+        role: m.role === "ai" ? ("assistant" as const) : ("user" as const),
+        content: m.text,
+      }));
+      setIsTyping(true);
+      chatComplete({ messages: apiMsgs, chatId: crmChatId ?? undefined })
+        .then((r) => {
+          setIsTyping(false);
+          if (r.chat_id && !crmChatId) setCrmChatId(r.chat_id);
+          if (!r.chat_id && !crmChatId) {
+            setMessages((p) => [...p, { id: nextId(), role: "ai", text: r.reply, timestamp: new Date() }]);
+          }
+          if (r.prototype_job?.id) startPrototypePolling(r.prototype_job.id);
+        })
+        .catch((err: unknown) => {
+          setIsTyping(false);
+          const detail = err instanceof Error ? err.message : String(err);
+          setMessages((p) => [...p, { id: nextId(), role: "ai", text: detail, timestamp: new Date() }]);
+        });
+      return combined;
+    });
+  }, [crmSessionReady, hasAssistant, crmChatId, startPrototypePolling]);
+
+  // Auto-send wizard brief once chat session is ready
+  useEffect(() => {
+    if (crmSessionReady && pendingBriefRef.current) {
+      const text = pendingBriefRef.current;
+      pendingBriefRef.current = null;
+      sendDirectMessage(text);
+    }
+  }, [crmSessionReady, sendDirectMessage]);
 
   if (boot.isLoading) {
     return (

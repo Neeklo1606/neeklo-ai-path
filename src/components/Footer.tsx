@@ -1,138 +1,148 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { ArrowRight, Send, Globe } from "lucide-react";
-import BrandLogo from "@/components/BrandLogo";
-import { useLanguage } from "@/hooks/useLanguage";
+import { Link } from "react-router-dom";
+import { Send } from "lucide-react";
 
-const Footer = () => {
-  const navigate = useNavigate();
-  const { t } = useLanguage();
+// ─── Footer ────────────────────────────────────────────────────────────────────
 
-  const serviceLinks = [
-    { label: t("footer.aiVideos"), path: "/chat" },
-    { label: t("footer.websiteKey"), path: "/chat" },
-    { label: t("footer.tgMiniApp"), path: "/chat" },
-    { label: t("footer.aiAgent"), path: "/chat" },
-    { label: t("footer.automation"), path: "/chat" },
-  ];
+const SERVICES = [
+  { label: "Сайт + ИИ-ассистент + CRM", to: "/catalog/site-ai-crm" },
+  { label: "ИИ видео и визуалы",         to: "/catalog/ai-video" },
+  { label: "Онлайн-запись и бот",        to: "/catalog/booking-bot" },
+  { label: "Telegram Mini App",          to: "/catalog/telegram-mini-app" },
+  { label: "Все услуги",                 to: "/services" },
+];
 
-  const navLinks = [
-    { label: t("footer.home"), path: "/" },
-    { label: t("footer.chat"), path: "/chat" },
-    { label: t("footer.ourWorks"), path: "/works" },
-    { label: t("footer.services"), path: "/services" },
-    { label: t("nav.projects"), path: "/projects" },
-  ];
+const NAV = [
+  { label: "Главная",         to: "/" },
+  { label: "Работы",          to: "/works" },
+  { label: "Кейсы",           to: "/cases" },
+  { label: "Блог",            to: "/blog" },
+  { label: "Начать проект",   to: "/brief" },
+];
 
-  const legalLinks = [
-    { label: t("footer.privacy"), path: "/legal/privacy" },
-    { label: t("footer.offer"), path: "/legal/offer" },
-    { label: t("footer.cookies"), path: "/legal/cookies" },
-  ];
+const LEGAL = [
+  { label: "Политика конфиденциальности", to: "/privacy" },
+  { label: "Публичная оферта",            to: "/offer" },
+  { label: "Cookies",                     to: "/cookies" },
+];
 
+export default function Footer() {
   return (
-    <footer style={{ background: "var(--surface)", color: "var(--tx)", borderTop: "1px solid var(--bd)", position: "relative", overflow: "hidden" }}>
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: "linear-gradient(var(--bd) 1px, transparent 1px), linear-gradient(90deg, var(--bd) 1px, transparent 1px)",
-        opacity: 0.4,
-          backgroundSize: "40px 40px",
-          maskImage: "radial-gradient(circle at center, black, transparent 80%)",
-          WebkitMaskImage: "radial-gradient(circle at center, black, transparent 80%)",
-          zIndex: 0,
-        }}
-      />
+    <footer className="border-t pt-10 pb-8" style={{ borderColor: "var(--bd)", background: "var(--bg)" }}>
+      <div className="max-w-6xl mx-auto px-4 md:px-6">
 
-      <div className="relative z-[1] mx-auto" style={{ maxWidth: 1200, padding: "64px 40px 32px" }}>
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-12">
-          <div className="md:col-span-5 flex flex-col gap-5">
-            <div className="flex items-center">
-              <BrandLogo variant="footer" className="h-12 w-auto opacity-90" />
-            </div>
-            <p className="font-body whitespace-pre-line" style={{ fontSize: 14, color: "var(--tx-muted)", lineHeight: 1.65, maxWidth: 300 }}>
-              {t("footer.desc")}
-            </p>
-            <p className="font-body" style={{ fontSize: 12, color: "var(--tx-faint)" }}>
-              ИП Клочко Н.Н. · ИНН 263520430560
-            </p>
+        {/* Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
 
-            <button
-              onClick={() => navigate("/chat")}
-              className="flex items-center justify-center gap-2 font-body cursor-pointer hover:-translate-y-[1px] active:scale-[0.97] transition-all duration-200 mt-2 btn-primary"
-              style={{ width: "100%", maxWidth: 280, border: "none" }}
+          {/* Col 1 — Brand */}
+          <div className="col-span-2 md:col-span-1">
+            <p
+              className="font-bold text-xl"
+              style={{ fontFamily: "'Onest', sans-serif", color: "var(--tx)" }}
             >
-              {t("footer.startProject")} <ArrowRight size={16} />
-            </button>
+              neeklo
+            </p>
+            <p className="text-[13px] mt-2 leading-relaxed" style={{ color: "var(--tx-muted)" }}>
+              AI-продакшн студия. Сайты, Mini App, AI-агенты и видео.
+            </p>
+            <div className="mt-3 space-y-0.5 text-[11px]" style={{ color: "var(--tx-muted)" }}>
+              <div>ИП Клочко Н.Н.</div>
+              <div>ИНН 263520430560</div>
+            </div>
+            <a
+              href="https://t.me/neeklo_studio"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 mt-4 text-[13px] hover:underline transition-colors"
+              style={{ color: "var(--ac-b)" }}
+            >
+              <Send size={13} />
+              Написать в Telegram
+            </a>
           </div>
 
-          <div className="md:col-span-7 grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-6">
-            <div>
-              <ColumnTitle>{t("footer.services")}</ColumnTitle>
-              <div className="flex flex-col gap-3">
-                {serviceLinks.map((l) => <FooterLink key={l.label} to={l.path}>{l.label}</FooterLink>)}
-              </div>
+          {/* Col 2 — Services */}
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-3" style={{ color: "var(--tx-faint)" }}>
+              Услуги
+            </p>
+            <div className="space-y-2">
+              {SERVICES.map((l) => (
+                <FooterLink key={l.to} to={l.to}>{l.label}</FooterLink>
+              ))}
             </div>
-            <div>
-              <ColumnTitle>{t("footer.navigation")}</ColumnTitle>
-              <div className="flex flex-col gap-3">
-                {navLinks.map((l) => <FooterLink key={l.label} to={l.path}>{l.label}</FooterLink>)}
-              </div>
+          </div>
+
+          {/* Col 3 — Navigation */}
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-3" style={{ color: "var(--tx-faint)" }}>
+              Навигация
+            </p>
+            <div className="space-y-2">
+              {NAV.map((l) => (
+                <FooterLink key={l.to} to={l.to}>{l.label}</FooterLink>
+              ))}
             </div>
-            <div className="col-span-2 md:col-span-1">
-              <ColumnTitle>{t("footer.contacts")}</ColumnTitle>
-              <div className="flex flex-col gap-3">
-                <a href="mailto:neeklostudio@gmail.com" className="font-body hover:text-white transition-colors duration-150" style={{ fontSize: 14, color: "rgba(255,255,255,0.5)" }}>neeklostudio@gmail.com</a>
-                <a href="https://t.me/neeekn" target="_blank" rel="noopener noreferrer" className="font-body flex items-center gap-2 hover:text-white transition-colors duration-150" style={{ fontSize: 14, color: "rgba(255,255,255,0.5)" }}>
-                  <Send size={14} /> @neeekn
-                </a>
-              </div>
-              <div className="flex gap-3 mt-4">
-                <a href="https://t.me/neeekn" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors duration-150" style={{ color: "var(--tx-faint)" }}><Send size={18} /></a>
-                <a href="https://neeklo.ru" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors duration-150" style={{ color: "var(--tx-faint)" }}><Globe size={18} /></a>
-              </div>
+          </div>
+
+          {/* Col 4 — Contacts */}
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-3" style={{ color: "var(--tx-faint)" }}>
+              Контакты
+            </p>
+            <div className="space-y-2 text-[13px]">
+              <a
+                href="https://t.me/neeklo_studio"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block transition-colors duration-150 hover:text-[var(--tx)]"
+                style={{ color: "var(--tx-muted)", textDecoration: "none" }}
+              >
+                @neeklo_studio
+              </a>
+              <a
+                href="mailto:hi@neeklo.ru"
+                className="block transition-colors duration-150 hover:text-[var(--tx)]"
+                style={{ color: "var(--tx-muted)", textDecoration: "none" }}
+              >
+                hi@neeklo.ru
+              </a>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mt-12 pt-6" style={{ borderTop: "1px solid var(--bd)" }}>
-          <span className="font-mono font-body text-center md:text-left" style={{ fontSize: 12, color: "var(--tx-faint)" }}>
-            © 2026 Neeklo Studio
+        {/* Divider */}
+        <div className="border-t mb-4" style={{ borderColor: "var(--bd)" }} />
+
+        {/* Bottom row */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+          <span className="text-[11px]" style={{ color: "var(--tx-faint)" }}>
+            2020–2026 neeklo. Все права защищены.
           </span>
-          <div className="flex flex-wrap justify-center md:justify-end gap-4">
-            {legalLinks.map((l) => (
-              <Link key={l.path} to={l.path} className="font-body transition-colors duration-150" style={{ fontSize: 11, color: "var(--tx-faint)" }}>
+          <div className="flex gap-4 text-[11px]">
+            {LEGAL.map((l) => (
+              <Link
+                key={l.to}
+                to={l.to}
+                className="transition-colors duration-150 hover:text-[var(--tx)]"
+                style={{ color: "var(--tx-faint)", textDecoration: "none" }}
+              >
                 {l.label}
               </Link>
             ))}
           </div>
         </div>
-      </div>
 
-      <style>{`
-        @media (max-width: 767px) {
-          footer > .relative { padding: 48px 20px calc(32px + env(safe-area-inset-bottom)) !important; }
-        }
-      `}</style>
+      </div>
     </footer>
   );
-};
+}
 
 const FooterLink = ({ to, children }: { to: string; children: React.ReactNode }) => (
   <Link
     to={to}
-    className="group flex items-center gap-2 font-body transition-colors duration-150"
-    style={{ fontSize: 14, color: "var(--tx-muted)" }}
+    className="block text-[13px] transition-colors duration-150 hover:text-[var(--tx)]"
+    style={{ color: "var(--tx-muted)", textDecoration: "none" }}
   >
-    <span className="rounded-full flex-shrink-0 transition-all duration-200 group-hover:bg-white" style={{ width: 6, height: 6, background: "rgba(255,255,255,0.2)" }} />
-    <span className="group-hover:text-white transition-colors duration-150">{children}</span>
+    {children}
   </Link>
 );
-
-const ColumnTitle = ({ children }: { children: React.ReactNode }) => (
-  <p className="font-body uppercase mb-4" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", color: "var(--tx-faint)" }}>
-    {children}
-  </p>
-);
-
-export default Footer;

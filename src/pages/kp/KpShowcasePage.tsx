@@ -29,7 +29,7 @@ const DEFAULT_SHOWCASE: ShowcaseData = {
     title_1: "Прозрачные коммерческие",
     title_2: "предложения",
     subtitle:
-      "Сайты, Telegram-боты, Mini App и AI-агенты — под ключ. Фиксированная смета, понятные сроки, результат за 4–8 недель.",
+      "Сайты, Telegram-боты, Mini App и AI-агенты: под ключ. Фиксированная смета, понятные сроки, результат за 4–8 недель.",
   },
   directions: [
     { icon: "🌐", title: "Сайты", text: "Многостраничные имиджевые сайты на Next.js с админкой, SEO и Telegram-воронкой." },
@@ -38,7 +38,7 @@ const DEFAULT_SHOWCASE: ShowcaseData = {
     { icon: "🧠", title: "AI-агенты", text: "AI-ассистенты на базе LLM с доступом к базе знаний компании и интеграцией в CRM." },
   ],
   packages: {
-    title_1: "Три базовых пакета —",
+    title_1: "Три базовых пакета:",
     title_2: "выбери свой формат",
     items: [
       {
@@ -89,7 +89,7 @@ const DEFAULT_SHOWCASE: ShowcaseData = {
           "Еженедельные созвоны и статус-отчёты",
           "Контент-поддержка и развитие продукта",
           "AI-ассистент или новые сценарии бота",
-          "Гибкий бэклог — добавляем задачи",
+          "Гибкий бэклог, добавляем задачи",
           "Приоритетная поддержка весь период",
         ],
       },
@@ -98,7 +98,7 @@ const DEFAULT_SHOWCASE: ShowcaseData = {
   cta: {
     title_1: "Обсудим",
     title_2: "ваш проект?",
-    text: "Расскажите задачу — подготовим индивидуальное КП за 48 часов. Фиксированная смета и прозрачные этапы.",
+    text: "Расскажите задачу, подготовим индивидуальное КП за 48 часов. Фиксированная смета и прозрачные этапы.",
     button_label: "Обсудить в Telegram",
     button_url: "https://t.me/neeeekn",
   },
@@ -115,14 +115,14 @@ export default function KpShowcasePage() {
   const [data, setData] = useState<ShowcaseData>(DEFAULT_SHOWCASE);
 
   useEffect(() => {
-    document.title = "КП · neeklo.studio — Коммерческие предложения";
+    document.title = "КП · neeklo.studio · Коммерческие предложения";
     cmsJson<Record<string, ShowcaseData>>("/settings/public")
       .then((settings) => {
         const val = settings["kp.showcase"] as ShowcaseData | undefined;
         if (val && val.hero && val.packages) setData(val);
       })
       .catch(() => {});
-    return () => { document.title = "neeklo — Сайты и AI-агенты под ключ"; };
+    return () => { document.title = "neeklo · Сайты и AI-агенты под ключ"; };
   }, []);
 
   return (
