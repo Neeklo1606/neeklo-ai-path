@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 import { motion } from "framer-motion";
-import { usePageTitle } from "@/hooks/usePageTitle";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { useLanguage } from "@/hooks/useLanguage";
 import Footer from "@/components/Footer";
 // import HomeHero from "@/components/home/HomeHero";
@@ -74,7 +74,23 @@ function HomeIncluded({ lang }: { lang: string }) {
 
 export default function CmsHomePage() {
   const { lang } = useLanguage();
-  usePageTitle("neeklo · цифровые продукты для бизнеса");
+  usePageMeta({
+    title: "neeklo — разработка сайтов, AI-ассистентов и Telegram-ботов",
+    description: "Создаём сайты, AI-ассистентов, Telegram-ботов и рекламные видео для бизнеса. Старт за 48 часов. Ответ в течение 2 часов.",
+    og: { url: "/" },
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "ProfessionalService",
+      "name": "neeklo",
+      "description": "AI-продакшн студия. Сайты, AI-ассистенты, Telegram-боты и видео для бизнеса.",
+      "url": "https://neeklo.ru",
+      "email": "hi@neeklo.ru",
+      "address": { "@type": "PostalAddress", "addressCountry": "RU" },
+      "priceRange": "от 15 000 ₽",
+      "serviceType": ["Разработка сайтов", "AI-ассистенты", "Telegram-боты", "AI-видео"],
+      "sameAs": ["https://t.me/neeklo_studio"],
+    },
+  });
 
   const { open: openWizard } = useBrief();
   const casesRef = useRef<HTMLDivElement>(null);

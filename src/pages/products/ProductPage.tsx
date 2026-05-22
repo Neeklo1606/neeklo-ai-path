@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -12,7 +12,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useBrief } from "@/context/BriefContext";
-import { usePageTitle } from "@/hooks/usePageTitle";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import Footer from "@/components/Footer";
 import { getProduct, type ProductData } from "@/data/products";
 
@@ -90,22 +90,11 @@ export default function ProductPage() {
   const { open: openBrief } = useBrief();
   const product = getProduct(slug ?? "");
 
-  usePageTitle(product?.seoTitle ?? "Продукт · neeklo");
-
-  // SEO meta description
-  useEffect(() => {
-    if (!product) return;
-    const el =
-      document.querySelector('meta[name="description"]') ||
-      (() => {
-        const m = document.createElement("meta");
-        m.setAttribute("name", "description");
-        document.head.appendChild(m);
-        return m;
-      })();
-    el.setAttribute("content", product.seoDescription);
-    return () => { el.setAttribute("content", ""); };
-  }, [product]);
+  usePageMeta({
+    title: product?.seoTitle ?? "Продукт · neeklo",
+    description: product?.seoDescription,
+    og: { url: slug ? `/products/${slug}` : "/" },
+  });
 
   if (!product) {
     navigate("/services", { replace: true });

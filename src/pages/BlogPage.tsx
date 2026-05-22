@@ -1,12 +1,15 @@
 import { motion } from "framer-motion";
-import { usePageTitle } from "@/hooks/usePageTitle";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import Footer from "@/components/Footer";
 import { news } from "@/data/news";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
 export default function BlogPage() {
-  usePageTitle("Блог · neeklo");
+  usePageMeta({
+    title: "Блог — neeklo",
+    description: "Статьи о сайтах, AI-ассистентах, Telegram-ботах и автоматизации бизнеса.",
+  });
 
   return (
     <div

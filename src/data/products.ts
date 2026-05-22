@@ -26,9 +26,8 @@ export type ProductData = {
 export const products: ProductData[] = [
   {
     id: "site-ai-crm",
-    seoTitle: "Сайт с AI-ассистентом и CRM для малого бизнеса | neeklo",
-    seoDescription:
-      "Разрабатываем сайты с встроенным AI-ассистентом и CRM-системой. Заявки не теряются, система отвечает клиентам автоматически. От 80 000 руб.",
+    seoTitle: "Сайт + AI-ассистент + CRM — neeklo",
+    seoDescription: "Разрабатываем сайты с встроенным AI-ассистентом и CRM. Заявки не теряются. От 80 000 ₽.",
     metaLabel: "Разработка · Под ключ",
     h1: "Сайт, который продаёт и работает без вас",
     subtitle:
@@ -85,9 +84,8 @@ export const products: ProductData[] = [
 
   {
     id: "ai-video",
-    seoTitle: "AI-видео для бизнеса: рекламные ролики с нейросетями | neeklo",
-    seoDescription:
-      "Создаём Reels, TikTok и рекламные ролики с AI-генерацией. Сценарий, озвучка, монтаж. Без съёмочной группы. От 15 000 руб. за ролик.",
+    seoTitle: "AI-видео для бизнеса — neeklo",
+    seoDescription: "Рекламные ролики и Reels с нейросетями. Сценарий, озвучка, монтаж. От 15 000 ₽.",
     metaLabel: "Контент · AI-генерация",
     h1: "Видео для рекламы: быстро, дёшево, без съёмок",
     subtitle:
@@ -144,9 +142,8 @@ export const products: ProductData[] = [
 
   {
     id: "telegram-bot",
-    seoTitle: "Разработка Telegram-бота для бизнеса | neeklo",
-    seoDescription:
-      "Создаём Telegram-ботов для продаж, записи, поддержки и автоматизации. Интеграция с CRM. Mini App по запросу. От 40 000 руб.",
+    seoTitle: "Telegram-бот для бизнеса — neeklo",
+    seoDescription: "Разрабатываем Telegram-ботов для продаж, записи и поддержки. От 40 000 ₽.",
     metaLabel: "Автоматизация · Telegram",
     h1: "Telegram-бот, который работает вместо менеджера",
     subtitle:
@@ -203,9 +200,8 @@ export const products: ProductData[] = [
 
   {
     id: "custom-development",
-    seoTitle: "Кастомная разработка сайтов и платформ под ключ | neeklo",
-    seoDescription:
-      "Разрабатываем сложные продукты, платформы и автоматизации когда готовых решений нет. Полный цикл от ТЗ до деплоя. От 120 000 руб.",
+    seoTitle: "Кастомная разработка — neeklo",
+    seoDescription: "Сложные платформы и автоматизации под нестандартные задачи. От 120 000 ₽.",
     metaLabel: "Разработка · Платформы",
     h1: "Нестандартный продукт: разработаем с нуля",
     subtitle:
@@ -262,9 +258,8 @@ export const products: ProductData[] = [
 
   {
     id: "ai-assistant",
-    seoTitle: "AI-ассистент для бизнеса: чат-бот на основе ваших данных | neeklo",
-    seoDescription:
-      "Разрабатываем AI-ассистентов на GPT-4 и Claude. Обучение на ваших данных, интеграция на сайт или в Telegram. Квалифицирует лиды 24/7. От 25 000 руб.",
+    seoTitle: "AI-ассистент для бизнеса — neeklo",
+    seoDescription: "Умный чат-бот на GPT-4 и Claude. Обучен на ваших данных. Отвечает 24/7. От 25 000 ₽.",
     metaLabel: "AI · Автоматизация",
     h1: "AI-ассистент, который знает ваш бизнес",
     subtitle:
@@ -321,9 +316,8 @@ export const products: ProductData[] = [
 
   {
     id: "telegram-mini-app",
-    seoTitle: "Разработка Telegram Mini App для бизнеса | neeklo",
-    seoDescription:
-      "Создаём Telegram Mini App: полноценные приложения внутри Telegram. Каталог, запись, магазин или личный кабинет. Без App Store. От 60 000 руб.",
+    seoTitle: "Telegram Mini App — neeklo",
+    seoDescription: "Приложение внутри Telegram без App Store. Каталог, запись, кабинет клиента. От 60 000 ₽.",
     metaLabel: "Telegram · Mini App",
     h1: "Приложение внутри Telegram без App Store",
     subtitle:

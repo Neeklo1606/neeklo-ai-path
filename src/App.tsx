@@ -67,6 +67,7 @@ const CookiesPage = lazy(() => import("./routes/cookies"));
 const BlogPage = lazy(() => import("./pages/BlogPage"));
 const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
 const ProductPage = lazy(() => import("./pages/products/ProductPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
 
 const queryClient = new QueryClient();
 
@@ -318,6 +319,7 @@ const AppContent = ({
                 </Route>
               </Route>
             </Route>
+            <Route path="/contact" element={<P><ContactPage /></P>} />
             <Route path="/products/:slug" element={<P><ProductPage /></P>} />
             <Route path="/kp" element={<KpShowcasePage />} />
             <Route path="/kp/:slug" element={<KpSlugPage />} />
