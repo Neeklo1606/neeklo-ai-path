@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Send } from "lucide-react";
 import { useBrief } from "@/context/BriefContext";
+import { LogoIcon } from "@/components/ui/LogoIcon";
 
 const SERVICES = [
   { label: "Сайт + AI-ассистент", to: "/products/site-ai-crm" },
@@ -24,9 +25,7 @@ export default function Footer() {
 
           {/* Col 1 — Brand */}
           <div className="col-span-2 lg:col-span-1">
-            <p className="font-bold text-xl text-foreground" style={{ fontFamily: "'Onest', sans-serif" }}>
-              neeklo
-            </p>
+            <LogoIcon height={24} style={{ color: 'var(--tx)' }} />
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-[200px]">
               AI-продакшн студия. Сайты, боты, AI-агенты и видео.
             </p>

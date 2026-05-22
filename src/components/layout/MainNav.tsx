@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom'
 import { Send } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MenuToggleIcon } from '@/components/ui/MenuToggleIcon'
+import { LogoIcon } from '@/components/ui/LogoIcon'
 
 const TELEGRAM_URL = 'https://t.me/neeekn'
 
@@ -63,12 +64,8 @@ export function MainNav() {
         <nav className="max-w-6xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
 
           {/* Logo */}
-          <Link
-            to="/"
-            className="font-bold text-xl tracking-tight"
-            style={{ fontFamily: 'var(--font-display, inherit)', color: 'var(--tx)' }}
-          >
-            neeklo
+          <Link to="/" className="flex items-center shrink-0" style={{ color: 'var(--tx)' }}>
+            <LogoIcon height={28} />
           </Link>
 
           {/* Desktop nav links */}
