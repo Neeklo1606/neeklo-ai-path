@@ -96,23 +96,12 @@ export default function HomeFinalCTA({ lang, onOpenWizard }: Props) {
                 marginBottom: 16,
               }}
             >
-              {ru ? <>Есть задача?<br />Обсудим прямо сейчас</> : <>Got a project?<br />Let's talk right now</>}
+              {ru ? "Обсудим ваш проект" : "Let's talk about your project"}
             </h2>
             <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", lineHeight: 1.6, maxWidth: 340 }}>
               {ru ? "Бесплатная консультация. Отвечаем быстро." : "Free consultation. We respond quickly."}
             </p>
 
-            {/* Metrics */}
-            <div className="flex gap-8 mt-8">
-              <div>
-                <p style={{ fontFamily: "'Onest', sans-serif", fontWeight: 800, fontSize: "clamp(28px, 3vw, 36px)", color: "white", lineHeight: 1 }}>44+</p>
-                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{ru ? "проекта запущено" : "projects launched"}</p>
-              </div>
-              <div>
-                <p style={{ fontFamily: "'Onest', sans-serif", fontWeight: 800, fontSize: "clamp(28px, 3vw, 36px)", color: "white", lineHeight: 1 }}>{ru ? "5 лет" : "5 yrs"}</p>
-                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{ru ? "в AI и digital" : "in AI & digital"}</p>
-              </div>
-            </div>
           </div>
 
           {/* ── Right column ── */}
@@ -179,7 +168,7 @@ export default function HomeFinalCTA({ lang, onOpenWizard }: Props) {
                 {/* Message (optional) */}
                 <textarea
                   rows={2}
-                  placeholder={ru ? "Кратко опишите задачу" : "Briefly describe your task"}
+                  placeholder={ru ? "Ваш проект или задача" : "Your project or task"}
                   value={values.message}
                   onChange={handleChange("message")}
                   style={{ ...fieldStyle, resize: "none" }}
@@ -205,15 +194,9 @@ export default function HomeFinalCTA({ lang, onOpenWizard }: Props) {
                   {loading ? "Отправляем..." : (ru ? "Начать проект" : "Start project")}
                 </button>
 
-                {/* Secondary — Telegram direct */}
-                <a
-                  href="https://t.me/neeklo_studio"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-3 rounded-xl text-sm text-white/70 border border-white/20 hover:border-white/40 text-center transition-colors mt-2 block"
-                >
-                  Написать напрямую в Telegram
-                </a>
+                <p className="text-sm text-center mt-3" style={{ color: "rgba(255,255,255,0.5)" }}>
+                  Без оплаты. Отвечаем в течение 2 часов.
+                </p>
               </form>
             )}
           </div>

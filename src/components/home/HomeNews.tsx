@@ -9,7 +9,7 @@ type Props = { lang: string };
 
 export default function HomeNews({ lang }: Props) {
   const ru = lang === "ru";
-  const items = news.slice(0, 5);
+  const items = news.slice(0, 3);
 
   return (
     <section style={{ padding: "64px 20px", borderTop: "1px solid var(--bd)" }}>
@@ -60,7 +60,7 @@ export default function HomeNews({ lang }: Props) {
               key={item.slug}
               href={`/blog/${item.slug}`}
               className={[
-                "flex items-center gap-3 py-3 px-4 transition-colors duration-150",
+                "flex items-center gap-3 py-3.5 px-4 transition-colors duration-150",
                 i < items.length - 1 ? "border-b border-[var(--bd)]" : "",
               ].join(" ")}
               style={{ textDecoration: "none", minHeight: 44 }}
@@ -69,7 +69,7 @@ export default function HomeNews({ lang }: Props) {
             >
               {/* Category badge */}
               <span
-                className="shrink-0 text-[10px] uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border border-[var(--bd)]"
+                className="shrink-0 self-start mt-0.5 text-[10px] uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border border-[var(--bd)]"
                 style={{
                   fontWeight: 600,
                   background: "var(--surface-2)",
@@ -81,13 +81,21 @@ export default function HomeNews({ lang }: Props) {
                 {item.category}
               </span>
 
-              {/* Title */}
-              <span
-                className="flex-1 line-clamp-1"
-                style={{ fontSize: 14, color: "var(--tx)", lineHeight: 1.45 }}
-              >
-                {item.title}
-              </span>
+              {/* Title + preview */}
+              <div className="flex-1 min-w-0">
+                <span
+                  className="block line-clamp-1"
+                  style={{ fontSize: 14, color: "var(--tx)", lineHeight: 1.45 }}
+                >
+                  {item.title}
+                </span>
+                <span
+                  className="block line-clamp-1 text-sm text-muted-foreground mt-0.5"
+                  style={{ fontSize: 12 }}
+                >
+                  {item.excerpt}
+                </span>
+              </div>
 
               {/* Date */}
               <span
