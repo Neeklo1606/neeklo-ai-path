@@ -52,13 +52,13 @@ export default function HomeCases({ lang }: Props) {
             onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--tx)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--tx-muted)"; }}
           >
-            {ru ? "Все кейсы" : "All cases"}
+            {ru ? "Все работы" : "All cases"}
             <ArrowUpRight size={14} strokeWidth={2} />
           </Link>
         </motion.div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 sm:gap-5">
-          {cases.slice(0, 3).map((c, i) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-5">
+          {cases.slice(0, 4).map((c, i) => (
             <motion.div
               key={c.id}
               initial={{ opacity: 0, y: 12 }}
@@ -139,25 +139,35 @@ function CaseCard({ item, onOpenModal }: { item: CaseData; onOpenModal: (c: Case
         >
           <ArrowUpRight size={13} />
         </div>
+
+        {/* Hover overlay */}
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+          <span className="bg-white text-black font-semibold text-sm px-5 py-2.5 rounded-full pointer-events-none">
+            Смотреть кейс →
+          </span>
+        </div>
       </div>
 
       {/* Content */}
-      <div style={{ padding: "16px 18px" }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--tx)", marginBottom: 4, lineHeight: 1.3 }}>
+      <div style={{ padding: "14px 16px" }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--tx)", marginBottom: 4, lineHeight: 1.3 }}>
           {item.title}
         </h3>
-        <p style={{ fontSize: 13, color: "var(--tx-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 20, fontWeight: 700, color: "var(--ac-b)", marginBottom: 6, lineHeight: 1.2 }}>
+          {item.metric}
+        </p>
+        <p style={{ fontSize: 12, color: "var(--tx-muted)", marginBottom: 10, lineHeight: 1.5 }}>
           {item.subtitle}
         </p>
 
-        <div className="flex flex-wrap gap-1.5" style={{ marginBottom: 14 }}>
+        <div className="flex flex-wrap gap-1">
           {item.tags.map((tag) => (
             <span
               key={tag}
               style={{
-                padding: "2px 8px",
+                padding: "2px 7px",
                 borderRadius: 9999,
-                fontSize: 11,
+                fontSize: 10,
                 background: "var(--surface-2)",
                 color: "var(--tx-faint)",
                 border: "1px solid var(--bd)",
@@ -166,15 +176,6 @@ function CaseCard({ item, onOpenModal }: { item: CaseData; onOpenModal: (c: Case
               {tag}
             </span>
           ))}
-        </div>
-
-        <div
-          className="flex items-center"
-          style={{ paddingTop: 12, borderTop: "1px solid var(--bd)" }}
-        >
-          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ac-b)" }}>
-            ↑ {item.metric}
-          </span>
         </div>
       </div>
     </>
