@@ -35,7 +35,7 @@ export default function Footer() {
               <div>ИНН 263520430560</div>
             </div>
             <a
-              href="https://t.me/neeklo_studio"
+              href="https://t.me/neeekn"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 mt-4 text-sm text-primary hover:underline transition-colors"
@@ -78,13 +78,13 @@ export default function Footer() {
             <p className={COL_HEAD}>КОНТАКТЫ</p>
             <div className="space-y-2 text-sm text-muted-foreground">
               <a
-                href="https://t.me/neeklo_studio"
+                href="https://t.me/neeekn"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block hover:text-foreground transition-colors duration-150"
                 style={{ textDecoration: "none" }}
               >
-                @neeklo_studio
+                @neeekn
               </a>
               <a
                 href="mailto:hi@neeklo.ru"

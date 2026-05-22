@@ -2,7 +2,7 @@
 # Single SSH session: start API, verify, save PM2 list (BeGet)
 set -euo pipefail
 export PM2_HOME="${PM2_HOME:-$HOME/.pm2}"
-cd /home/d/dsc23ytp/neeklo/public_html
+cd /var/www/neeklo.ru
 pm2 kill 2>/dev/null || true
 pm2 start deploy/beget/ecosystem.config.cjs
 sleep 5

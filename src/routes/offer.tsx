@@ -104,8 +104,8 @@ export default function OfferRoute() {
 
           <Section title="13. Контакты исполнителя">
             ИП Клочко Никита Николаевич, ИНН 263520430560
-            <br />Email: neeklostudio@gmail.com
-            <br />Telegram: <a href="https://t.me/neeklo_studio" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ac-b)" }}>@neeklo_studio</a>
+            <br />Email: hi@neeklo.ru
+            <br />Telegram: <a href="https://t.me/neeekn" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ac-b)" }}>@neeekn</a>
           </Section>
 
         </div>

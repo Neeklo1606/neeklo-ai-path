@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Home, Sparkles, PenLine, Image, User } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useBrief } from "@/context/BriefContext";
 
 type NavItem = {
   icon: React.ElementType;
@@ -19,8 +20,9 @@ const ITEMS: NavItem[] = [
 
 export default function BottomNav() {
   const { pathname } = useLocation();
-  const navigate = useNavigate();
-  const { t } = useLanguage();
+  const navigate     = useNavigate();
+  const { t }        = useLanguage();
+  const { open }     = useBrief();
 
   return (
     <nav
@@ -42,7 +44,7 @@ export default function BottomNav() {
             return (
               <button
                 key={path}
-                onClick={() => navigate(path)}
+                onClick={() => open()}
                 className="flex flex-col items-center justify-center gap-0.5 touch-manipulation"
                 style={{ minHeight: 44 }}
                 aria-current={active ? "page" : undefined}

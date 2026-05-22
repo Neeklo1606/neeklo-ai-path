@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd /home/d/dsc23ytp/neeklo/public_html
+cd /var/www/neeklo.ru
 cp .env.backup .env
 sed -i '/^JWT_SECRET=/d' .env
 sed -i '/^DATABASE_URL=/d' .env

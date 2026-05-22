@@ -65,7 +65,7 @@ export default function PrivacyRoute() {
           <Section title="6. Права пользователя">
             Вы вправе в любой момент: запросить информацию об обрабатываемых данных; потребовать исправления
             неточных данных; потребовать удаления ваших персональных данных; отозвать ранее данное согласие.
-            Для этого напишите на почту: neeklostudio@gmail.com. Мы ответим в течение 30 дней.
+            Для этого напишите на почту: hi@neeklo.ru. Мы ответим в течение 30 дней.
           </Section>
 
           <Section title="7. Cookies">
@@ -81,9 +81,9 @@ export default function PrivacyRoute() {
           </Section>
 
           <Section title="9. Контакты">
-            По вопросам обработки персональных данных: neeklostudio@gmail.com
+            По вопросам обработки персональных данных: hi@neeklo.ru
             <br />
-            Telegram: <a href="https://t.me/neeklo_studio" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ac-b)" }}>@neeklo_studio</a>
+            Telegram: <a href="https://t.me/neeekn" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ac-b)" }}>@neeekn</a>
           </Section>
 
         </div>

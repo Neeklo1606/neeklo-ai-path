@@ -6,7 +6,7 @@ import { useBrief } from "@/context/BriefContext";
 export default function ContactPage() {
   usePageMeta({
     title: "Контакты — neeklo",
-    description: "Свяжитесь с командой neeklo. Отвечаем в течение 2 часов. Telegram: @neeklo_studio",
+    description: "Свяжитесь с командой neeklo. Отвечаем в течение 2 часов. Telegram: @neeekn",
   });
 
   const { open } = useBrief();
@@ -30,7 +30,7 @@ export default function ContactPage() {
         <div className="flex flex-col gap-4">
           {/* Telegram */}
           <a
-            href="https://t.me/neeklo_studio"
+            href="https://t.me/neeekn"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-4 rounded-2xl p-5 border border-border hover:border-[var(--bd-hover)] transition-colors duration-150"
@@ -44,7 +44,7 @@ export default function ContactPage() {
             </span>
             <div>
               <p className="font-semibold text-sm" style={{ color: "var(--tx)" }}>Telegram</p>
-              <p className="text-sm text-muted-foreground mt-0.5">@neeklo_studio</p>
+              <p className="text-sm text-muted-foreground mt-0.5">@neeekn</p>
             </div>
           </a>
 

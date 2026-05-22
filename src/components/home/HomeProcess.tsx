@@ -7,7 +7,7 @@ import { useBrief } from "@/context/BriefContext";
 
 function CheckList({ items }: { items: string[] }) {
   return (
-    <ul className="flex flex-col gap-2.5 my-0 p-0 list-none">
+    <ul className="flex flex-col gap-2 my-0 p-0 list-none">
       {items.map((item) => (
         <li key={item} className="flex items-start gap-2.5">
           <span
@@ -35,11 +35,11 @@ function SectionText({
   cta: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-5">
-      <h3 className="font-bold text-[clamp(20px,3vw,28px)] leading-tight tracking-tight text-foreground m-0">
+    <div className="flex flex-col gap-4">
+      <h3 className="font-bold text-[clamp(18px,2.5vw,24px)] leading-tight tracking-tight text-foreground m-0">
         {h3}
       </h3>
-      <p className="text-[15px] text-muted-foreground leading-relaxed m-0">{body}</p>
+      <p className="text-[14px] text-muted-foreground leading-relaxed m-0">{body}</p>
       <CheckList items={items} />
       <div>{cta}</div>
     </div>
@@ -50,7 +50,7 @@ function SectionText({
 
 function ChatCard() {
   return (
-    <div className="rounded-2xl p-5 flex flex-col gap-3 border border-border bg-muted/50">
+    <div className="rounded-2xl p-4 flex flex-col gap-3 border border-border bg-muted/50">
       {/* Client message (right) */}
       <div className="flex justify-end">
         <div
@@ -83,7 +83,7 @@ function ChatCard() {
 
 function KpCard() {
   return (
-    <div className="rounded-2xl p-5 flex flex-col gap-4 border border-border bg-muted/50">
+    <div className="rounded-2xl p-4 flex flex-col gap-3 border border-border bg-muted/50">
       <p className="font-semibold text-sm text-foreground m-0">
         Коммерческое предложение
       </p>
@@ -155,7 +155,7 @@ function StatusDot({ status }: { status: ProgressRow["status"] }) {
 
 function ProgressCard() {
   return (
-    <div className="rounded-2xl p-5 flex flex-col gap-4 border border-border bg-muted/50">
+    <div className="rounded-2xl p-4 flex flex-col gap-3 border border-border bg-muted/50">
       <p className="font-semibold text-sm text-foreground m-0">Статус проекта</p>
 
       <div className="flex flex-col gap-3">
@@ -226,7 +226,7 @@ function CasesBtn() {
 
 function ItemLayout({ left, right }: { left: React.ReactNode; right: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-start">
       <div>{left}</div>
       <div>{right}</div>
     </div>
@@ -243,7 +243,7 @@ export default function HomeProcess(_props: Props) {
   return (
     <div style={{ borderTop: "1px solid var(--bd)" }}>
       {/* Section header above StickyTabs */}
-      <div className="mx-auto max-w-6xl px-4 md:px-6 pt-10 pb-4">
+      <div className="mx-auto max-w-6xl px-4 md:px-6 pt-8 pb-3">
         <p
           style={{
             fontSize: 11,
@@ -258,7 +258,7 @@ export default function HomeProcess(_props: Props) {
         </p>
         <h2
           style={{
-            fontSize: "clamp(24px, 3.5vw, 32px)",
+            fontSize: "clamp(22px, 3vw, 28px)",
             fontWeight: 800,
             lineHeight: 1.1,
             letterSpacing: "-0.02em",
@@ -278,9 +278,9 @@ export default function HomeProcess(_props: Props) {
         sectionClassName="bg-background"
         stickyHeaderContainerClassName=""
         headerContentWrapperClassName="bg-background/95 backdrop-blur-sm border-b border-border"
-        headerContentLayoutClassName="max-w-6xl mx-auto px-4 md:px-6 py-3 md:py-4"
-        titleClassName="font-bold text-xl md:text-2xl lg:text-3xl tracking-tight text-foreground"
-        contentLayoutClassName="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12"
+        headerContentLayoutClassName="max-w-6xl mx-auto px-4 md:px-6 py-2.5 md:py-3"
+        titleClassName="font-bold text-base md:text-lg tracking-tight text-foreground"
+        contentLayoutClassName="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8"
       >
         {/* ── 01 Обсуждаем ─────────────────────────────────────────────────── */}
         <StickyTabs.Item id="discuss" title="01 — Обсуждаем задачу">

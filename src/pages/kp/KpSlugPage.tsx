@@ -67,7 +67,7 @@ export default function KpSlugPage() {
             Возможно, ссылка устарела или КП было отозвано. Свяжитесь с нами
             для получения актуального предложения.
           </p>
-          <a href="https://t.me/neeeekn" target="_blank" rel="noopener noreferrer" className="kp-cta-btn">
+          <a href="https://t.me/neeekn" target="_blank" rel="noopener noreferrer" className="kp-cta-btn">
             Написать в Telegram
           </a>
         </div>

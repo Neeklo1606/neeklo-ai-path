@@ -62,7 +62,7 @@ export default function ServicesPage() {
             <div className="flex flex-col sm:flex-row gap-4 mt-6">
               {/* Telegram */}
               <a
-                href="https://t.me/neeklo_studio"
+                href="https://t.me/neeekn"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded-2xl border border-[var(--bd)] p-5 flex items-center gap-4 hover:border-[var(--bd-hover)] transition-colors flex-1"
@@ -71,7 +71,7 @@ export default function ServicesPage() {
                 <Send size={20} className="text-[var(--ac-b)] shrink-0" />
                 <div>
                   <p style={{ fontSize: 11, color: "var(--tx-faint)", marginBottom: 2 }}>Telegram</p>
-                  <p className="text-[var(--ac-b)] font-semibold text-[14px]">@neeklo_studio</p>
+                  <p className="text-[var(--ac-b)] font-semibold text-[14px]">@neeekn</p>
                 </div>
               </a>
 

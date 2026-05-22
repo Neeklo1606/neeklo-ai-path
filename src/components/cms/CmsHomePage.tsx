@@ -88,7 +88,7 @@ export default function CmsHomePage() {
       "address": { "@type": "PostalAddress", "addressCountry": "RU" },
       "priceRange": "от 15 000 ₽",
       "serviceType": ["Разработка сайтов", "AI-ассистенты", "Telegram-боты", "AI-видео"],
-      "sameAs": ["https://t.me/neeklo_studio"],
+      "sameAs": ["https://t.me/neeekn"],
     },
   });
 

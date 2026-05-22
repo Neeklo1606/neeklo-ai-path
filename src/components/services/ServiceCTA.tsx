@@ -12,7 +12,7 @@ export default function ServiceCTA({ service }: { service: string }) {
     const text = encodeURIComponent(
       `Заявка: ${service}\nИмя: ${name}\nКонтакт: ${contact}\n${message ? `Задача: ${message}` : ""}`
     );
-    window.open(`https://t.me/neeeekn?text=${text}`, "_blank", "noopener,noreferrer");
+    window.open(`https://t.me/neeekn?text=${text}`, "_blank", "noopener,noreferrer");
     setSent(true);
   };
 
@@ -32,7 +32,7 @@ export default function ServiceCTA({ service }: { service: string }) {
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {[
-                { icon: "✈️", label: "Telegram", value: "@neeeekn", href: "https://t.me/neeeekn" },
+                { icon: "✈️", label: "Telegram", value: "@neeekn", href: "https://t.me/neeekn" },
                 { icon: "✉️", label: "Email", value: "neeklostudio@gmail.com", href: "mailto:neeklostudio@gmail.com" },
               ].map((c) => (
                 <a key={c.label} href={c.href} target="_blank" rel="noopener noreferrer"

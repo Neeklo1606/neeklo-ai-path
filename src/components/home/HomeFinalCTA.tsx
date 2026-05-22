@@ -123,7 +123,7 @@ export default function HomeFinalCTA({ lang, onOpenWizard }: Props) {
                   Ответим в течение 2 часов
                 </p>
                 <a
-                  href="https://t.me/neeklo_studio"
+                  href="https://t.me/neeekn"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-block mt-4 text-white/80 hover:text-white underline text-sm transition-colors"

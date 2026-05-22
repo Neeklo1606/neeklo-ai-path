@@ -4,7 +4,7 @@ import { Send } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MenuToggleIcon } from '@/components/ui/MenuToggleIcon'
 
-const TELEGRAM_URL = 'https://t.me/neeklo_studio'
+const TELEGRAM_URL = 'https://t.me/neeekn'
 
 const NAV_LINKS = [
   { label: 'Услуги',   href: '/services' },

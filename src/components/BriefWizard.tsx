@@ -1,15 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate, Link } from "react-router-dom";
-import { X, ArrowRight, ArrowLeft, Check, Clock } from "lucide-react";
+import { Link } from "react-router-dom";
+import { X, ArrowRight, ArrowLeft, Check, Send } from "lucide-react";
 import { SOLUTIONS, BUDGET_OPTIONS } from "@/data/homeData";
 
 export type WizardData = {
   serviceId: string;
   budget: string;
   name: string;
-  contact: string;
+  phone: string;
+  telegram: string;
 };
 
 type Props = {
@@ -21,32 +22,54 @@ type Props = {
 
 const STEPS = 3;
 const ease = [0.16, 1, 0.3, 1] as const;
-
 const STORAGE_KEY = "neeklo_wizard_brief";
+const TELEGRAM_ASSISTANT = "https://t.me/neeekn";
+
+// ─── Phone mask ────────────────────────────────────────────────────────────────
+function formatPhone(raw: string): string {
+  let digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("8")) digits = "7" + digits.slice(1);
+  if (digits && !digits.startsWith("7")) digits = "7" + digits;
+  digits = digits.slice(0, 11);
+  if (!digits) return "";
+  if (digits.length <= 1) return "+7";
+  if (digits.length <= 4) return `+7 (${digits.slice(1)}`;
+  if (digits.length <= 7) return `+7 (${digits.slice(1, 4)}) ${digits.slice(4)}`;
+  if (digits.length <= 9) return `+7 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  return `+7 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7, 9)}-${digits.slice(9, 11)}`;
+}
+
+// ─── Telegram format ───────────────────────────────────────────────────────────
+function formatTelegram(raw: string): string {
+  if (!raw) return "";
+  const clean = raw.replace(/^@+/, "");
+  if (!clean) return "@";
+  return "@" + clean.slice(0, 32);
+}
 
 export default function BriefWizard({ open, initialServiceId, lang, onClose }: Props) {
-  const navigate = useNavigate();
   const ru = lang === "ru";
 
-  const [step, setStep] = useState(1);
+  const [step, setStep]         = useState(1);
   const [direction, setDirection] = useState(1);
   const [submitted, setSubmitted] = useState(false);
 
   const [serviceId, setServiceId] = useState(initialServiceId ?? "");
-  const [budget, setBudget] = useState("");
-  const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
-  const [agreed, setAgreed] = useState(false);
+  const [budget, setBudget]       = useState("");
+  const [name, setName]           = useState("");
+  const [phone, setPhone]         = useState("");
+  const [telegram, setTelegram]   = useState("");
+  const [agreed, setAgreed]       = useState(false);
+
+  // contact error state (shown on submit attempt)
+  const [contactError, setContactError] = useState("");
+  const [phoneError, setPhoneError]     = useState("");
 
   useEffect(() => {
     if (open) {
-      setStep(1);
-      setDirection(1);
-      setSubmitted(false);
-      setBudget("");
-      setName("");
-      setContact("");
-      setAgreed(false);
+      setStep(1); setDirection(1); setSubmitted(false);
+      setBudget(""); setName(""); setPhone(""); setTelegram("");
+      setAgreed(false); setContactError(""); setPhoneError("");
       setServiceId(initialServiceId ?? "");
     }
   }, [open, initialServiceId]);
@@ -64,25 +87,48 @@ export default function BriefWizard({ open, initialServiceId, lang, onClose }: P
   }, [step]);
 
   const handleSubmit = () => {
-    const data: WizardData = { serviceId, budget, name, contact };
-    try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch {}
+    // Validate contacts
+    const phoneDigits = phone.replace(/\D/g, "");
+    const telegramFilled = telegram && telegram.length > 1;
+    const phoneFilled    = phone && phoneDigits.length === 11;
+
+    let hasError = false;
+
+    if (phone && phoneDigits.length !== 11) {
+      setPhoneError(ru ? "Введите полный номер" : "Enter full number");
+      hasError = true;
+    } else {
+      setPhoneError("");
+    }
+
+    if (!phoneFilled && !telegramFilled) {
+      setContactError(
+        ru
+          ? "Укажите телефон или Telegram — хотя бы один способ связи"
+          : "Enter phone or Telegram — at least one contact"
+      );
+      hasError = true;
+    } else {
+      setContactError("");
+    }
+
+    if (hasError) return;
+
+    const data: WizardData = { serviceId, budget, name, phone, telegram };
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
     setSubmitted(true);
-    setTimeout(() => {
-      onClose();
-      navigate("/chat");
-    }, 1600);
   };
 
-  const step1Valid = !!serviceId;
-  const step2Valid = !!budget;
-  const step3Valid = name.trim().length >= 2 && contact.trim().length >= 3 && agreed;
+  const phoneDigits = phone.replace(/\D/g, "");
+  const nameValid   = name.trim().length >= 2;
+  const phoneFilled = phone && phoneDigits.length === 11;
+  const tgFilled    = telegram && telegram.length > 1;
+  const step3Valid  = nameValid && (phoneFilled || tgFilled) && agreed;
 
   const variants = {
-    enter: (d: number) => ({ x: d > 0 ? 32 : -32, opacity: 0 }),
+    enter:  (d: number) => ({ x: d > 0 ? 32 : -32, opacity: 0 }),
     center: { x: 0, opacity: 1 },
-    exit: (d: number) => ({ x: d > 0 ? -32 : 32, opacity: 0 }),
+    exit:   (d: number) => ({ x: d > 0 ? -32 : 32, opacity: 0 }),
   };
 
   const selectedService = SOLUTIONS.find((s) => s.id === serviceId);
@@ -113,9 +159,9 @@ export default function BriefWizard({ open, initialServiceId, lang, onClose }: P
       >
         <style>{`@media (min-width: 768px) { .brief-wizard-sheet { border-radius: 20px !important; } }`}</style>
 
-        {/* Header */}
+        {/* ── Header ── */}
         <div
-          className="flex items-center justify-between px-6 flex-shrink-0"
+          className="flex items-center justify-between px-5 flex-shrink-0"
           style={{ height: 60, borderBottom: "1px solid var(--bd)" }}
         >
           <div className="flex items-center gap-3">
@@ -131,7 +177,7 @@ export default function BriefWizard({ open, initialServiceId, lang, onClose }: P
             <div>
               <p style={{ fontSize: 15, fontWeight: 700, color: "var(--tx)" }}>
                 {submitted
-                  ? (ru ? "Отлично!" : "Great!")
+                  ? (ru ? "Заявка отправлена" : "Request sent")
                   : step === 1
                   ? (ru ? "Что нужно сделать?" : "What do you need?")
                   : step === 2
@@ -154,9 +200,9 @@ export default function BriefWizard({ open, initialServiceId, lang, onClose }: P
           </button>
         </div>
 
-        {/* Progress bar */}
+        {/* ── Progress bar ── */}
         {!submitted && (
-          <div style={{ height: 2, background: "var(--bd)" }}>
+          <div style={{ height: 2, background: "var(--bd)", flexShrink: 0 }}>
             <motion.div
               animate={{ width: `${(step / STEPS) * 100}%` }}
               transition={{ duration: 0.35, ease }}
@@ -165,9 +211,10 @@ export default function BriefWizard({ open, initialServiceId, lang, onClose }: P
           </div>
         )}
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto" style={{ padding: "24px 24px 28px" }}>
+        {/* ── Body ── */}
+        <div className="flex-1 overflow-y-auto" style={{ padding: "20px 20px 24px" }}>
           <AnimatePresence mode="wait" custom={direction}>
+            {/* ── Success screen ── */}
             {submitted ? (
               <motion.div
                 key="success"
@@ -178,18 +225,43 @@ export default function BriefWizard({ open, initialServiceId, lang, onClose }: P
               >
                 <div
                   className="flex items-center justify-center rounded-full mb-5"
-                  style={{ width: 56, height: 56, background: "var(--ac-b)", opacity: 0.15 + 1 }}
+                  style={{ width: 56, height: 56, background: "var(--ac-b)", opacity: 0.15 }}
+                />
+                <div
+                  className="flex items-center justify-center rounded-full -mt-14 mb-5"
+                  style={{ width: 56, height: 56 }}
                 >
-                  <Check size={24} strokeWidth={2.5} style={{ color: "var(--ac-b)" }} />
+                  <Check size={26} strokeWidth={2.5} style={{ color: "var(--ac-b)" }} />
                 </div>
+
                 <p style={{ fontSize: 20, fontWeight: 800, color: "var(--tx)", marginBottom: 8 }}>
-                  {ru ? "Переходим в чат!" : "Opening chat!"}
+                  {ru ? "Заявка отправлена" : "Request sent!"}
                 </p>
-                <p style={{ fontSize: 14, color: "var(--tx-muted)", lineHeight: 1.6 }}>
-                  {ru
-                    ? "Данные брифа загружены. AI-ассистент уже в курсе вашего запроса."
-                    : "Brief loaded. Our AI assistant already knows your request."}
+                <p style={{ fontSize: 14, color: "var(--tx-muted)", lineHeight: 1.6, marginBottom: 4 }}>
+                  {ru ? "Менеджер свяжется с вами в течение часа" : "A manager will contact you within an hour"}
                 </p>
+                <p style={{ fontSize: 13, color: "var(--tx-faint)", lineHeight: 1.5, marginBottom: 28 }}>
+                  {ru ? "Пока ждёте — можете задать вопросы нашему ассистенту" : "While you wait, feel free to ask our assistant"}
+                </p>
+
+                <a
+                  href={TELEGRAM_ASSISTANT}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl font-semibold transition-opacity hover:opacity-85"
+                  style={{
+                    height: 48,
+                    paddingLeft: 24,
+                    paddingRight: 24,
+                    background: "var(--tx)",
+                    color: "var(--bg)",
+                    fontSize: 15,
+                    textDecoration: "none",
+                  }}
+                >
+                  <Send size={15} strokeWidth={2} />
+                  {ru ? "Написать ассистенту" : "Message assistant"}
+                </a>
               </motion.div>
             ) : step === 1 ? (
               <motion.div key="step1" custom={direction} variants={variants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.22, ease }}>
@@ -212,14 +284,25 @@ export default function BriefWizard({ open, initialServiceId, lang, onClose }: P
                 <Step3
                   ru={ru}
                   name={name}
-                  contact={contact}
+                  phone={phone}
+                  telegram={telegram}
                   onChangeName={setName}
-                  onChangeContact={setContact}
-                  valid={step3Valid}
+                  onChangePhone={(v) => {
+                    setPhone(formatPhone(v));
+                    setPhoneError("");
+                    setContactError("");
+                  }}
+                  onChangeTelegram={(v) => {
+                    setTelegram(formatTelegram(v));
+                    setContactError("");
+                  }}
+                  phoneError={phoneError}
+                  contactError={contactError}
                   agreed={agreed}
                   onChangeAgreed={setAgreed}
                   serviceName={selectedService?.name[ru ? "ru" : "en"] ?? ""}
                   budget={budget}
+                  step3Valid={step3Valid}
                   onSubmit={handleSubmit}
                 />
               </motion.div>
@@ -227,22 +310,18 @@ export default function BriefWizard({ open, initialServiceId, lang, onClose }: P
           </AnimatePresence>
         </div>
 
-        {/* Footer CTA (steps 1–2 auto-advance, step 3 has inline submit) */}
+        {/* ── Footer CTA (steps 1–2 only) ── */}
         {!submitted && step === 1 && (
-          <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ padding: "0 20px 20px", flexShrink: 0 }}>
             <button
               onClick={() => go(2)}
-              disabled={!step1Valid}
+              disabled={!serviceId}
               className="w-full flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.97] disabled:opacity-40"
               style={{
-                height: 48,
-                borderRadius: 12,
-                background: "var(--tx)",
-                color: "var(--bg)",
-                fontSize: 15,
-                fontWeight: 600,
-                border: "none",
-                cursor: step1Valid ? "pointer" : "not-allowed",
+                height: 48, borderRadius: 12,
+                background: "var(--tx)", color: "var(--bg)",
+                fontSize: 15, fontWeight: 600, border: "none",
+                cursor: serviceId ? "pointer" : "not-allowed",
               }}
             >
               {ru ? "Далее" : "Next"}
@@ -251,20 +330,16 @@ export default function BriefWizard({ open, initialServiceId, lang, onClose }: P
           </div>
         )}
         {!submitted && step === 2 && (
-          <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ padding: "0 20px 20px", flexShrink: 0 }}>
             <button
               onClick={() => go(3)}
-              disabled={!step2Valid}
+              disabled={!budget}
               className="w-full flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.97] disabled:opacity-40"
               style={{
-                height: 48,
-                borderRadius: 12,
-                background: "var(--tx)",
-                color: "var(--bg)",
-                fontSize: 15,
-                fontWeight: 600,
-                border: "none",
-                cursor: step2Valid ? "pointer" : "not-allowed",
+                height: 48, borderRadius: 12,
+                background: "var(--tx)", color: "var(--bg)",
+                fontSize: 15, fontWeight: 600, border: "none",
+                cursor: budget ? "pointer" : "not-allowed",
               }}
             >
               {ru ? "Далее" : "Next"}
@@ -290,9 +365,7 @@ function Step1({ ru, selectedId, onSelect }: { ru: boolean; selectedId: string; 
             onClick={() => onSelect(s.id)}
             className="flex items-center gap-3 text-left transition-all duration-150 active:scale-[0.98]"
             style={{
-              padding: "14px 16px",
-              minHeight: 52,
-              borderRadius: 12,
+              padding: "14px 16px", minHeight: 52, borderRadius: 12,
               background: active ? "var(--surface-3)" : "var(--surface-2)",
               border: active ? "1.5px solid var(--tx)" : "1px solid var(--bd)",
               cursor: "pointer",
@@ -329,9 +402,7 @@ function Step2({ ru, selected, onSelect }: { ru: boolean; selected: string; onSe
             onClick={() => onSelect(b.id)}
             className="flex items-center justify-between text-left transition-all duration-150 active:scale-[0.98]"
             style={{
-              padding: "16px 18px",
-              minHeight: 52,
-              borderRadius: 12,
+              padding: "16px 18px", minHeight: 52, borderRadius: 12,
               background: active ? "var(--surface-3)" : "var(--surface-2)",
               border: active ? "1.5px solid var(--tx)" : "1px solid var(--bd)",
               cursor: "pointer",
@@ -351,25 +422,45 @@ function Step2({ ru, selected, onSelect }: { ru: boolean; selected: string; onSe
 }
 
 // ─── Step 3: Contact form ──────────────────────────────────────────────────────
+const inputStyle: React.CSSProperties = {
+  width: "100%", height: 46, padding: "0 14px",
+  borderRadius: 10, background: "var(--surface-2)",
+  border: "1px solid var(--bd)", color: "var(--tx)",
+  fontSize: 14, outline: "none", boxSizing: "border-box",
+};
+const inputErrorStyle: React.CSSProperties = {
+  ...inputStyle,
+  borderColor: "rgba(239,68,68,0.6)",
+};
+
 function Step3({
-  ru, name, contact, onChangeName, onChangeContact, valid, agreed, onChangeAgreed, serviceName, budget, onSubmit,
+  ru, name, phone, telegram,
+  onChangeName, onChangePhone, onChangeTelegram,
+  phoneError, contactError,
+  agreed, onChangeAgreed,
+  serviceName, budget, step3Valid, onSubmit,
 }: {
   ru: boolean;
   name: string;
-  contact: string;
+  phone: string;
+  telegram: string;
   onChangeName: (v: string) => void;
-  onChangeContact: (v: string) => void;
-  valid: boolean;
+  onChangePhone: (v: string) => void;
+  onChangeTelegram: (v: string) => void;
+  phoneError: string;
+  contactError: string;
   agreed: boolean;
   onChangeAgreed: (v: boolean) => void;
   serviceName: string;
   budget: string;
+  step3Valid: boolean;
   onSubmit: () => void;
 }) {
   const budgetLabel = BUDGET_OPTIONS.find((b) => b.id === budget)?.[ru ? "ru" : "en"] ?? budget;
+
   return (
-    <div className="flex flex-col gap-5">
-      {/* Brief summary pill */}
+    <div className="flex flex-col gap-4">
+      {/* Summary pill */}
       {serviceName && (
         <div
           className="flex items-center gap-2"
@@ -385,8 +476,9 @@ function Step3({
         </div>
       )}
 
+      {/* Name */}
       <div>
-        <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--tx)", marginBottom: 8 }}>
+        <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--tx)", marginBottom: 6 }}>
           {ru ? "Как вас зовут?" : "Your name"}
         </label>
         <input
@@ -394,53 +486,70 @@ function Step3({
           onChange={(e) => onChangeName(e.target.value.slice(0, 100))}
           placeholder={ru ? "Имя или компания" : "Name or company"}
           autoFocus
-          style={{
-            width: "100%",
-            height: 46,
-            padding: "0 14px",
-            borderRadius: 10,
-            background: "var(--surface-2)",
-            border: "1px solid var(--bd)",
-            color: "var(--tx)",
-            fontSize: 14,
-            outline: "none",
-            boxSizing: "border-box",
-          }}
+          style={inputStyle}
           onFocus={(e) => { e.target.style.borderColor = "var(--bd-hover)"; }}
           onBlur={(e) => { e.target.style.borderColor = "var(--bd)"; }}
         />
       </div>
 
+      {/* Phone */}
       <div>
-        <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--tx)", marginBottom: 8 }}>
-          {ru ? "Телефон или Telegram" : "Phone or Telegram"}
+        <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--tx)", marginBottom: 6 }}>
+          {ru ? "Телефон" : "Phone"}
+          <span style={{ fontWeight: 400, color: "var(--tx-faint)", marginLeft: 6, fontSize: 12 }}>
+            {ru ? "(необязательно)" : "(optional)"}
+          </span>
         </label>
         <input
-          value={contact}
-          onChange={(e) => onChangeContact(e.target.value.slice(0, 100))}
-          placeholder={ru ? "+7 … или @username" : "+1 … or @username"}
-          style={{
-            width: "100%",
-            height: 46,
-            padding: "0 14px",
-            borderRadius: 10,
-            background: "var(--surface-2)",
-            border: "1px solid var(--bd)",
-            color: "var(--tx)",
-            fontSize: 14,
-            outline: "none",
-            boxSizing: "border-box",
-          }}
-          onFocus={(e) => { e.target.style.borderColor = "var(--bd-hover)"; }}
-          onBlur={(e) => { e.target.style.borderColor = "var(--bd)"; }}
-          onKeyDown={(e) => { if (e.key === "Enter" && valid) onSubmit(); }}
+          value={phone}
+          onChange={(e) => onChangePhone(e.target.value)}
+          placeholder="+7 (999) 000-00-00"
+          type="tel"
+          inputMode="tel"
+          style={phoneError ? inputErrorStyle : inputStyle}
+          onFocus={(e) => { e.target.style.borderColor = phoneError ? "rgba(239,68,68,0.6)" : "var(--bd-hover)"; }}
+          onBlur={(e) => { e.target.style.borderColor = phoneError ? "rgba(239,68,68,0.6)" : "var(--bd)"; }}
+          onKeyDown={(e) => { if (e.key === "Enter") onSubmit(); }}
         />
-        <p style={{ fontSize: 12, color: "var(--tx-faint)", marginTop: 6 }}>
-          {ru ? "Ответим в течение часа" : "We'll reply within an hour"}
-        </p>
+        {phoneError && (
+          <p style={{ fontSize: 11, color: "rgb(239,68,68)", marginTop: 4 }}>{phoneError}</p>
+        )}
       </div>
 
-      {/* Consent checkbox */}
+      {/* Telegram */}
+      <div>
+        <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--tx)", marginBottom: 6 }}>
+          Telegram
+          <span style={{ fontWeight: 400, color: "var(--tx-faint)", marginLeft: 6, fontSize: 12 }}>
+            {ru ? "(необязательно)" : "(optional)"}
+          </span>
+        </label>
+        <input
+          value={telegram}
+          onChange={(e) => onChangeTelegram(e.target.value)}
+          placeholder="@username"
+          type="text"
+          inputMode="text"
+          style={contactError && !telegram ? inputErrorStyle : inputStyle}
+          onFocus={(e) => {
+            e.target.style.borderColor = "var(--bd-hover)";
+            // Auto-add @ on first focus if empty
+            if (!telegram) onChangeTelegram("@");
+          }}
+          onBlur={(e) => {
+            e.target.style.borderColor = "var(--bd)";
+            // Clear bare @ on blur
+            if (telegram === "@") onChangeTelegram("");
+          }}
+          onKeyDown={(e) => { if (e.key === "Enter") onSubmit(); }}
+        />
+        {/* Combined contact error */}
+        {contactError && (
+          <p style={{ fontSize: 11, color: "rgb(239,68,68)", marginTop: 4 }}>{contactError}</p>
+        )}
+      </div>
+
+      {/* Consent */}
       <label className="flex items-start gap-2 cursor-pointer" style={{ fontSize: 12, color: "var(--tx-faint)", lineHeight: 1.5 }}>
         <input
           type="checkbox"
@@ -450,41 +559,28 @@ function Step3({
         />
         <span>
           {ru
-            ? <>Я согласен(а) с <Link to="/privacy" style={{ color: "var(--tx-muted)", textDecoration: "underline" }}>политикой конфиденциальности</Link> и даю согласие на обработку персональных данных (152-ФЗ)</>
-            : <>I agree to the <Link to="/privacy" style={{ color: "var(--tx-muted)", textDecoration: "underline" }}>privacy policy</Link> and consent to personal data processing</>
+            ? <>Согласен(а) с <Link to="/privacy" style={{ color: "var(--tx-muted)", textDecoration: "underline" }}>политикой конфиденциальности</Link> и обработкой данных (152-ФЗ)</>
+            : <>I agree to the <Link to="/privacy" style={{ color: "var(--tx-muted)", textDecoration: "underline" }}>privacy policy</Link> and data processing</>
           }
         </span>
       </label>
 
+      {/* Submit */}
       <button
         onClick={onSubmit}
-        disabled={!valid}
+        disabled={!agreed || !name.trim()}
         className="w-full flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.97] disabled:opacity-40"
         style={{
-          height: 48,
-          borderRadius: 12,
-          background: "var(--tx)",
-          color: "var(--bg)",
-          fontSize: 15,
-          fontWeight: 600,
-          border: "none",
-          cursor: valid ? "pointer" : "not-allowed",
-          marginTop: 4,
+          height: 48, borderRadius: 12,
+          background: "var(--tx)", color: "var(--bg)",
+          fontSize: 15, fontWeight: 600, border: "none",
+          cursor: (!agreed || !name.trim()) ? "not-allowed" : "pointer",
+          marginTop: 2,
         }}
       >
         {ru ? "Отправить заявку" : "Submit request"}
         <ArrowRight size={15} strokeWidth={2.5} />
       </button>
-
-      {/* Trust line */}
-      <div className="flex items-center gap-3" style={{ fontSize: 12, color: "var(--tx-faint)", marginTop: 14 }}>
-        <span className="flex items-center gap-1">
-          <Clock size={12} strokeWidth={1.8} />
-          {ru ? "около 1 минуты" : "about 1 minute"}
-        </span>
-        <span>·</span>
-        <span>{ru ? "Ответ в течение 2 часов" : "Reply within 2 hours"}</span>
-      </div>
     </div>
   );
 }

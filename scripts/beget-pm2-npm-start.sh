@@ -4,7 +4,7 @@ export PM2_HOME="${HOME}/.pm2"
 pkill -f "server/cms-server.mjs" 2>/dev/null || true
 pm2 kill 2>/dev/null || true
 sleep 2
-cd /home/d/dsc23ytp/neeklo/public_html
+cd /var/www/neeklo.ru
 pm2 start deploy/beget/ecosystem.config.cjs
 sleep 6
 curl -sS -o /dev/null -w "local:%{http_code}\n" "http://127.0.0.1:8787/pages/slug/home?locale=ru"

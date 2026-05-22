@@ -5,6 +5,7 @@ import BrandLogo from "@/components/BrandLogo";
 import ThemeToggle from "@/components/ThemeToggle";
 import SearchOverlay from "@/components/SearchOverlay";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useBrief } from "@/context/BriefContext";
 
 const NAV_ITEMS = [
   { key: "nav.home" as const, path: "/" },
@@ -18,6 +19,7 @@ export default function Header() {
   const navigate = useNavigate();
   const { t, lang, toggleLang } = useLanguage();
   const [searchOpen, setSearchOpen] = useState(false);
+  const { open: openBrief } = useBrief();
 
   return (
     <>
@@ -89,7 +91,7 @@ export default function Header() {
             <ThemeToggle size="sm" />
 
             <button
-              onClick={() => navigate("/chat")}
+              onClick={() => openBrief()}
               className="flex items-center gap-1.5 h-8 px-4 rounded-full text-[13px] font-semibold transition-all duration-150 hover:opacity-85 active:scale-[0.97]"
               style={{
                 background: "var(--tx)",

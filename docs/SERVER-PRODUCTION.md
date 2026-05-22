@@ -1,6 +1,6 @@
 # Продакшен-сервер neeklo.ru
 
-**Единый VPS:** `89.169.39.244` (root по SSH).
+**Единый VPS:** `212.67.9.173` (root по SSH).
 
 В локальном `~/.ssh/config` — алиас **`Host neeklo-prod`** / **`neeklo`** → этот IP. На этом сервере в `authorized_keys` обычно ключ **`~/.ssh/id_rsa`** (не путать с ключом только для GitHub).
 

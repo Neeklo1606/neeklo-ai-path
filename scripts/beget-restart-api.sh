@@ -2,7 +2,7 @@
 # Освободить :8787, перезапуск PM2 (BeGet)
 set -euo pipefail
 export PM2_HOME="${HOME}/.pm2"
-cd /home/d/dsc23ytp/neeklo/public_html
+cd /var/www/neeklo.ru
 pkill -f "server/cms-server.mjs" 2>/dev/null || true
 pm2 delete neeklo-api 2>/dev/null || true
 pm2 kill 2>/dev/null || true

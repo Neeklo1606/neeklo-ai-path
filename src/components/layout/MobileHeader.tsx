@@ -4,6 +4,7 @@ import { Menu, X, ArrowRight } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useBrief } from "@/context/BriefContext";
 
 const NAV_ITEMS = [
   { key: "nav.home" as const, path: "/" },
@@ -19,6 +20,7 @@ export default function MobileHeader() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { t, lang, toggleLang } = useLanguage();
+  const { open: openBrief } = useBrief();
 
   const go = (path: string) => {
     setOpen(false);
@@ -141,7 +143,7 @@ export default function MobileHeader() {
           style={{ borderTop: "1px solid var(--bd)" }}
         >
           <button
-            onClick={() => go("/chat")}
+            onClick={() => { setOpen(false); openBrief(); }}
             className="flex items-center justify-center gap-2 w-full rounded-xl text-[14px] font-semibold transition-all duration-150 active:scale-[0.97] touch-manipulation"
             style={{
               height: 48,

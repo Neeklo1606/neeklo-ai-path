@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -uo pipefail
-ROOT="/home/d/dsc23ytp/neeklo/public_html"
+ROOT="/var/www/neeklo.ru"
 if curl -sf "http://127.0.0.1:8787/pages/slug/home?locale=ru" >/dev/null 2>&1; then
   exit 0
 fi

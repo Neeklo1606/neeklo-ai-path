@@ -6,7 +6,7 @@ pkill -f "server/cms-server.mjs" 2>/dev/null || true
 sleep 1
 fuser -k 8787/tcp 2>/dev/null || true
 sleep 1
-cd /home/d/dsc23ytp/neeklo/public_html
+cd /var/www/neeklo.ru
 nohup node server/cms-server.mjs >>/tmp/neeklo-api.log 2>&1 &
 echo $! >/tmp/neeklo-api.pid
 sleep 3
