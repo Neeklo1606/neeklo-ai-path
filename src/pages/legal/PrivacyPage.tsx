@@ -41,7 +41,7 @@ export default function PrivacyPage() {
           </section>
           <section>
             <h2 style={{ fontFamily: "'Onest', sans-serif", fontWeight: 600, fontSize: 18, color: "var(--tx)", marginBottom: 8, marginTop: 16 }}>Права пользователя</h2>
-            <p style={{ fontSize: 15, color: "var(--tx-muted)", lineHeight: 1.7 }}>Вы вправе запросить удаление ваших персональных данных. Для этого напишите на почту: hi@neeklo.ru.</p>
+            <p style={{ fontSize: 15, color: "var(--tx-muted)", lineHeight: 1.7 }}>Вы вправе запросить удаление ваших персональных данных. Для этого напишите на почту: neeklostudio@gmail.com.</p>
           </section>
           <section>
             <h2 style={{ fontFamily: "'Onest', sans-serif", fontWeight: 600, fontSize: 18, color: "var(--tx)", marginBottom: 8, marginTop: 16 }}>Cookies</h2>
@@ -49,7 +49,7 @@ export default function PrivacyPage() {
           </section>
           <section>
             <h2 style={{ fontFamily: "'Onest', sans-serif", fontWeight: 600, fontSize: 18, color: "var(--tx)", marginBottom: 8, marginTop: 16 }}>Контакты</h2>
-            <p style={{ fontSize: 15, color: "var(--tx-muted)", lineHeight: 1.7 }}>По вопросам обработки данных: hi@neeklo.ru.</p>
+            <p style={{ fontSize: 15, color: "var(--tx-muted)", lineHeight: 1.7 }}>По вопросам обработки данных: neeklostudio@gmail.com.</p>
           </section>
         </div>
       </div>

@@ -84,7 +84,7 @@ export default function CmsHomePage() {
       "name": "neeklo",
       "description": "AI-продакшн студия. Сайты, AI-ассистенты, Telegram-боты и видео для бизнеса.",
       "url": "https://neeklo.ru",
-      "email": "hi@neeklo.ru",
+      "email": "neeklostudio@gmail.com",
       "address": { "@type": "PostalAddress", "addressCountry": "RU" },
       "priceRange": "от 15 000 ₽",
       "serviceType": ["Разработка сайтов", "AI-ассистенты", "Telegram-боты", "AI-видео"],

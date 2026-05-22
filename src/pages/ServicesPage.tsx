@@ -77,14 +77,14 @@ export default function ServicesPage() {
 
               {/* Email */}
               <a
-                href="mailto:hi@neeklo.ru"
+                href="mailto:neeklostudio@gmail.com"
                 className="rounded-2xl border border-[var(--bd)] p-5 flex items-center gap-4 hover:border-[var(--bd-hover)] transition-colors flex-1"
                 style={{ textDecoration: "none", background: "var(--surface)" }}
               >
                 <Mail size={20} style={{ color: "var(--tx-muted)", flexShrink: 0 }} />
                 <div>
                   <p style={{ fontSize: 11, color: "var(--tx-faint)", marginBottom: 2 }}>Email</p>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--tx)" }}>hi@neeklo.ru</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--tx)" }}>neeklostudio@gmail.com</p>
                 </div>
               </a>
 

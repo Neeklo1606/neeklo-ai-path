@@ -87,11 +87,11 @@ export default function Footer() {
                 @neeekn
               </a>
               <a
-                href="mailto:hi@neeklo.ru"
+                href="mailto:neeklostudio@gmail.com"
                 className="block hover:text-foreground transition-colors duration-150"
                 style={{ textDecoration: "none" }}
               >
-                hi@neeklo.ru
+                neeklostudio@gmail.com
               </a>
             </div>
           </div>

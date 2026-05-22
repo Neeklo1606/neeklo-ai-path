@@ -37,7 +37,7 @@ export default function CookiesPage() {
           </section>
           <section>
             <h2 style={{ fontFamily: "'Onest', sans-serif", fontWeight: 600, fontSize: 18, color: "var(--tx)", marginBottom: 8, marginTop: 16 }}>Контакты</h2>
-            <p style={{ fontSize: 15, color: "var(--tx-muted)", lineHeight: 1.7 }}>По вопросам использования cookies: hi@neeklo.ru.</p>
+            <p style={{ fontSize: 15, color: "var(--tx-muted)", lineHeight: 1.7 }}>По вопросам использования cookies: neeklostudio@gmail.com.</p>
           </section>
         </div>
       </div>
