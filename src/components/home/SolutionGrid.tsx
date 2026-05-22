@@ -58,7 +58,7 @@ export function SolutionCard({ s, onOpen }: { s: Solution; onOpen: () => void })
       }}
     >
       <div className="flex items-start justify-between">
-        <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.55)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <Icon size={18} color="var(--tx-muted)" strokeWidth={1.8} />
         </div>
         <ArrowUpRight size={15} color="var(--tx-faint)" strokeWidth={1.8} />

@@ -32,14 +32,14 @@ const CookieBanner = () => {
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         >
           <div
-            className="bg-white rounded-2xl shadow-xl p-4"
-            style={{ border: "1px solid #E8E6E0" }}
+            className="rounded-2xl shadow-xl p-4"
+            style={{ background: "var(--bg)", border: "1px solid var(--bd)" }}
           >
             <div className="flex gap-2.5">
               <span style={{ fontSize: 20, lineHeight: 1 }}>🍪</span>
-              <p className="font-body" style={{ fontSize: 13, color: "#3A3A3A", lineHeight: 1.55 }}>
+              <p className="font-body" style={{ fontSize: 13, color: "var(--tx-muted)", lineHeight: 1.55 }}>
                 Мы используем cookie для улучшения сайта. Продолжая использование, вы соглашаетесь с нашей{" "}
-                <span className="underline underline-offset-2 cursor-pointer" style={{ color: "#0052FF" }}>
+                <span className="underline underline-offset-2 cursor-pointer" style={{ color: "var(--ac-b)" }}>
                   Политикой Cookie
                 </span>
                 .
@@ -48,8 +48,8 @@ const CookieBanner = () => {
             <div className="flex gap-2 justify-end mt-3">
               <button
                 onClick={dismiss}
-                className="font-body rounded-lg cursor-pointer hover:bg-[#F5F5F5] active:scale-[0.97] transition-all"
-                style={{ fontSize: 13, fontWeight: 600, padding: "8px 16px", border: "1px solid #E0E0E0", color: "#6A6860" }}
+                className="font-body rounded-lg cursor-pointer active:scale-[0.97] transition-all"
+                style={{ fontSize: 13, fontWeight: 600, padding: "8px 16px", border: "1px solid var(--bd)", color: "var(--tx-muted)", background: "var(--surface-2)" }}
               >
                 Отклонить
               </button>

@@ -75,7 +75,7 @@ export default function HomeFinalCTA({ lang, onOpenWizard }: Props) {
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col lg:flex-row gap-10 lg:gap-16"
           style={{
-            background: "var(--tx)",
+            background: "linear-gradient(135deg, #111118 0%, #1a1a2a 100%)",
             borderRadius: 24,
             padding: "clamp(32px, 5vw, 56px)",
           }}
