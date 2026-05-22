@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
-import { X, ArrowRight, ArrowLeft, Check, Send } from "lucide-react";
+import { X, ArrowRight, ArrowLeft, Check } from "lucide-react";
 import { SOLUTIONS, BUDGET_OPTIONS } from "@/data/homeData";
+import SuccessScreen from "@/components/SuccessScreen";
 
 export type WizardData = {
   serviceId: string;
@@ -23,7 +24,6 @@ type Props = {
 const STEPS = 3;
 const ease = [0.16, 1, 0.3, 1] as const;
 const STORAGE_KEY = "neeklo_wizard_brief";
-const TELEGRAM_ASSISTANT = "https://t.me/neeekn";
 
 // ─── Phone mask ────────────────────────────────────────────────────────────────
 function formatPhone(raw: string): string {
@@ -218,50 +218,12 @@ export default function BriefWizard({ open, initialServiceId, lang, onClose }: P
             {submitted ? (
               <motion.div
                 key="success"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, ease }}
-                className="flex flex-col items-center justify-center text-center py-6"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+                className="py-4"
               >
-                <div
-                  className="flex items-center justify-center rounded-full mb-5"
-                  style={{ width: 56, height: 56, background: "var(--ac-b)", opacity: 0.15 }}
-                />
-                <div
-                  className="flex items-center justify-center rounded-full -mt-14 mb-5"
-                  style={{ width: 56, height: 56 }}
-                >
-                  <Check size={26} strokeWidth={2.5} style={{ color: "var(--ac-b)" }} />
-                </div>
-
-                <p style={{ fontSize: 20, fontWeight: 800, color: "var(--tx)", marginBottom: 8 }}>
-                  {ru ? "Заявка отправлена" : "Request sent!"}
-                </p>
-                <p style={{ fontSize: 14, color: "var(--tx-muted)", lineHeight: 1.6, marginBottom: 4 }}>
-                  {ru ? "Менеджер свяжется с вами в течение часа" : "A manager will contact you within an hour"}
-                </p>
-                <p style={{ fontSize: 13, color: "var(--tx-faint)", lineHeight: 1.5, marginBottom: 28 }}>
-                  {ru ? "Пока ждёте — можете задать вопросы нашему ассистенту" : "While you wait, feel free to ask our assistant"}
-                </p>
-
-                <a
-                  href={TELEGRAM_ASSISTANT}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-xl font-semibold transition-opacity hover:opacity-85"
-                  style={{
-                    height: 48,
-                    paddingLeft: 24,
-                    paddingRight: 24,
-                    background: "var(--tx)",
-                    color: "var(--bg)",
-                    fontSize: 15,
-                    textDecoration: "none",
-                  }}
-                >
-                  <Send size={15} strokeWidth={2} />
-                  {ru ? "Написать ассистенту" : "Message assistant"}
-                </a>
+                <SuccessScreen onClose={onClose} />
               </motion.div>
             ) : step === 1 ? (
               <motion.div key="step1" custom={direction} variants={variants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.22, ease }}>
