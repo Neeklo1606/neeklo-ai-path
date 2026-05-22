@@ -169,7 +169,7 @@ const ChatPage = () => {
         if (d.contact) parts.push(`Контакт: ${d.contact}.`);
         if (parts.length) pendingBriefRef.current = parts.join(" ");
       }
-    } catch {}
+    } catch { /* ignore storage parse errors */ }
   }, []);
 
   /** Сессия CRM хранится на сервере (cookie + БД), без localStorage */

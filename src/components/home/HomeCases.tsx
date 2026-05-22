@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, X } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { cases, type CaseData } from "@/data/cases";
+import { useBrief } from "@/context/BriefContext";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -231,12 +232,12 @@ function CaseCard({ item, onOpenModal }: { item: CaseData; onOpenModal: (c: Case
 // ─── Case Modal ───────────────────────────────────────────────────────────────
 
 function CaseModal({ case_: c, onClose }: { case_: CaseData; onClose: () => void }) {
-  const navigate = useNavigate();
+  const { open: openBrief } = useBrief();
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
 
   const handleCTA = () => {
     onClose();
-    navigate("/brief");
+    openBrief();
   };
 
   const modalContent = (

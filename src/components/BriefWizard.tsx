@@ -115,7 +115,7 @@ export default function BriefWizard({ open, initialServiceId, lang, onClose }: P
     if (hasError) return;
 
     const data: WizardData = { serviceId, budget, name, phone, telegram };
-    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch { /* ignore storage errors */ }
     setSubmitted(true);
   };
 

@@ -245,7 +245,7 @@ const ProjectSheet = ({ project: p, activeTab, setActiveTab, onClose, navigate, 
   project: Project; activeTab: "overview" | "tasks" | "chat";
   setActiveTab: (t: "overview" | "tasks" | "chat") => void;
   onClose: () => void; navigate: ReturnType<typeof useNavigate>;
-  t: (key: any) => string; lang: string;
+  t: (key: string) => string; lang: string;
   statusConfig: Record<string, { label: string; color: string; bg: string; border: string }>;
 }) => {
   const sc = statusConfig[p.status] || statusConfig.new;

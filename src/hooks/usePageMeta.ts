@@ -78,5 +78,5 @@ export function usePageMeta({ title, description, og, jsonLd }: PageMetaOptions)
       cleaned.forEach((el) => el.setAttribute("content", ""));
       if (jsonLd && ldScript) ldScript.textContent = "";
     };
-  }, [title, description, og, jsonLd]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [title, description, og, jsonLd]);
 }

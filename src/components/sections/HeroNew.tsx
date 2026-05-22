@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useBrief } from "@/context/BriefContext";
 import { ArrowRight } from "lucide-react";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -37,7 +38,7 @@ type Props = {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function HeroNew({ onOpenWizard }: Props) {
-  const navigate = useNavigate();
+  const { open: openBrief } = useBrief();
   const [current, setCurrent] = useState(0);
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pauseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -71,7 +72,7 @@ export default function HeroNew({ onOpenWizard }: Props) {
 
   const handleCTA = (serviceId?: string) => {
     if (onOpenWizard) onOpenWizard(serviceId);
-    else navigate("/brief");
+    else openBrief();
   };
 
   const next = (current + 1) % CARDS.length;

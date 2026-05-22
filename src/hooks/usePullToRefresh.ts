@@ -36,7 +36,7 @@ export function usePullToRefresh({ onRefresh, threshold = 80, maxPull = 120 }: U
     if (pullDistance >= threshold && !isRefreshing) {
       setIsRefreshing(true);
       setPullDistance(threshold * 0.6);
-      try { await onRefresh(); } catch {}
+      try { await onRefresh(); } catch { /* ignore refresh errors */ }
       setIsRefreshing(false);
     }
     setPullDistance(0);

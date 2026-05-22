@@ -864,7 +864,7 @@ const AdminPage = () => {
             {[{label:'Название',key:'title'},{label:'Клиент',key:'client'},{label:'Дедлайн',key:'deadline'}].map(f=>(
               <div key={f.key}>
                 <label style={{fontFamily:"'Onest',sans-serif",fontSize:12,color:'#6A6860',marginBottom:4,display:'block'}}>{f.label}</label>
-                <input value={(p as any)[f.key]} onChange={e=>{const v=e.target.value;setProjects(prev=>prev.map(pp=>pp.id===p.id?{...pp,[f.key]:v}:pp));setSelectedProject({...p,[f.key]:v});}} className="w-full outline-none" style={{fontFamily:"'Onest',sans-serif",fontSize:14,background:'#F5F5F5',borderRadius:12,padding:'10px 16px'}} />
+                <input value={(p as Record<string, string>)[f.key]} onChange={e=>{const v=e.target.value;setProjects(prev=>prev.map(pp=>pp.id===p.id?{...pp,[f.key]:v}:pp));setSelectedProject({...p,[f.key]:v});}} className="w-full outline-none" style={{fontFamily:"'Onest',sans-serif",fontSize:14,background:'#F5F5F5',borderRadius:12,padding:'10px 16px'}} />
               </div>
             ))}
             <div className="grid grid-cols-2 gap-3">
