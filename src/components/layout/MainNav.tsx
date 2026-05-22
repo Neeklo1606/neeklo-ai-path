@@ -4,6 +4,7 @@ import { Send } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MenuToggleIcon } from '@/components/ui/MenuToggleIcon'
 import { LogoIcon } from '@/components/ui/LogoIcon'
+import ThemeToggle from '@/components/ThemeToggle'
 
 const TELEGRAM_URL = 'https://t.me/neeekn'
 
@@ -146,6 +147,15 @@ export function MainNav() {
               </Link>
             ))}
           </nav>
+
+          {/* Theme toggle */}
+          <div
+            className="mx-4 px-4 py-3 rounded-xl flex items-center justify-between"
+            style={{ background: 'var(--surface-2)', border: '1px solid var(--bd)' }}
+          >
+            <span className="text-sm" style={{ color: 'var(--tx-muted)' }}>Тема</span>
+            <ThemeToggle size="sm" />
+          </div>
 
           {/* CTA at bottom */}
           <div className="mt-auto p-4 pb-safe">

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Send } from "lucide-react";
 import { useBrief } from "@/context/BriefContext";
 import { LogoIcon } from "@/components/ui/LogoIcon";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const SERVICES = [
   { label: "Сайт + AI-ассистент", to: "/products/site-ai-crm" },
@@ -25,7 +26,7 @@ export default function Footer() {
 
           {/* Col 1 — Brand */}
           <div className="col-span-2 lg:col-span-1">
-            <LogoIcon height={24} style={{ color: 'var(--tx)' }} />
+            <LogoIcon height={24} />
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-[200px]">
               AI-продакшн студия. Сайты, боты, AI-агенты и видео.
             </p>
@@ -99,25 +100,28 @@ export default function Footer() {
 
         {/* Divider */}
         <div className="border-t border-border mt-10 pt-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
             <span className="text-xs text-muted-foreground">
               © 2020–2026 neeklo
             </span>
-            <div className="flex gap-4 text-xs text-muted-foreground">
-              <Link
-                to="/privacy"
-                className="hover:text-foreground transition-colors duration-150"
-                style={{ textDecoration: "none" }}
-              >
-                Конфиденциальность
-              </Link>
-              <Link
-                to="/offer"
-                className="hover:text-foreground transition-colors duration-150"
-                style={{ textDecoration: "none" }}
-              >
-                Оферта
-              </Link>
+            <div className="flex items-center gap-4">
+              <div className="flex gap-4 text-xs text-muted-foreground">
+                <Link
+                  to="/privacy"
+                  className="hover:text-foreground transition-colors duration-150"
+                  style={{ textDecoration: "none" }}
+                >
+                  Конфиденциальность
+                </Link>
+                <Link
+                  to="/offer"
+                  className="hover:text-foreground transition-colors duration-150"
+                  style={{ textDecoration: "none" }}
+                >
+                  Оферта
+                </Link>
+              </div>
+              <ThemeToggle size="sm" />
             </div>
           </div>
         </div>
