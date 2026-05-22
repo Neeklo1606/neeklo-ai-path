@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
@@ -89,18 +89,16 @@ export default function HeroNew({ onOpenWizard }: Props) {
           style={{
             fontFamily: "'Onest', sans-serif",
             fontWeight: 800,
-            fontSize: "clamp(32px, 8vw, 68px)",
-            lineHeight: 1.05,
+            fontSize: "clamp(28px, 7.5vw, 60px)",
+            lineHeight: 1.08,
             letterSpacing: "-0.035em",
             color: "var(--tx)",
             textAlign: "center",
           }}
         >
-          Сайт, бот и AI
+          Разработка сайтов
           <br />
-          от идеи до заявок
-          <br />
-          за 48 часов
+          и AI-решений
         </h1>
 
         {/* Subtitle */}
@@ -110,21 +108,36 @@ export default function HeroNew({ onOpenWizard }: Props) {
             fontSize: "clamp(14px, 3.5vw, 17px)",
             color: "var(--tx-muted)",
             textAlign: "center",
-            maxWidth: 420,
+            maxWidth: 460,
             lineHeight: 1.6,
           }}
         >
-          Помогаем малому бизнесу не терять заявки с сайта, Telegram и рекламы.
+          Создаём сайты, AI-ассистентов, Telegram-ботов и рекламные видео для бизнеса.
         </p>
 
-        {/* CTA button */}
-        <button
-          onClick={() => handleCTA()}
-          className="mt-5 btn-primary w-full sm:w-auto justify-center flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-semibold"
-        >
-          Начать проект
-          <ArrowRight size={16} strokeWidth={2} />
-        </button>
+        {/* CTA buttons */}
+        <div className="mt-5 flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <button
+            onClick={() => handleCTA()}
+            className="btn-primary w-full sm:w-auto justify-center flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-semibold"
+          >
+            Начать проект
+            <ArrowRight size={16} strokeWidth={2} />
+          </button>
+          <Link
+            to="/cases"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-base font-semibold transition-colors duration-150"
+            style={{
+              color: "var(--tx)",
+              border: "1px solid var(--bd)",
+              textDecoration: "none",
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--bd-hover)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--bd)"; }}
+          >
+            Посмотреть работы
+          </Link>
+        </div>
       </div>
 
       {/* ── Card system ── */}
@@ -193,6 +206,7 @@ export default function HeroNew({ onOpenWizard }: Props) {
             </div>
           </motion.div>
         </AnimatePresence>
+
       </div>
 
       {/* ── Indicators ── */}

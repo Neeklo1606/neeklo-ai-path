@@ -5,8 +5,7 @@ import { MotionConfig } from "framer-motion";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Header from "@/components/layout/Header";
-import MobileHeader from "@/components/layout/MobileHeader";
+import MainNav from "@/components/layout/MainNav";
 import BottomNav from "@/components/layout/BottomNav";
 import StickyCTA from "@/components/layout/StickyCTA";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -17,6 +16,7 @@ import TelegramManagerButton from "@/components/TelegramManagerButton";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LanguageProvider } from "@/hooks/useLanguage";
 import { useTheme } from "@/hooks/useTheme";
+import { BriefProvider } from "@/context/BriefContext";
 import Index from "./pages/Index";
 
 import ChatPage from "./pages/ChatPage";
@@ -64,6 +64,9 @@ const ServiceEducation = lazy(() => import("./pages/services/ServiceEducation"))
 const PrivacyPage = lazy(() => import("./routes/privacy"));
 const OfferPage = lazy(() => import("./routes/offer"));
 const CookiesPage = lazy(() => import("./routes/cookies"));
+const BlogPage = lazy(() => import("./pages/BlogPage"));
+const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
+const ProductPage = lazy(() => import("./pages/products/ProductPage"));
 
 const queryClient = new QueryClient();
 
@@ -109,8 +112,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <MobileHeader />
-      <Header />
+      <MainNav />
       <div className="flex-1 flex flex-col">{children}</div>
       <BottomNav />
       <StickyCTA />
@@ -144,6 +146,8 @@ const AppContent = ({
             <Route path="/services" element={<P><ServicesPage /></P>} />
             <Route path="/works" element={<P><WorksPage /></P>} />
             <Route path="/cases" element={<P><CasesPage /></P>} />
+            <Route path="/blog" element={<P><BlogPage /></P>} />
+            <Route path="/blog/:slug" element={<P><BlogPostPage /></P>} />
             <Route path="/projects" element={<P><ProjectsPage /></P>} />
             <Route path="/projects/:id" element={<P><ProjectDetailPage /></P>} />
             <Route path="/profile" element={<P><ProfilePage /></P>} />
@@ -314,6 +318,7 @@ const AppContent = ({
                 </Route>
               </Route>
             </Route>
+            <Route path="/products/:slug" element={<P><ProductPage /></P>} />
             <Route path="/kp" element={<KpShowcasePage />} />
             <Route path="/kp/:slug" element={<KpSlugPage />} />
             <Route path="*" element={<P><NotFound /></P>} />
@@ -344,10 +349,12 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <AppContent
-                showOnboarding={showOnboarding}
-                onCompleteOnboarding={() => setShowOnboarding(false)}
-              />
+              <BriefProvider>
+                <AppContent
+                  showOnboarding={showOnboarding}
+                  onCompleteOnboarding={() => setShowOnboarding(false)}
+                />
+              </BriefProvider>
             </BrowserRouter>
           </MotionConfig>
         </LanguageProvider>

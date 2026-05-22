@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { NEWS } from "@/data/news";
+import { news } from "@/data/news";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -9,7 +9,7 @@ type Props = { lang: string };
 
 export default function HomeNews({ lang }: Props) {
   const ru = lang === "ru";
-  const items = NEWS.slice(0, 5);
+  const items = news.slice(0, 5);
 
   return (
     <section style={{ padding: "64px 20px", borderTop: "1px solid var(--bd)" }}>
@@ -56,75 +56,47 @@ export default function HomeNews({ lang }: Props) {
           }}
         >
           {items.map((item, i) => (
-            <div key={item.slug}>
-              <a
-                href={item.href}
-                className="flex items-start gap-3 group"
+            <a
+              key={item.slug}
+              href={`/blog/${item.slug}`}
+              className={[
+                "flex items-center gap-3 py-3 px-4 transition-colors duration-150",
+                i < items.length - 1 ? "border-b border-[var(--bd)]" : "",
+              ].join(" ")}
+              style={{ textDecoration: "none", minHeight: 44 }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "var(--surface-2)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
+            >
+              {/* Category badge */}
+              <span
+                className="shrink-0 text-[10px] uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border border-[var(--bd)]"
                 style={{
-                  padding: "14px 16px",
-                  textDecoration: "none",
-                  display: "flex",
-                  transition: "background 0.15s",
-                  minHeight: 44,
+                  fontWeight: 600,
+                  background: "var(--surface-2)",
+                  color: "var(--tx-faint)",
+                  whiteSpace: "nowrap",
+                  lineHeight: 1.8,
                 }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "var(--surface-2)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
               >
-                {/* Category badge */}
-                <span
-                  className="shrink-0 mt-0.5"
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    padding: "2px 8px",
-                    borderRadius: 9999,
-                    background: "var(--surface-2)",
-                    color: "var(--tx-faint)",
-                    border: "1px solid var(--bd)",
-                    whiteSpace: "nowrap",
-                    lineHeight: 1.8,
-                  }}
-                >
-                  {item.category}
-                </span>
+                {item.category}
+              </span>
 
-                {/* Title */}
-                <span
-                  className="flex-1"
-                  style={{
-                    fontSize: 14,
-                    color: "var(--tx)",
-                    lineHeight: 1.45,
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                  }}
-                >
-                  {item.title}
-                </span>
+              {/* Title */}
+              <span
+                className="flex-1 line-clamp-1"
+                style={{ fontSize: 14, color: "var(--tx)", lineHeight: 1.45 }}
+              >
+                {item.title}
+              </span>
 
-                {/* Date */}
-                <span
-                  className="shrink-0 mt-0.5 text-right"
-                  style={{
-                    fontSize: 11,
-                    color: "var(--tx-faint)",
-                    whiteSpace: "nowrap",
-                    marginLeft: 8,
-                  }}
-                >
-                  {item.date}
-                </span>
-              </a>
-
-              {/* Divider — not after last */}
-              {i < items.length - 1 && (
-                <hr style={{ margin: 0, border: "none", borderTop: "1px solid var(--bd)" }} />
-              )}
-            </div>
+              {/* Date */}
+              <span
+                className="shrink-0 text-[11px] whitespace-nowrap"
+                style={{ color: "var(--tx-2)" }}
+              >
+                {item.date}
+              </span>
+            </a>
           ))}
         </motion.div>
       </div>

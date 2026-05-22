@@ -7,41 +7,63 @@ type Props = {
   onOpenWizard: () => void;
 };
 
+const fieldStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "12px 16px",
+  borderRadius: 12,
+  background: "rgba(255,255,255,0.10)",
+  border: "1px solid rgba(255,255,255,0.20)",
+  color: "white",
+  fontSize: 14,
+  outline: "none",
+  transition: "border-color 0.15s",
+  resize: "none" as const,
+};
+
+const fieldErrorStyle: React.CSSProperties = {
+  ...fieldStyle,
+  borderColor: "rgba(239,68,68,0.6)",
+};
+
 export default function HomeFinalCTA({ lang, onOpenWizard }: Props) {
   const ru = lang === "ru";
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [task, setTask] = useState("");
-  const [agreed, setAgreed] = useState(false);
-  const [errors, setErrors] = useState<{ name?: boolean; phone?: boolean; agreed?: boolean }>({});
-  const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [values, setValues] = useState({ name: "", contact: "", message: "" });
+  const [errors, setErrors] = useState({ name: "", contact: "" });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const validate = (): boolean => {
+    const next = {
+      name: values.name.trim() === "" ? "Введите ваше имя" : "",
+      contact: values.contact.trim() === "" ? "Укажите телефон или Telegram" : "",
+    };
+    setErrors(next);
+    return next.name === "" && next.contact === "";
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newErrors: typeof errors = {};
-    if (!name.trim()) newErrors.name = true;
-    if (!phone.trim()) newErrors.phone = true;
-    if (!agreed) newErrors.agreed = true;
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
+    if (!validate()) return;
+    setLoading(true);
+    try {
+      // TODO: connect to /api/brief-submissions
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setSuccess(true);
+    } catch (err) {
+      console.error("Form submission error:", err);
+    } finally {
+      setLoading(false);
     }
-    setErrors({});
-    setSubmitted(true);
   };
 
-  const fieldStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "12px 16px",
-    borderRadius: 12,
-    background: "rgba(255,255,255,0.10)",
-    border: "1px solid rgba(255,255,255,0.20)",
-    color: "white",
-    fontSize: 14,
-    outline: "none",
-    transition: "border-color 0.15s",
-    resize: "none" as const,
-  };
+  const handleChange = (field: "name" | "contact" | "message") =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setValues((prev) => ({ ...prev, [field]: e.target.value }));
+      if (field !== "message") {
+        setErrors((prev) => ({ ...prev, [field]: "" }));
+      }
+    };
 
   return (
     <section style={{ padding: "64px 16px 80px", borderTop: "1px solid var(--bd)" }}>
@@ -51,15 +73,12 @@ export default function HomeFinalCTA({ lang, onOpenWizard }: Props) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col lg:flex-row gap-10 lg:gap-16"
           style={{
             background: "var(--tx)",
             borderRadius: 24,
             padding: "clamp(32px, 5vw, 56px)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 48,
           }}
-          className="lg:flex-row lg:gap-16"
         >
           {/* ── Left column ── */}
           <div className="lg:flex-1">
@@ -79,12 +98,12 @@ export default function HomeFinalCTA({ lang, onOpenWizard }: Props) {
             >
               {ru ? <>Есть задача?<br />Обсудим прямо сейчас</> : <>Got a project?<br />Let's talk right now</>}
             </h2>
-            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", lineHeight: 1.6, maxWidth: 340, marginBottom: 40 }}>
+            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", lineHeight: 1.6, maxWidth: 340 }}>
               {ru ? "Бесплатная консультация. Отвечаем быстро." : "Free consultation. We respond quickly."}
             </p>
 
             {/* Metrics */}
-            <div className="flex gap-10">
+            <div className="flex gap-8 mt-8">
               <div>
                 <p style={{ fontFamily: "'Onest', sans-serif", fontWeight: 800, fontSize: "clamp(28px, 3vw, 36px)", color: "white", lineHeight: 1 }}>44+</p>
                 <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{ru ? "проекта запущено" : "projects launched"}</p>
@@ -98,114 +117,103 @@ export default function HomeFinalCTA({ lang, onOpenWizard }: Props) {
 
           {/* ── Right column ── */}
           <div className="lg:w-[380px] lg:shrink-0">
-            {submitted ? (
-              <div style={{ textAlign: "center", padding: "40px 0" }}>
-                <p style={{ fontFamily: "'Onest', sans-serif", fontWeight: 700, fontSize: 20, color: "white", marginBottom: 8 }}>
-                  {ru ? "Заявка отправлена" : "Request sent"}
+            {success ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
+                className="py-8 text-center"
+              >
+                <p
+                  className="font-bold text-xl text-white"
+                  style={{ fontFamily: "'Onest', sans-serif" }}
+                >
+                  Заявка отправлена
                 </p>
-                <p style={{ fontSize: 14, color: "rgba(255,255,255,0.6)" }}>
-                  {ru ? "Ответим в течение 2 часов" : "We'll reply within 2 hours"}
+                <p className="text-white/60 text-sm mt-2">
+                  Ответим в течение 2 часов
                 </p>
-              </div>
+                <a
+                  href="https://t.me/neeklo_studio"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-4 text-white/80 hover:text-white underline text-sm transition-colors"
+                >
+                  Или напишите в Telegram прямо сейчас
+                </a>
+              </motion.div>
             ) : (
-              <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                 {/* Name */}
                 <div>
                   <input
                     type="text"
                     placeholder={ru ? "Как к вам обращаться" : "Your name"}
-                    value={name}
-                    onChange={(e) => { setName(e.target.value); setErrors((prev) => ({ ...prev, name: false })); }}
-                    style={fieldStyle}
+                    value={values.name}
+                    onChange={handleChange("name")}
+                    style={errors.name ? fieldErrorStyle : fieldStyle}
                     onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.4)"; }}
                     onBlur={(e) => { e.currentTarget.style.borderColor = errors.name ? "rgba(239,68,68,0.6)" : "rgba(255,255,255,0.20)"; }}
                   />
-                  {errors.name && <span style={{ fontSize: 11, color: "#fca5a5", display: "block", marginTop: 4 }}>{ru ? "Заполните поле" : "Required"}</span>}
+                  {errors.name && (
+                    <p className="text-[11px] text-red-400 mt-1">{errors.name}</p>
+                  )}
                 </div>
 
-                {/* Phone */}
+                {/* Contact */}
                 <div>
                   <input
-                    type="tel"
-                    placeholder="+7 999 000-00-00"
-                    value={phone}
-                    onChange={(e) => { setPhone(e.target.value); setErrors((prev) => ({ ...prev, phone: false })); }}
-                    style={fieldStyle}
+                    type="text"
+                    placeholder="+7 999 000-00-00 или @username"
+                    value={values.contact}
+                    onChange={handleChange("contact")}
+                    style={errors.contact ? fieldErrorStyle : fieldStyle}
                     onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.4)"; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = errors.phone ? "rgba(239,68,68,0.6)" : "rgba(255,255,255,0.20)"; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = errors.contact ? "rgba(239,68,68,0.6)" : "rgba(255,255,255,0.20)"; }}
                   />
-                  {errors.phone && <span style={{ fontSize: 11, color: "#fca5a5", display: "block", marginTop: 4 }}>{ru ? "Заполните поле" : "Required"}</span>}
+                  {errors.contact && (
+                    <p className="text-[11px] text-red-400 mt-1">{errors.contact}</p>
+                  )}
                 </div>
 
-                {/* Task */}
+                {/* Message (optional) */}
                 <textarea
-                  rows={3}
-                  placeholder={ru ? "Кратко опишите задачу или вопрос" : "Briefly describe your task"}
-                  value={task}
-                  onChange={(e) => setTask(e.target.value)}
+                  rows={2}
+                  placeholder={ru ? "Кратко опишите задачу" : "Briefly describe your task"}
+                  value={values.message}
+                  onChange={handleChange("message")}
                   style={{ ...fieldStyle, resize: "none" }}
                   onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.4)"; }}
                   onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.20)"; }}
                 />
 
-                {/* Consent checkbox */}
-                <div>
-                  <label
-                    className="flex items-start gap-2 cursor-pointer"
-                    style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", lineHeight: 1.5 }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={agreed}
-                      onChange={(e) => { setAgreed(e.target.checked); setErrors((p) => ({ ...p, agreed: false })); }}
-                      style={{
-                        marginTop: 2,
-                        width: 15,
-                        height: 15,
-                        flexShrink: 0,
-                        accentColor: "white",
-                        cursor: "pointer",
-                      }}
-                    />
-                    <span>
-                      Я согласен(а) с{" "}
-                      <Link to="/privacy" style={{ color: "rgba(255,255,255,0.75)", textDecoration: "underline" }}>
-                        политикой конфиденциальности
-                      </Link>{" "}
-                      и даю согласие на обработку персональных данных в соответствии с 152-ФЗ
-                    </span>
-                  </label>
-                  {errors.agreed && (
-                    <span style={{ fontSize: 11, color: "#fca5a5", display: "block", marginTop: 4 }}>
-                      Необходимо ваше согласие
-                    </span>
-                  )}
-                </div>
+                {/* Privacy note */}
+                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>
+                  Отправляя форму, вы соглашаетесь с{" "}
+                  <Link to="/privacy" style={{ color: "rgba(255,255,255,0.6)", textDecoration: "underline" }}>
+                    политикой конфиденциальности
+                  </Link>
+                </p>
 
-                {/* Submit */}
+                {/* Primary — submit */}
                 <button
                   type="submit"
-                  style={{
-                    width: "100%",
-                    padding: "14px",
-                    borderRadius: 12,
-                    background: "white",
-                    color: "var(--tx)",
-                    fontSize: 15,
-                    fontWeight: 600,
-                    border: "none",
-                    cursor: "pointer",
-                    transition: "opacity 0.15s, transform 0.15s",
-                    minHeight: 44,
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.92"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
-                  onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.98)"; }}
-                  onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+                  disabled={loading}
+                  className="w-full py-3.5 rounded-xl font-semibold text-base bg-white text-[var(--tx)] hover:bg-white/90 disabled:opacity-60 transition-all active:scale-[0.98]"
+                  style={{ minHeight: 44, border: "none", cursor: loading ? "not-allowed" : "pointer" }}
                 >
-                  {ru ? "Начать проект" : "Start project"}
+                  {loading ? "Отправляем..." : (ru ? "Начать проект" : "Start project")}
                 </button>
 
+                {/* Secondary — Telegram direct */}
+                <a
+                  href="https://t.me/neeklo_studio"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 rounded-xl text-sm text-white/70 border border-white/20 hover:border-white/40 text-center transition-colors mt-2 block"
+                >
+                  Написать напрямую в Telegram
+                </a>
               </form>
             )}
           </div>

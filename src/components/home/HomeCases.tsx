@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { CASES_DATA, type CaseData } from "@/data/cases";
+import { cases, type CaseData } from "@/data/cases";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -58,7 +58,7 @@ export default function HomeCases({ lang }: Props) {
         </motion.div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 sm:gap-5">
-          {CASES_DATA.slice(0, 3).map((c, i) => (
+          {cases.slice(0, 3).map((c, i) => (
             <motion.div
               key={c.id}
               initial={{ opacity: 0, y: 12 }}
@@ -91,8 +91,7 @@ function CaseCard({ item, onOpenModal }: { item: CaseData; onOpenModal: (c: Case
     <>
       {/* Image area */}
       <div
-        className="relative overflow-hidden"
-        style={{ aspectRatio: "16/9", background: "linear-gradient(135deg, var(--surface-2), var(--surface-3))" }}
+        className={`relative overflow-hidden aspect-video bg-gradient-to-br ${item.color}`}
       >
         {item.image ? (
           <img
@@ -104,7 +103,7 @@ function CaseCard({ item, onOpenModal }: { item: CaseData; onOpenModal: (c: Case
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span style={{ fontSize: 12, color: "var(--tx-faint)", letterSpacing: "0.08em" }}>
+            <span style={{ fontSize: 11, color: "rgba(0,0,0,0.3)", letterSpacing: "0.08em", fontWeight: 600 }}>
               {item.badge}
             </span>
           </div>
@@ -291,21 +290,13 @@ function CaseModal({ case_: c, onClose }: { case_: CaseData; onClose: () => void
       </p>
 
       {/* Preview */}
-      <div style={{
-        aspectRatio: "16/9",
-        borderRadius: 14,
-        background: "linear-gradient(135deg, var(--surface-2), var(--surface-3))",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 16,
-        border: "1px solid var(--bd)",
-        overflow: "hidden",
-      }}>
+      <div
+        className={`aspect-video rounded-[14px] flex items-center justify-center mb-4 overflow-hidden border border-[var(--bd)] bg-gradient-to-br ${c.color}`}
+      >
         {c.image ? (
           <img src={c.image} alt={c.title} className="w-full h-full object-cover" />
         ) : (
-          <span style={{ fontSize: 12, color: "var(--tx-faint)" }}>Пример проекта</span>
+          <span style={{ fontSize: 11, color: "rgba(0,0,0,0.3)", fontWeight: 600, letterSpacing: "0.08em" }}>{c.badge}</span>
         )}
       </div>
 

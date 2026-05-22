@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -11,7 +11,7 @@ import HomeCases from "@/components/home/HomeCases";
 import HomeStats from "@/components/home/HomeStats";
 import HomeNews from "@/components/home/HomeNews";
 import HomeFinalCTA from "@/components/home/HomeFinalCTA";
-import BriefWizard from "@/components/BriefWizard";
+import { useBrief } from "@/context/BriefContext";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -76,16 +76,8 @@ export default function CmsHomePage() {
   const { lang } = useLanguage();
   usePageTitle("neeklo · цифровые продукты для бизнеса");
 
-  const [wizardOpen, setWizardOpen] = useState(false);
-  const [wizardServiceId, setWizardServiceId] = useState<string | undefined>();
+  const { open: openWizard } = useBrief();
   const casesRef = useRef<HTMLDivElement>(null);
-
-  const openWizard = useCallback((serviceId?: string) => {
-    setWizardServiceId(serviceId);
-    setWizardOpen(true);
-  }, []);
-
-  const closeWizard = useCallback(() => setWizardOpen(false), []);
 
   const scrollToCases = useCallback(() => {
     casesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -93,7 +85,7 @@ export default function CmsHomePage() {
 
   return (
     <div
-      className="flex-1 flex flex-col overflow-x-hidden"
+      className="flex-1 flex flex-col overflow-x-clip"
       style={{ background: "var(--bg)", color: "var(--tx)", paddingBottom: "calc(56px + env(safe-area-inset-bottom))" }}
     >
       {/* <HomeHero lang={lang} onOpenWizard={openWizard} /> */}
@@ -107,13 +99,6 @@ export default function CmsHomePage() {
       <HomeStats lang={lang} />
       <HomeFinalCTA lang={lang} onOpenWizard={() => openWizard()} />
       <Footer />
-
-      <BriefWizard
-        open={wizardOpen}
-        initialServiceId={wizardServiceId}
-        lang={lang}
-        onClose={closeWizard}
-      />
     </div>
   );
 }
