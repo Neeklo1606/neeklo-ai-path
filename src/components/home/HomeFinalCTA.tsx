@@ -188,7 +188,7 @@ export default function HomeFinalCTA({ lang, onOpenWizard }: Props) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 rounded-xl font-semibold text-base bg-white text-[var(--tx)] hover:bg-white/90 disabled:opacity-60 transition-all active:scale-[0.98]"
+                  className="w-full py-3.5 rounded-xl font-semibold text-base bg-white text-[#0A0A0A] hover:bg-white/90 disabled:opacity-60 transition-all active:scale-[0.98]"
                   style={{ minHeight: 44, border: "none", cursor: loading ? "not-allowed" : "pointer" }}
                 >
                   {loading ? "Отправляем..." : (ru ? "Начать проект" : "Start project")}

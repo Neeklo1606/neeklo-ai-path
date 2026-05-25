@@ -26,7 +26,7 @@ export default function Footer() {
 
           {/* Col 1 — Brand */}
           <div className="col-span-2 lg:col-span-1">
-            <LogoIcon height={24} />
+            <LogoIcon height={34} />
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-[200px]">
               AI-продакшн студия. Сайты, боты, AI-агенты и видео.
             </p>

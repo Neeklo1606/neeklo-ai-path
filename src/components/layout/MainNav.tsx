@@ -66,7 +66,7 @@ export function MainNav() {
 
           {/* Logo */}
           <Link to="/" className="flex items-center shrink-0" style={{ color: 'var(--tx)' }}>
-            <LogoIcon height={28} />
+            <LogoIcon height={40} />
           </Link>
 
           {/* Desktop nav links */}
