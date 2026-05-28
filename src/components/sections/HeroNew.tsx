@@ -311,21 +311,17 @@ function VideoContent() {
 
       {/* Preview block */}
       <div className="rounded-xl overflow-hidden">
-        <div className="aspect-video bg-gradient-to-br from-rose-300 to-orange-200 relative flex items-center justify-center">
-          <div
-            className="w-10 h-10 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(255,255,255,0.6)" }}
-          >
-            <svg width="12" height="14" viewBox="0 0 12 14" fill="none">
-              <path d="M1 1L11 7L1 13V1Z" fill="rgba(0,0,0,0.7)" />
-            </svg>
-          </div>
-          <div
-            className="absolute bottom-2 right-2 text-[10px] text-white px-2 py-0.5 rounded"
-            style={{ background: "rgba(0,0,0,0.4)" }}
-          >
-            00:28
-          </div>
+        <div className="aspect-video bg-gradient-to-br from-rose-300 to-orange-200 relative">
+          <video
+            className="absolute inset-0 w-full h-full object-cover"
+            src="/videos/hero-ai.mp4"
+            poster="/videos/hero-ai.jpg"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+          />
         </div>
       </div>
 
