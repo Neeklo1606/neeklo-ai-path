@@ -33,21 +33,25 @@ describe("isClientAvitoMessage", () => {
 });
 
 describe("buildCleroPayload", () => {
-  it("builds correct payload shape", async () => {
+  it("builds correct Clero API Chat payload shape", async () => {
     const { buildCleroPayload } = await import("../../server/clero-helpers.mjs");
     const p = buildCleroPayload("abc123", "999999", "Привет, хочу купить");
-    expect(p.chatid).toBe("avitoabc123");
-    expect(p.clientname).toBe("999999");
-    expect(p.message).toBe("Привет, хочу купить");
-    expect(p.source).toBe("avito");
-    expect(typeof p.timestamp).toBe("string");
-    expect(() => new Date(p.timestamp).toISOString()).not.toThrow();
+    expect(p.sourceid).toBe(176);
+    expect(p.sessionid).toBe("avitoabc123");
+    expect(p.direction).toBe("inbound");
+    expect(p.role).toBe("user");
+    expect(p.text).toBe("Привет, хочу купить");
+    expect(p.metadata.source).toBe("avito");
+    expect(p.metadata.chatid).toBe("abc123");
+    expect(p.metadata.clientname).toBe("999999");
+    expect(typeof p.metadata.timestamp).toBe("string");
+    expect(() => new Date(p.metadata.timestamp).toISOString()).not.toThrow();
   });
 
   it("preserves message text with separators", async () => {
     const { buildCleroPayload } = await import("../../server/clero-helpers.mjs");
     const p = buildCleroPayload("abc123", "999999", "Сообщение 1\n---\nСообщение 2");
-    expect(p.message).toContain("---");
+    expect(p.text).toContain("---");
   });
 });
 
@@ -64,8 +68,10 @@ describe("sendToCleroRaw", () => {
     expect(url).toBe("https://neeklo.ru/api/clero/avito-webhook");
     expect(opts.method).toBe("POST");
     const body = JSON.parse(opts.body);
-    expect(body.chatid).toBe("avitochat1");
-    expect(body.source).toBe("avito");
+    expect(body.sessionid).toBe("avitochat1");
+    expect(body.direction).toBe("inbound");
+    expect(body.text).toBe("Хочу купить");
+    expect(body.metadata.source).toBe("avito");
   });
 
   it("throws on non-200 response", async () => {
