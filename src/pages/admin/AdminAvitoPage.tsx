@@ -240,6 +240,7 @@ export default function AdminAvitoPage() {
       return data;
     },
     onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["avito", "events"] });
       toast.success(`Clero: отправлено ${data.sent}, пропущено ${data.skipped}${data.errors.length ? `, ошибок: ${data.errors.length}` : ""}`);
     },
     onError: (error) => {
