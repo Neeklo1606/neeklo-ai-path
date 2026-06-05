@@ -3517,7 +3517,7 @@ app.post("/avito/clero/sync-all", requireAuth, async (_req, res) => {
         chatid: String(ev.payload.payload.value.chatid),
         authorid: String(ev.payload.payload.value.authorid),
         text: String(ev.payload.payload.value.content?.text || "").trim(),
-        created: ev.payload.payload.value.created || ev.at || "",
+        created: ev.payload.payload.value.created || ev.at || new Date(0).toISOString(),
       }))
       .filter((m) => m.text);
 
@@ -3545,8 +3545,8 @@ app.post("/avito/clero/sync-all", requireAuth, async (_req, res) => {
       const text = msgs.map((m) => m.text).join("\n---\n");
       const authorid = msgs[0].authorid;
       try {
-        await sendToClero(chatid, authorid, text);
         await markCleroSent(chatid);
+        await sendToClero(chatid, authorid, text);
         await writeAvitoLogLine(`clero sync-all sent chatid=${chatid}`);
         sent++;
       } catch (e) {
