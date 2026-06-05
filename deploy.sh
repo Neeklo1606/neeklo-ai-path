@@ -40,6 +40,22 @@ set +a
 
 echo "=== PRISMA ==="
 npx prisma generate
+if [ -z "${DATABASE_URL:-}" ]; then
+  echo "ERROR: DATABASE_URL is not set"
+  exit 1
+fi
+if [[ "$DATABASE_URL" != *"neeklo_cms"* ]]; then
+  echo "ERROR: DATABASE_URL does not look like production neeklo DB"
+  exit 1
+fi
+BACKUP_DIR="/var/backups/neeklo.ru"
+mkdir -p "$BACKUP_DIR"
+BACKUP_FILE="$BACKUP_DIR/neeklo_cms_predeploy_$(date +%F_%H-%M-%S).sql"
+echo "Creating DB backup: $BACKUP_FILE"
+pg_dump "$DATABASE_URL" -f "$BACKUP_FILE"
+echo "Backup size:"
+ls -lh "$BACKUP_FILE"
+# Safe mode: if Prisma detects potential data loss, command fails (no --accept-data-loss flag).
 npx prisma db push
 
 echo "=== PM2 RESTART ==="

@@ -1,0 +1,599 @@
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import { Navigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
+import { usePageTitle } from "@/hooks/usePageTitle";
+import { adminApi } from "@/lib/admin-api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+type AvitoAccount = {
+  id: string;
+  name: string;
+  accountId: string;
+  clientId: string;
+  clientSecret: string;
+  accessToken: string;
+  refreshToken: string;
+  tokenExpiresAt: string;
+  webhookSecret: string;
+  isActive: boolean;
+};
+
+type AgentBinding = {
+  agentId: string;
+  avitoAccountId: string;
+};
+
+type AvitoConfig = {
+  webhookBaseUrl: string;
+  telegramBotToken: string;
+  telegramChatId: string;
+  telegramEnabled: boolean;
+  accounts: AvitoAccount[];
+  agentBindings: AgentBinding[];
+};
+
+type AvitoEvent = {
+  id: string;
+  at: string;
+  eventType: string;
+  payload?: unknown;
+  reason?: string;
+};
+
+type LooseObject = Record<string, unknown>;
+
+const emptyAccount = (): AvitoAccount => ({
+  id: crypto.randomUUID(),
+  name: "",
+  accountId: "",
+  clientId: "",
+  clientSecret: "",
+  accessToken: "",
+  refreshToken: "",
+  tokenExpiresAt: "",
+  webhookSecret: "",
+  isActive: false,
+});
+
+const emptyConfig = (): AvitoConfig => ({
+  webhookBaseUrl: "",
+  telegramBotToken: "",
+  telegramChatId: "",
+  telegramEnabled: false,
+  accounts: [],
+  agentBindings: [],
+});
+
+function shortJson(v: unknown) {
+  try {
+    const s = JSON.stringify(v, null, 2);
+    return s.length > 700 ? `${s.slice(0, 700)}…` : s;
+  } catch {
+    return String(v ?? "");
+  }
+}
+
+export default function AdminAvitoPage() {
+  usePageTitle("Avito — интеграция");
+  const { section } = useParams<{ section?: string }>();
+  const qc = useQueryClient();
+  const [draft, setDraft] = useState<AvitoConfig>(emptyConfig());
+  const [activeAccountId, setActiveAccountId] = useState<string>("");
+  const [agentIdForWebhook, setAgentIdForWebhook] = useState("");
+  const [webhookBaseUrlOverride, setWebhookBaseUrlOverride] = useState("");
+  const [selectedChatId, setSelectedChatId] = useState("");
+  const [chatReply, setChatReply] = useState("");
+  const [configStatus, setConfigStatus] = useState<{ kind: "idle" | "saving" | "success" | "error"; message: string }>({
+    kind: "idle",
+    message: "",
+  });
+
+  const configQ = useQuery({
+    queryKey: ["avito", "config"],
+    queryFn: async () => {
+      const { data } = await adminApi.get<AvitoConfig>("/avito/config");
+      return data;
+    },
+    refetchOnWindowFocus: false,
+  });
+
+  const eventsQ = useQuery({
+    queryKey: ["avito", "events"],
+    queryFn: async () => {
+      const { data } = await adminApi.get<AvitoEvent[]>("/avito/events");
+      return data;
+    },
+    refetchInterval: 5000,
+  });
+
+  const tokenCheckQ = useQuery({
+    queryKey: ["avito", "token-check", activeAccountId],
+    enabled: false,
+    queryFn: async () => {
+      const { data } = await adminApi.get("/avito/token-check", { params: { accountId: activeAccountId } });
+      return data;
+    },
+  });
+
+  const webhookStatusQ = useQuery({
+    queryKey: ["avito", "webhook-status", activeAccountId],
+    enabled: false,
+    queryFn: async () => {
+      const { data } = await adminApi.get("/avito/webhook-status", { params: { accountId: activeAccountId } });
+      return data;
+    },
+  });
+
+  const itemsQ = useQuery({
+    queryKey: ["avito", "items", activeAccountId],
+    queryFn: async () => {
+      const { data } = await adminApi.get("/avito/items", { params: { accountId: activeAccountId, per_page: 30, page: 1 } });
+      return data;
+    },
+    enabled: !!activeAccountId,
+    refetchInterval: 15000,
+  });
+
+  const chatsQ = useQuery({
+    queryKey: ["avito", "chats", activeAccountId],
+    queryFn: async () => {
+      const { data } = await adminApi.get("/avito/messenger/chats", { params: { accountId: activeAccountId, per_page: 30, page: 1 } });
+      return data;
+    },
+    enabled: !!activeAccountId,
+    refetchInterval: 4000,
+  });
+
+  const messagesQ = useQuery({
+    queryKey: ["avito", "messages", activeAccountId, selectedChatId],
+    queryFn: async () => {
+      const { data } = await adminApi.get(`/avito/messenger/chats/${selectedChatId}/messages`, {
+        params: { accountId: activeAccountId, per_page: 50, page: 1 },
+      });
+      return data;
+    },
+    enabled: !!activeAccountId && !!selectedChatId,
+    refetchInterval: 2500,
+  });
+
+  const saveConfig = useMutation({
+    mutationFn: async () => {
+      const { data } = await adminApi.put<AvitoConfig>("/avito/config", draft);
+      return data;
+    },
+    onMutate: () => {
+      setConfigStatus({ kind: "saving", message: "Сохранение конфигурации..." });
+    },
+    onSuccess: (data) => {
+      setDraft(data);
+      qc.invalidateQueries({ queryKey: ["avito", "config"] });
+      setConfigStatus({ kind: "success", message: "Конфигурация успешно сохранена." });
+      toast.success("Конфигурация Avito сохранена");
+    },
+    onError: (error) => {
+      const message = err(error);
+      setConfigStatus({ kind: "error", message: `Ошибка сохранения: ${message}` });
+      toast.error(`Не удалось сохранить конфигурацию: ${message}`);
+    },
+  });
+
+  const registerWebhook = useMutation({
+    mutationFn: async () => {
+      const { data } = await adminApi.post("/avito/messenger/register-webhook", {
+        agentId: agentIdForWebhook.trim(),
+        webhookBaseUrl: webhookBaseUrlOverride.trim() || undefined,
+        accountId: activeAccountId || undefined,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["avito", "events"] });
+      webhookStatusQ.refetch();
+      toast.success("Webhook зарегистрирован");
+    },
+    onError: (error) => {
+      toast.error(`Ошибка регистрации webhook: ${err(error)}`);
+    },
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await adminApi.post("/avito/sync", {
+        accountId: activeAccountId || undefined,
+        agentId: agentIdForWebhook.trim() || undefined,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["avito", "events"] });
+      toast.success("Синхронизация Avito запущена");
+    },
+    onError: (error) => {
+      toast.error(`Ошибка синхронизации: ${err(error)}`);
+    },
+  });
+
+  const sendReply = useMutation({
+    mutationFn: async () => {
+      const { data } = await adminApi.post(`/avito/messenger/chats/${selectedChatId}/messages`, { text: chatReply.trim() }, { params: { accountId: activeAccountId } });
+      return data;
+    },
+    onSuccess: () => {
+      setChatReply("");
+      messagesQ.refetch();
+      qc.invalidateQueries({ queryKey: ["avito", "events"] });
+      toast.success("Сообщение отправлено");
+    },
+    onError: (error) => {
+      toast.error(`Ошибка отправки сообщения: ${err(error)}`);
+    },
+  });
+
+  const syncToCleroMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await adminApi.post<{ sent: number; skipped: number; errors: { chatid: string; error: string }[] }>(
+        "/avito/clero/sync-all",
+      );
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["avito", "events"] });
+      toast.success(`Clero: отправлено ${data.sent}, пропущено ${data.skipped}${data.errors.length ? `, ошибок: ${data.errors.length}` : ""}`);
+    },
+    onError: (error) => {
+      toast.error(`Ошибка синхронизации с Clero: ${err(error)}`);
+    },
+  });
+
+  const err = (e: unknown) =>
+    axios.isAxiosError(e) ? (e.response?.data as { error?: string })?.error || e.message : (e as Error).message;
+
+  const accountList = useMemo(() => draft.accounts || [], [draft.accounts]);
+  const activeAccount = useMemo(
+    () => accountList.find((a) => a.id === activeAccountId) || accountList.find((a) => a.isActive) || accountList[0],
+    [accountList, activeAccountId],
+  );
+
+  const itemRows = useMemo(() => {
+    const data = itemsQ.data as LooseObject | undefined;
+    if (!data) return [];
+    if (Array.isArray(data.items)) return data.items as LooseObject[];
+    const result = data.result as LooseObject | undefined;
+    if (result && Array.isArray(result.items)) return result.items as LooseObject[];
+    if (Array.isArray(data.results)) return data.results as LooseObject[];
+    return [];
+  }, [itemsQ.data]);
+
+  const chatRows = useMemo(() => {
+    const data = chatsQ.data as LooseObject | undefined;
+    if (!data) return [];
+    if (Array.isArray(data.chats)) return data.chats as LooseObject[];
+    if (Array.isArray(data.results)) return data.results as LooseObject[];
+    return [];
+  }, [chatsQ.data]);
+
+  const msgRows = useMemo(() => {
+    const data = messagesQ.data as LooseObject | undefined;
+    if (!data) return [];
+    if (Array.isArray(data.messages)) return data.messages as LooseObject[];
+    if (Array.isArray(data.results)) return data.results as LooseObject[];
+    return [];
+  }, [messagesQ.data]);
+
+  useEffect(() => {
+    if (!configQ.data) return;
+    setDraft(configQ.data);
+    if (!activeAccountId) {
+      const first = configQ.data.accounts?.find((a) => a.isActive) || configQ.data.accounts?.[0];
+      if (first?.id) setActiveAccountId(first.id);
+    }
+  }, [configQ.data, activeAccountId]);
+
+  if (configQ.isLoading) return <p className="text-sm text-[#6A6860]">Загрузка Avito конфигурации…</p>;
+  if (configQ.isError) return <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{err(configQ.error)}</div>;
+
+  const activeSection = (section || "config").toLowerCase();
+  const allowedSections = new Set(["config", "accounts", "webhook", "items", "chats", "events"]);
+  if (!allowedSections.has(activeSection)) {
+    return <Navigate to="/admin/avito/config" replace />;
+  }
+
+  const primaryBtnClass = "rounded-xl border border-[#0B0B0A] bg-[#111110] px-4 text-white hover:bg-[#222220] disabled:opacity-60 disabled:text-white";
+  const secondaryBtnClass = "rounded-xl border border-[#CBC5BA] bg-white px-4 text-[#111110] hover:bg-[#F3F1EC] disabled:text-[#8A867D]";
+  const readableInputClass = "h-11 border-[#BEB7AA] bg-white text-[#111110] placeholder:text-[#7E786D] focus-visible:ring-[#111110]";
+
+  return (
+    <div className="space-y-8 text-[#0D0D0B]">
+      <div>
+        <h1 className="font-heading text-2xl font-extrabold text-[#0D0D0B]">Avito интеграция</h1>
+        <p className="mt-1 text-sm text-[#6A6860]">Управление объявлениями, чатами, webhook, уведомлениями и синхронизацией в CRM.</p>
+      </div>
+
+      {activeSection === "config" && (
+        <section className="rounded-2xl border border-[#E8E6E0] bg-white p-5 space-y-4 shadow-sm">
+          <h2 className="font-heading text-lg font-bold text-[#0D0D0B]">Конфигурация</h2>
+          <div className="grid gap-3 md:grid-cols-3">
+            <div>
+              <label className="text-xs font-semibold text-[#6A6860]">Webhook base URL</label>
+              <Input value={draft.webhookBaseUrl} onChange={(e) => setDraft((p) => ({ ...p, webhookBaseUrl: e.target.value }))} className={`mt-1 ${readableInputClass}`} />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[#6A6860]">Telegram bot token</label>
+              <Input value={draft.telegramBotToken} onChange={(e) => setDraft((p) => ({ ...p, telegramBotToken: e.target.value }))} className={`mt-1 ${readableInputClass}`} />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[#6A6860]">Telegram chat id</label>
+              <Input value={draft.telegramChatId} onChange={(e) => setDraft((p) => ({ ...p, telegramChatId: e.target.value }))} className={`mt-1 ${readableInputClass}`} />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-[#3C3A34]">
+            <input
+              type="checkbox"
+              checked={draft.telegramEnabled}
+              onChange={(e) => setDraft((p) => ({ ...p, telegramEnabled: e.target.checked }))}
+            />
+            Уведомления в TG бот включены
+          </label>
+          <Button type="button" className={primaryBtnClass} onClick={() => saveConfig.mutate()} disabled={saveConfig.isPending}>
+            {saveConfig.isPending ? "Сохранение..." : "Сохранить конфигурацию"}
+          </Button>
+          {configStatus.kind !== "idle" && (
+            <div
+              className={`rounded-lg border px-3 py-2 text-sm ${
+                configStatus.kind === "success"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  : configStatus.kind === "error"
+                    ? "border-red-200 bg-red-50 text-red-800"
+                    : "border-slate-200 bg-slate-50 text-slate-700"
+              }`}
+            >
+              {configStatus.message}
+            </div>
+          )}
+        </section>
+      )}
+
+      {activeSection === "accounts" && (
+        <section className="rounded-2xl border border-[#E8E6E0] bg-white p-5 space-y-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading text-lg font-bold">Avito аккаунты</h2>
+            <Button type="button" variant="outline" className={secondaryBtnClass} onClick={() => setDraft((p) => ({ ...p, accounts: [...p.accounts, emptyAccount()] }))}>
+              Добавить аккаунт
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {draft.accounts.map((a, idx) => (
+              <div key={a.id} className="rounded-xl border border-[#E8E6E0] bg-[#FCFCFB] p-3 space-y-2">
+                <div className="grid gap-2 md:grid-cols-4">
+                  <Input className={readableInputClass} placeholder="Name" value={a.name} onChange={(e) => setDraft((p) => {
+                    const next = [...p.accounts];
+                    next[idx] = { ...next[idx], name: e.target.value };
+                    return { ...p, accounts: next };
+                  })} />
+                  <Input className={readableInputClass} placeholder="accountId" value={a.accountId} onChange={(e) => setDraft((p) => {
+                    const next = [...p.accounts];
+                    next[idx] = { ...next[idx], accountId: e.target.value };
+                    return { ...p, accounts: next };
+                  })} />
+                  <Input className={readableInputClass} placeholder="clientId" value={a.clientId} onChange={(e) => setDraft((p) => {
+                    const next = [...p.accounts];
+                    next[idx] = { ...next[idx], clientId: e.target.value };
+                    return { ...p, accounts: next };
+                  })} />
+                  <Input className={readableInputClass} placeholder="clientSecret" value={a.clientSecret} onChange={(e) => setDraft((p) => {
+                    const next = [...p.accounts];
+                    next[idx] = { ...next[idx], clientSecret: e.target.value };
+                    return { ...p, accounts: next };
+                  })} />
+                </div>
+                <div className="grid gap-2 md:grid-cols-3">
+                  <Input className={readableInputClass} placeholder="accessToken" value={a.accessToken} onChange={(e) => setDraft((p) => {
+                    const next = [...p.accounts];
+                    next[idx] = { ...next[idx], accessToken: e.target.value };
+                    return { ...p, accounts: next };
+                  })} />
+                  <Input className={readableInputClass} placeholder="refreshToken" value={a.refreshToken} onChange={(e) => setDraft((p) => {
+                    const next = [...p.accounts];
+                    next[idx] = { ...next[idx], refreshToken: e.target.value };
+                    return { ...p, accounts: next };
+                  })} />
+                  <Input className={readableInputClass} placeholder="webhookSecret" value={a.webhookSecret} onChange={(e) => setDraft((p) => {
+                    const next = [...p.accounts];
+                    next[idx] = { ...next[idx], webhookSecret: e.target.value };
+                    return { ...p, accounts: next };
+                  })} />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="text-sm flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={activeAccount?.id === a.id}
+                      onChange={() => {
+                        setActiveAccountId(a.id);
+                        setDraft((p) => ({ ...p, accounts: p.accounts.map((x) => ({ ...x, isActive: x.id === a.id })) }));
+                      }}
+                    />
+                    Активный
+                  </label>
+                  <Button type="button" variant="ghost" className="text-red-700 hover:text-red-900" onClick={() => setDraft((p) => ({ ...p, accounts: p.accounts.filter((x) => x.id !== a.id) }))}>
+                    Удалить
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {draft.accounts.length === 0 && <p className="text-sm text-[#6A6860]">Аккаунты еще не добавлены.</p>}
+          </div>
+        </section>
+      )}
+
+      {activeSection === "webhook" && (
+        <section className="rounded-2xl border border-[#E8E6E0] bg-white p-5 space-y-4 shadow-sm">
+          <h2 className="font-heading text-lg font-bold">Webhook и сервисные операции</h2>
+          <div className="grid gap-3 md:grid-cols-3">
+            <Input className={readableInputClass} placeholder="agentId (UUID)" value={agentIdForWebhook} onChange={(e) => setAgentIdForWebhook(e.target.value)} />
+            <Input className={readableInputClass} placeholder="webhookBaseUrl override" value={webhookBaseUrlOverride} onChange={(e) => setWebhookBaseUrlOverride(e.target.value)} />
+            <div className="rounded-lg border border-[#D5CFC3] bg-white px-3 py-2 text-sm font-medium text-[#2E2C27]">
+              Активный аккаунт: {activeAccount?.name || activeAccount?.accountId || "—"}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" className={primaryBtnClass} onClick={() => registerWebhook.mutate()} disabled={registerWebhook.isPending || !agentIdForWebhook.trim()}>
+              {registerWebhook.isPending ? "Регистрация..." : "Register webhook"}
+            </Button>
+            <Button type="button" variant="outline" className={secondaryBtnClass} onClick={() => tokenCheckQ.refetch()}>
+              {tokenCheckQ.isFetching ? "Проверка..." : "Token check"}
+            </Button>
+            <Button type="button" variant="outline" className={secondaryBtnClass} onClick={() => webhookStatusQ.refetch()}>
+              {webhookStatusQ.isFetching ? "Проверка..." : "Webhook status"}
+            </Button>
+            <Button type="button" variant="outline" className={secondaryBtnClass} onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
+              {syncMutation.isPending ? "Синхронизация..." : "Avito sync"}
+            </Button>
+          </div>
+          {(registerWebhook.isError || tokenCheckQ.isError || webhookStatusQ.isError || syncMutation.isError) && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {registerWebhook.isError && <p>{err(registerWebhook.error)}</p>}
+              {tokenCheckQ.isError && <p>{err(tokenCheckQ.error)}</p>}
+              {webhookStatusQ.isError && <p>{err(webhookStatusQ.error)}</p>}
+              {syncMutation.isError && <p>{err(syncMutation.error)}</p>}
+            </div>
+          )}
+          {(registerWebhook.data || tokenCheckQ.data || webhookStatusQ.data || syncMutation.data) && (
+            <div className="rounded-xl border border-[#EEE] bg-[#FAFAF8] p-3 text-xs overflow-auto">
+              <pre className="whitespace-pre-wrap">
+                {shortJson({
+                  registerWebhook: registerWebhook.data,
+                  tokenCheck: tokenCheckQ.data,
+                  webhookStatus: webhookStatusQ.data,
+                  sync: syncMutation.data,
+                })}
+              </pre>
+            </div>
+          )}
+        </section>
+      )}
+
+      {activeSection === "items" && (
+        <section className="rounded-2xl border border-[#E8E6E0] bg-white p-5 space-y-4 shadow-sm">
+          <h2 className="font-heading text-lg font-bold">Управление объявлениями</h2>
+          {itemsQ.isLoading && <p className="text-sm text-[#6A6860]">Загрузка объявлений…</p>}
+          {itemsQ.isError && <p className="text-sm text-red-700">{err(itemsQ.error)}</p>}
+          <div className="max-h-[560px] overflow-auto rounded-xl border border-[#EEE]">
+            <table className="w-full text-sm">
+              <thead className="bg-[#FAFAF8] border-b border-[#EEE]">
+                <tr>
+                  <th className="px-3 py-2 text-left">ID</th>
+                  <th className="px-3 py-2 text-left">Заголовок</th>
+                  <th className="px-3 py-2 text-left">Статус</th>
+                </tr>
+              </thead>
+              <tbody>
+                {itemRows.map((r, i) => {
+                  const id = String(r.id ?? r.item_id ?? `row-${i}`);
+                  const title = String(r.title ?? r.name ?? "—");
+                  const status = String(r.status ?? r.state ?? "—");
+                  return (
+                    <tr key={id} className="border-b border-[#F5F5F5]">
+                      <td className="px-3 py-2 font-mono text-xs">{id}</td>
+                      <td className="px-3 py-2">{title}</td>
+                      <td className="px-3 py-2">{status}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {itemRows.length === 0 && !itemsQ.isLoading && <p className="p-4 text-center text-[#6A6860]">Нет данных</p>}
+          </div>
+        </section>
+      )}
+
+      {activeSection === "chats" && (
+        <section className="rounded-2xl border border-[#E8E6E0] bg-white p-5 space-y-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading text-lg font-bold">Диалоги Avito</h2>
+            <Button
+              type="button"
+              variant="outline"
+              className={secondaryBtnClass}
+              onClick={() => syncToCleroMutation.mutate()}
+              disabled={syncToCleroMutation.isPending}
+            >
+              {syncToCleroMutation.isPending ? "Синхронизация..." : "Отправить все в Clero"}
+            </Button>
+          </div>
+          <div className="grid gap-3 md:grid-cols-[280px_1fr]">
+            <div className="rounded-xl border border-[#EEE] max-h-[560px] overflow-auto">
+              {chatRows.map((c, idx) => {
+                const id = String(c.id ?? c.chat_id ?? idx);
+                const title = String(c.title ?? c.user_name ?? c.context?.title ?? `Чат ${idx + 1}`);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`w-full border-b border-[#F5F5F5] p-2 text-left text-sm ${selectedChatId === id ? "bg-[#0D0D0B] text-white" : "text-[#0D0D0B] hover:bg-[#FAFAF8]"}`}
+                    onClick={() => setSelectedChatId(id)}
+                  >
+                    <div className="font-semibold">{title}</div>
+                    <div className={`text-xs ${selectedChatId === id ? "text-white/70" : "text-[#6A6860]"}`}>#{id}</div>
+                  </button>
+                );
+              })}
+              {chatRows.length === 0 && <p className="p-3 text-sm text-[#6A6860]">Чатов нет</p>}
+            </div>
+            <div className="rounded-xl border border-[#EEE] p-3 min-h-[420px] flex flex-col">
+              <div className="flex-1 overflow-auto space-y-2">
+                {msgRows.map((m, idx) => {
+                  const text = String(m.content?.text ?? m.text ?? m.message ?? "");
+                  const created = String(m.created_at ?? m.created ?? "");
+                  const side = String(m.direction ?? m.type ?? "").toLowerCase().includes("out") ? "justify-end" : "justify-start";
+                  return (
+                    <div key={`${idx}-${created}`} className={`flex ${side}`}>
+                      <div className="max-w-[80%] rounded-xl bg-[#F5F5F5] px-3 py-2 text-sm">
+                        <p className="whitespace-pre-wrap">{text || "—"}</p>
+                        <p className="mt-1 text-[10px] text-[#6A6860]">{created}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {!selectedChatId && <p className="text-sm text-[#6A6860]">Выберите чат слева.</p>}
+              </div>
+              <div className="mt-3 flex gap-2 border-t pt-3">
+                <Input className={readableInputClass} value={chatReply} onChange={(e) => setChatReply(e.target.value)} placeholder="Ответ пользователю..." />
+                <Button type="button" className={primaryBtnClass} onClick={() => sendReply.mutate()} disabled={!selectedChatId || !chatReply.trim() || sendReply.isPending}>
+                  Отправить
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {activeSection === "events" && (
+        <section className="rounded-2xl border border-[#E8E6E0] bg-white p-5 shadow-sm">
+          <h2 className="font-heading text-lg font-bold">События webhook / sync</h2>
+          {eventsQ.isLoading && <p className="text-sm text-[#6A6860]">Загрузка событий…</p>}
+          {eventsQ.isError && <p className="text-sm text-red-700">{err(eventsQ.error)}</p>}
+          <div className="mt-3 max-h-[520px] space-y-2 overflow-auto">
+            {(eventsQ.data || []).map((ev) => (
+              <div key={ev.id} className="rounded-xl border border-[#EEE] p-3">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-sm">{ev.eventType}</p>
+                  <p className="text-xs text-[#6A6860]">{new Date(ev.at).toLocaleString()}</p>
+                </div>
+                <pre className="mt-2 whitespace-pre-wrap text-xs text-[#6A6860]">{shortJson(ev.payload)}</pre>
+              </div>
+            ))}
+            {(eventsQ.data || []).length === 0 && <p className="text-sm text-[#6A6860]">Событий пока нет</p>}
+          </div>
+        </section>
+      )}
+
+      <section className="rounded-2xl border border-[#E8E6E0] bg-white p-4 text-sm text-[#6A6860] shadow-sm">
+        <p>Дальнейшее расширение: автогенерация ответов ассистентом, правила эскалации менеджеру, автосоздание лидов и приоритизация по intent/readiness.</p>
+      </section>
+    </div>
+  );
+}

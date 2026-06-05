@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import Footer from "@/components/Footer";
@@ -10,6 +11,30 @@ export default function BlogPage() {
     title: "Блог — neeklo",
     description: "Статьи о сайтах, AI-ассистентах, Telegram-ботах и автоматизации бизнеса.",
   });
+
+  // ── API fetch: prefer live posts, fall back to static news ──
+  const [livePosts, setLivePosts] = useState<typeof news | null>(null);
+  useEffect(() => {
+    fetch("/cms-api/blog")
+      .then(r => r.ok ? r.json() : null)
+      .then((data: null | Array<{id:number;title:string;slug:string;category:string;excerpt:string|null;readTime:string;publishedAt:string|null;createdAt:string}>) => {
+        if (data && data.length > 0) {
+          setLivePosts(data.map(p => ({
+            id: p.id,
+            slug: p.slug,
+            category: p.category,
+            title: p.title,
+            excerpt: p.excerpt || "",
+            date: new Date(p.publishedAt || p.createdAt).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" }),
+            readTime: p.readTime,
+            href: "/blog/" + p.slug,
+          })));
+        }
+      })
+      .catch(() => {});
+  }, []);
+  const allNews = livePosts ?? news;
+
 
   return (
     <div
@@ -44,7 +69,7 @@ export default function BlogPage() {
           transition={{ duration: 0.4, ease, delay: 0.1 }}
           className="flex flex-col divide-y divide-[var(--bd)] mt-8"
         >
-          {news.map((item) => (
+          {allNews.map((item) => (
             <a
               key={item.slug}
               href={`/blog/${item.slug}`}

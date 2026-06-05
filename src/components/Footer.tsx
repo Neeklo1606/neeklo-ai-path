@@ -5,11 +5,10 @@ import { LogoIcon } from "@/components/ui/LogoIcon";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const SERVICES = [
-  { label: "Сайт + AI-ассистент", to: "/products/site-ai-crm" },
-  { label: "AI-видео",            to: "/products/ai-video" },
-  { label: "Telegram-бот",        to: "/products/telegram-bot" },
-  { label: "AI-ассистент",        to: "/products/ai-assistant" },
-  { label: "Все услуги",          to: "/services" },
+  { label: "Сайты под ключ",   to: "/products/websites" },
+  { label: "ИИ агенты",        to: "/products/ai-agents" },
+  { label: "ИИ видео",         to: "/products/video" },
+  { label: "Все услуги",       to: "/services" },
 ];
 
 const COL_HEAD = "text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3";

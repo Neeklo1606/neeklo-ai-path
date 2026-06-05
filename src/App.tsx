@@ -37,7 +37,12 @@ const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const AdminLoginPage = lazy(() => import("./pages/admin/AdminLoginPage"));
 const AdminAuthGuard = lazy(() => import("./pages/admin/AdminAuthGuard"));
-const AdminRoot = lazy(() => import("./pages/admin/AdminRoot"));
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
+const AdminCasesPage = lazy(() => import("./pages/admin/AdminCasesPage"));
+const AdminBlogPage = lazy(() => import("./pages/admin/AdminBlogPage"));
+const AdminSitePagesPage = lazy(() => import("./pages/admin/AdminSitePagesPage"));
+const AdminVideosPage = lazy(() => import("./pages/admin/AdminVideosPage"));
 const AdminCmsShell = lazy(() => import("./pages/admin/AdminCmsShell"));
 const AdminPagesList = lazy(() => import("./pages/admin/AdminPagesList"));
 const AdminPageEditor = lazy(() => import("./pages/admin/AdminPageEditor"));
@@ -53,6 +58,12 @@ const AdminAiAnalyticsPage = lazy(() => import("./pages/admin/AdminAiAnalyticsPa
 const AdminBillingPage = lazy(() => import("./pages/admin/AdminBillingPage"));
 const AdminKnowledgePage = lazy(() => import("./pages/admin/AdminKnowledgePage"));
 const AdminKnowledgeGraphPage = lazy(() => import("./pages/admin/AdminKnowledgeGraphPage"));
+const AdminCrmDashboard = lazy(() => import("./pages/admin/AdminCrmDashboard"));
+const AdminContactsPage = lazy(() => import("./pages/admin/AdminContactsPage"));
+const AdminCrmKanbanPage = lazy(() => import("./pages/admin/AdminCrmKanbanPage"));
+const AdminKnowledgeBasePage = lazy(() => import("./pages/admin/AdminKnowledgeBasePage"));
+const AdminRegulationsPage = lazy(() => import("./pages/admin/AdminRegulationsPage"));
+const AdminAvitoPage = lazy(() => import("./pages/admin/AdminAvitoPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const KpShowcasePage = lazy(() => import("./pages/kp/KpShowcasePage"));
 const KpSlugPage = lazy(() => import("./pages/kp/KpSlugPage"));
@@ -125,6 +136,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+const S = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<RouteLoadingFallback />}>{children}</Suspense>
+);
+
 const AppContent = ({
   showOnboarding,
   onCompleteOnboarding,
@@ -169,159 +184,58 @@ const AppContent = ({
             <Route path="/privacy" element={<P><PrivacyPage /></P>} />
             <Route path="/offer" element={<P><OfferPage /></P>} />
             <Route path="/cookies" element={<P><CookiesPage /></P>} />
-            <Route
-              path="/admin/login"
-              element={
-                <Suspense fallback={<RouteLoadingFallback />}>
-                  <AdminLoginPage />
-                </Suspense>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <Suspense fallback={<RouteLoadingFallback />}>
-                  <AdminAuthGuard />
-                </Suspense>
-              }
-            >
-              <Route
-                element={
-                  <Suspense fallback={<RouteLoadingFallback />}>
-                    <AdminRoot />
-                  </Suspense>
-                }
-              >
-                <Route
-                  index
-                  element={
-                    <Suspense fallback={<RouteLoadingFallback />}>
-                      <AdminPage />
-                    </Suspense>
-                  }
-                />
-                <Route
-                  element={
-                    <Suspense fallback={<RouteLoadingFallback />}>
-                      <AdminCmsShell />
-                    </Suspense>
-                  }
-                >
-                  <Route
-                    path="crm"
-                    element={
-                      <Suspense fallback={<RouteLoadingFallback />}>
-                        <AdminCrmPage />
-                      </Suspense>
-                    }
-                  />
-                  <Route
-                    path="operator"
-                    element={
-                      <Suspense fallback={<RouteLoadingFallback />}>
-                        <AdminOperatorPage />
-                      </Suspense>
-                    }
-                  />
-                  <Route
-                    path="pages"
-                    element={
-                      <Suspense fallback={<RouteLoadingFallback />}>
-                        <AdminPagesList />
-                      </Suspense>
-                    }
-                  />
-                  <Route
-                    path="pages/:id"
-                    element={
-                      <Suspense fallback={<RouteLoadingFallback />}>
-                        <AdminPageEditor />
-                      </Suspense>
-                    }
-                  />
-                  <Route
-                    path="media"
-                    element={
-                      <Suspense fallback={<RouteLoadingFallback />}>
-                        <AdminMediaPage />
-                      </Suspense>
-                    }
-                  />
-                  <Route
-                    path="branding"
-                    element={
-                      <Suspense fallback={<RouteLoadingFallback />}>
-                        <AdminBrandingPage />
-                      </Suspense>
-                    }
-                  />
-                  <Route
-                    path="assistants"
-                    element={
-                      <Suspense fallback={<RouteLoadingFallback />}>
-                        <AdminAssistantsPage />
-                      </Suspense>
-                    }
-                  />
-                  <Route
-                    path="assistants/:id"
-                    element={
-                      <Suspense fallback={<RouteLoadingFallback />}>
-                        <AdminAssistantEditor />
-                      </Suspense>
-                    }
-                  />
-                  <Route
-                    path="ai-analytics"
-                    element={
-                      <Suspense fallback={<RouteLoadingFallback />}>
-                        <AdminAiAnalyticsPage />
-                      </Suspense>
-                    }
-                  />
-                  <Route
-                    path="billing"
-                    element={
-                      <Suspense fallback={<RouteLoadingFallback />}>
-                        <AdminBillingPage />
-                      </Suspense>
-                    }
-                  />
-                  <Route
-                    path="knowledge"
-                    element={
-                      <Suspense fallback={<RouteLoadingFallback />}>
-                        <AdminKnowledgePage />
-                      </Suspense>
-                    }
-                  />
-                  <Route
-                    path="knowledge/graph"
-                    element={
-                      <Suspense fallback={<RouteLoadingFallback />}>
-                        <AdminKnowledgeGraphPage />
-                      </Suspense>
-                    }
-                  />
-                  <Route
-                    path="settings"
-                    element={
-                      <Suspense fallback={<RouteLoadingFallback />}>
-                        <AdminSettingsPage />
-                      </Suspense>
-                    }
-                  />
-                  <Route
-                    path="settings/item/:settingKey"
-                    element={
-                      <Suspense fallback={<RouteLoadingFallback />}>
-                        <AdminSettingEditor />
-                      </Suspense>
-                    }
-                  />
-                </Route>
+
+            {/* Admin login (public) */}
+            <Route path="/admin/login" element={<S><AdminLoginPage /></S>} />
+
+            {/* Admin area — protected by auth guard */}
+            <Route path="/admin" element={<S><AdminAuthGuard /></S>}>
+              {/* New unified sidebar layout */}
+              <Route element={<S><AdminLayout /></S>}>
+                {/* Dashboard — default landing page */}
+                <Route index element={<S><AdminDashboardPage /></S>} />
+                <Route path="dashboard" element={<S><AdminDashboardPage /></S>} />
+
+                {/* CRM / Communication */}
+                <Route path="leads" element={<S><AdminCrmPage /></S>} />
+                <Route path="crm" element={<S><AdminCrmPage /></S>} />
+                <Route path="kanban" element={<S><AdminPage /></S>} />
+                <Route path="operator" element={<S><AdminOperatorPage /></S>} />
+                <Route path="chats" element={<S><AdminOperatorPage /></S>} />
+                <Route path="avito" element={<S><AdminAvitoPage /></S>} />
+                <Route path="avito/:section" element={<S><AdminAvitoPage /></S>} />
+
+                {/* Site content */}
+                <Route path="cases" element={<S><AdminCasesPage /></S>} />
+                <Route path="videos" element={<S><AdminVideosPage /></S>} />
+                <Route path="blog" element={<S><AdminBlogPage /></S>} />
+                <Route path="blog-posts" element={<S><AdminBlogPage /></S>} />
+                <Route path="site-pages" element={<S><AdminSitePagesPage /></S>} />
+                <Route path="services" element={<S><AdminSitePagesPage /></S>} />
+
+                {/* CMS pages (rich editor) */}
+                <Route path="pages" element={<S><AdminPagesList /></S>} />
+                <Route path="pages/:id" element={<S><AdminPageEditor /></S>} />
+
+                {/* Media & System */}
+                <Route path="media" element={<S><AdminMediaPage /></S>} />
+                <Route path="branding" element={<S><AdminBrandingPage /></S>} />
+                <Route path="assistants" element={<S><AdminAssistantsPage /></S>} />
+                <Route path="assistants/:id" element={<S><AdminAssistantEditor /></S>} />
+                <Route path="ai-analytics" element={<S><AdminAiAnalyticsPage /></S>} />
+                <Route path="billing" element={<S><AdminBillingPage /></S>} />
+                <Route path="knowledge" element={<S><AdminKnowledgePage /></S>} />
+                <Route path="knowledge/graph" element={<S><AdminKnowledgeGraphPage /></S>} />
+                <Route path="knowledge-base" element={<S><AdminKnowledgeBasePage /></S>} />
+                <Route path="regulations" element={<S><AdminRegulationsPage /></S>} />
+                <Route path="crm" element={<S><AdminCrmDashboard /></S>} />
+                <Route path="crm/contacts" element={<S><AdminContactsPage /></S>} />
+                <Route path="crm/kanban" element={<S><AdminCrmKanbanPage /></S>} />
+                <Route path="settings" element={<S><AdminSettingsPage /></S>} />
+                <Route path="settings/item/:settingKey" element={<S><AdminSettingEditor /></S>} />
               </Route>
             </Route>
+
             <Route path="/contact" element={<P><ContactPage /></P>} />
             <Route path="/products/websites" element={<P><WebsitesPage /></P>} />
             <Route path="/products/ai-agents" element={<P><AIAgentsPage /></P>} />

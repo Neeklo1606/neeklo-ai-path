@@ -32,6 +32,13 @@ import {
   searchContext,
 } from "./services/ai.service.mjs";
 import {
+  CLERO_SENT_SETTING_KEY,
+  CLERO_ENDPOINT,
+  isClientAvitoMessage,
+  buildCleroPayload,
+  sendToCleroRaw,
+} from "./clero-helpers.mjs";
+import {
   getBillingConfig,
   computeUsageCost,
   rateLimitByKeyHash,
@@ -128,7 +135,14 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: "10mb" }));
+app.use(
+  express.json({
+    limit: "10mb",
+    verify: (req, _res, buf) => {
+      req.rawBody = Buffer.from(buf);
+    },
+  }),
+);
 app.use(express.static(path.join(ROOT, "public")));
 
 const PUBLIC_CHAT_COOKIE = "neeklo_crm_chat_id";
@@ -496,6 +510,318 @@ function genApiKey() {
 function signToken(user) {
   const secret = JWT_SECRET || "dev-only-unsafe-secret-min-32-chars!!";
   return jwt.sign({ sub: user.id, role: user.role }, secret, { expiresIn: "7d" });
+}
+
+const AVITO_CONFIG_SETTING_KEY = "integrations.avito";
+const AVITO_CHAT_MAP_SETTING_KEY = "integrations.avito.chat_map";
+const AVITO_EVENTS_SETTING_KEY = "integrations.avito.events";
+const AVITO_API_BASE = "https://api.avito.ru";
+const AVITO_MAX_EVENTS = 500;
+
+
+function safeJsonObject(value, fallback = {}) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return fallback;
+  return value;
+}
+
+function normalizeAvitoConfig(value) {
+  const raw = safeJsonObject(value, {});
+  const accounts = Array.isArray(raw.accounts)
+    ? raw.accounts
+        .map((a) => safeJsonObject(a, {}))
+        .filter((a) => a.id || a.accountId || a.clientId)
+        .map((a) => ({
+          id: String(a.id || crypto.randomUUID()),
+          name: String(a.name || "").trim(),
+          accountId: a.accountId != null ? String(a.accountId).trim() : "",
+          clientId: a.clientId != null ? String(a.clientId).trim() : "",
+          clientSecret: a.clientSecret != null ? String(a.clientSecret).trim() : "",
+          accessToken: a.accessToken != null ? String(a.accessToken).trim() : "",
+          refreshToken: a.refreshToken != null ? String(a.refreshToken).trim() : "",
+          tokenExpiresAt: a.tokenExpiresAt != null ? String(a.tokenExpiresAt).trim() : "",
+          webhookSecret: a.webhookSecret != null ? String(a.webhookSecret).trim() : "",
+          isActive: Boolean(a.isActive),
+        }))
+    : [];
+  const agentBindings = Array.isArray(raw.agentBindings)
+    ? raw.agentBindings
+        .map((b) => safeJsonObject(b, {}))
+        .filter((b) => b.agentId && b.avitoAccountId)
+        .map((b) => ({
+          agentId: String(b.agentId),
+          avitoAccountId: String(b.avitoAccountId),
+        }))
+    : [];
+  return {
+    webhookBaseUrl: raw.webhookBaseUrl ? String(raw.webhookBaseUrl) : "",
+    telegramBotToken: raw.telegramBotToken ? String(raw.telegramBotToken) : "",
+    telegramChatId: raw.telegramChatId ? String(raw.telegramChatId) : "",
+    telegramEnabled: Boolean(raw.telegramEnabled),
+    accounts,
+    agentBindings,
+  };
+}
+
+async function readJsonSetting(key, fallback) {
+  const row = await prisma.cmsSetting.findUnique({ where: { key } });
+  if (!row || row.value == null) return fallback;
+  return row.value;
+}
+
+async function writeJsonSetting(key, value) {
+  await prisma.cmsSetting.upsert({
+    where: { key },
+    create: { key, value, isPublic: false },
+    update: { value, isPublic: false },
+  });
+}
+
+async function getAvitoConfig() {
+  const cfg = await readJsonSetting(AVITO_CONFIG_SETTING_KEY, {});
+  return normalizeAvitoConfig(cfg);
+}
+
+async function saveAvitoConfig(config) {
+  const normalized = normalizeAvitoConfig(config);
+  await writeJsonSetting(AVITO_CONFIG_SETTING_KEY, normalized);
+  return normalized;
+}
+
+async function getAvitoChatMap() {
+  const val = await readJsonSetting(AVITO_CHAT_MAP_SETTING_KEY, {});
+  return safeJsonObject(val, {});
+}
+
+async function saveAvitoChatMap(map) {
+  await writeJsonSetting(AVITO_CHAT_MAP_SETTING_KEY, safeJsonObject(map, {}));
+}
+
+async function getCleroSentChats() {
+  const val = await readJsonSetting(CLERO_SENT_SETTING_KEY, {});
+  return typeof val === "object" && val !== null && !Array.isArray(val) ? val : {};
+}
+
+async function markCleroSent(chatId) {
+  const current = await getCleroSentChats();
+  current[String(chatId)] = true;
+  await writeJsonSetting(CLERO_SENT_SETTING_KEY, current);
+}
+
+async function sendToClero(chatId, authorId, messageText) {
+  return sendToCleroRaw(chatId, authorId, messageText);
+}
+
+async function appendAvitoEventLog(eventType, payload, extra = {}) {
+  const listRaw = await readJsonSetting(AVITO_EVENTS_SETTING_KEY, []);
+  const list = Array.isArray(listRaw) ? listRaw : [];
+  list.push({
+    id: crypto.randomUUID(),
+    eventType: String(eventType || "event"),
+    at: new Date().toISOString(),
+    payload,
+    ...extra,
+  });
+  if (list.length > AVITO_MAX_EVENTS) list.splice(0, list.length - AVITO_MAX_EVENTS);
+  await writeJsonSetting(AVITO_EVENTS_SETTING_KEY, list);
+}
+
+function getWebhookBaseUrl(overrideBase, config) {
+  const fromReq = String(overrideBase || "").trim();
+  if (fromReq) return fromReq.replace(/\/+$/, "");
+  const fromConfig = String(config?.webhookBaseUrl || "").trim();
+  if (fromConfig) return fromConfig.replace(/\/+$/, "");
+  const envBase = String(process.env.AVITO_INCOMING_WEBHOOK_BASE || process.env.PUBLIC_WEBHOOK_BASE || "").trim();
+  if (envBase) return envBase.replace(/\/+$/, "");
+  return "https://site-al.ru/api/incoming";
+}
+
+function resolveAvitoAccount(config, accountId) {
+  const accounts = Array.isArray(config?.accounts) ? config.accounts : [];
+  if (accountId) {
+    const id = String(accountId);
+    const byId = accounts.find((a) => a.id === id || a.accountId === id);
+    if (byId) return byId;
+  }
+  return accounts.find((a) => a.isActive) || accounts[0] || null;
+}
+
+async function avitoApiRequest(account, method, endpointPath, body, query = {}) {
+  if (!account?.accessToken) {
+    const err = new Error("Avito accessToken is required");
+    err.status = 400;
+    throw err;
+  }
+  const url = new URL(endpointPath.startsWith("http") ? endpointPath : `${AVITO_API_BASE}${endpointPath}`);
+  for (const [k, v] of Object.entries(query || {})) {
+    if (v !== undefined && v !== null && String(v) !== "") url.searchParams.set(k, String(v));
+  }
+  const resp = await fetch(url.toString(), {
+    method,
+    headers: {
+      Authorization: `Bearer ${account.accessToken}`,
+      "Content-Type": "application/json",
+    },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+  const text = await resp.text();
+  let data = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { raw: text };
+  }
+  if (!resp.ok) {
+    const err = new Error(`Avito API ${resp.status}`);
+    err.status = resp.status;
+    err.payload = data;
+    throw err;
+  }
+  return data;
+}
+
+function getAvitoSignatureHeader(req) {
+  const x1 = req.headers["x-avito-signature"];
+  if (typeof x1 === "string" && x1.trim()) return x1.trim();
+  const x2 = req.headers["x-avito-messenger-signature"];
+  if (typeof x2 === "string" && x2.trim()) return x2.trim();
+  return "";
+}
+
+function verifyAvitoSignature(req, secret) {
+  const signature = getAvitoSignatureHeader(req);
+  if (!secret) return { ok: true, reason: "permissive_no_secret", signature };
+  if (!signature) return { ok: false, reason: "missing_signature", signature };
+  const rawBody = req.rawBody || Buffer.from(JSON.stringify(req.body || {}), "utf8");
+  const digest = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+  try {
+    const expected = Buffer.from(digest, "utf8");
+    const got = Buffer.from(signature, "utf8");
+    return { ok: expected.length === got.length && crypto.timingSafeEqual(expected, got), reason: "hmac_sha256", signature };
+  } catch {
+    return { ok: false, reason: "signature_compare_failed", signature };
+  }
+}
+
+function extractAvitoWebhookMessage(payload) {
+  const p = safeJsonObject(payload, {});
+  const directMessage = safeJsonObject(p.message, null);
+  const nestedMessage = safeJsonObject(p.payload, null) ? safeJsonObject(p.payload.message, null) : null;
+  const m = directMessage || nestedMessage || null;
+  if (!m) return null;
+  const chatId =
+    m.chat_id != null
+      ? String(m.chat_id)
+      : m.chatId != null
+        ? String(m.chatId)
+        : p.chat_id != null
+          ? String(p.chat_id)
+          : p.chatId != null
+            ? String(p.chatId)
+            : "";
+  const userId =
+    m.user_id != null
+      ? String(m.user_id)
+      : m.author_id != null
+        ? String(m.author_id)
+        : m.from_id != null
+          ? String(m.from_id)
+          : p.user_id != null
+            ? String(p.user_id)
+            : "";
+  const text =
+    m.content?.text != null
+      ? String(m.content.text)
+      : m.text != null
+        ? String(m.text)
+        : m.message != null
+          ? String(m.message)
+          : "";
+  const at = m.created != null ? new Date(Number(m.created) * 1000) : m.created_at ? new Date(String(m.created_at)) : new Date();
+  if (!chatId || !text.trim()) return null;
+  return {
+    chatId,
+    userId,
+    text: text.trim(),
+    at: Number.isNaN(at.getTime()) ? new Date().toISOString() : at.toISOString(),
+    raw: m,
+  };
+}
+
+async function sendTelegramNotification(config, text) {
+  const token = String(config?.telegramBotToken || "").trim();
+  const chatId = String(config?.telegramChatId || "").trim();
+  if (!config?.telegramEnabled || !token || !chatId || !text) return { ok: false, skipped: true };
+  try {
+    const resp = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    });
+    return { ok: resp.ok };
+  } catch {
+    return { ok: false };
+  }
+}
+
+async function appendMessageToChat(chatId, role, content, at, meta = {}) {
+  const row = await prisma.chat.findUnique({ where: { id: chatId } });
+  if (!row) return null;
+  const arr = parseChatMessagesJson(row.messages);
+  arr.push({
+    role,
+    content,
+    at: at || new Date().toISOString(),
+    source: "avito",
+    ...meta,
+  });
+  const next = await prisma.chat.update({
+    where: { id: chatId },
+    data: { messages: arr, updatedAt: new Date() },
+  });
+  return next;
+}
+
+async function ingestAvitoMessageToCrm(agentId, msg) {
+  const map = await getAvitoChatMap();
+  let crmChatId = map[msg.chatId] ? String(map[msg.chatId]) : "";
+  let chat = crmChatId ? await prisma.chat.findUnique({ where: { id: crmChatId } }) : null;
+  if (!chat) {
+    const lead = await prisma.lead.create({
+      data: {
+        name: msg.userId ? `Avito user ${msg.userId}` : "Avito user",
+        status: "new",
+        summary: `Диалог из Avito (${msg.chatId})`,
+      },
+    });
+    chat = await prisma.chat.create({
+      data: {
+        leadId: lead.id,
+        status: "active",
+        messages: [],
+      },
+    });
+    crmChatId = chat.id;
+    map[msg.chatId] = crmChatId;
+    await saveAvitoChatMap(map);
+  }
+  await appendMessageToChat(crmChatId, "user", msg.text, msg.at, {
+    channel: "avito",
+    avito_chat_id: msg.chatId,
+    avito_user_id: msg.userId || null,
+    agent_id: agentId || null,
+  });
+  return { crmChatId };
+}
+
+async function writeAvitoLogLine(text) {
+  const base = String(process.env.AVITO_LOG_DIR || "/var/www/site-al.ru/logs").trim();
+  const line = `[${new Date().toISOString()}] ${text}\n`;
+  try {
+    await fs.mkdir(base, { recursive: true });
+    await fs.appendFile(path.join(base, "avito.log"), line, "utf8");
+  } catch {
+    // Ignore file logging errors in dev environments.
+  }
 }
 
 app.get("/health", (_req, res) => {
@@ -2912,6 +3238,386 @@ app.post("/crm/chats/:id/connect-operator", requireAuth, async (req, res) => {
   }
 });
 
+// ─── Avito integration (auth + incoming webhook) ───
+app.get("/incoming/:agentId", (_req, res) => {
+  res.status(405).json({ error: "Use POST with JSON payload" });
+});
+app.get("/avito/webhook/:agentId", (_req, res) => {
+  res.status(405).json({ error: "Use POST with JSON payload" });
+});
+
+app.get("/avito/config", requireAuth, async (_req, res) => {
+  try {
+    const cfg = await getAvitoConfig();
+    res.json(cfg);
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
+app.put("/avito/config", requireAuth, async (req, res) => {
+  try {
+    const cfg = await saveAvitoConfig(req.body || {});
+    res.json(cfg);
+  } catch (e) {
+    res.status(400).json({ error: e.message || "Failed" });
+  }
+});
+
+app.get("/avito/events", requireAuth, async (_req, res) => {
+  try {
+    const listRaw = await readJsonSetting(AVITO_EVENTS_SETTING_KEY, []);
+    const list = Array.isArray(listRaw) ? listRaw : [];
+    res.json(list.slice().reverse());
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
+app.post("/avito/messenger/register-webhook", requireAuth, async (req, res) => {
+  try {
+    const { agentId, webhookBaseUrl, accountId } = req.body || {};
+    const agent = String(agentId || "").trim();
+    if (!agent || !isUuid(agent)) return res.status(400).json({ error: "agentId UUID required" });
+    const cfg = await getAvitoConfig();
+    const account = resolveAvitoAccount(cfg, accountId);
+    if (!account) return res.status(400).json({ error: "No Avito account configured" });
+
+    const base = getWebhookBaseUrl(webhookBaseUrl, cfg);
+    const url = `${base}/${agent}`;
+    const secret = String(account.webhookSecret || process.env.AVITO_WEBHOOK_SECRET || "").trim();
+    const payload = { url, ...(secret ? { secret } : {}) };
+    const data = await avitoApiRequest(account, "POST", "/messenger/v3/webhook", payload);
+
+    await appendAvitoEventLog("webhook_registered", { agentId: agent, url }, { accountId: account.id || account.accountId });
+    await writeAvitoLogLine(`webhook register ok agent=${agent} url=${url}`);
+
+    res.json({ ok: true, agentId: agent, url, avito: data });
+  } catch (e) {
+    await writeAvitoLogLine(`webhook register failed: ${e?.message || "unknown"}`);
+    res.status(e?.status || 500).json({ error: e.message || "Failed", details: e?.payload || null });
+  }
+});
+
+app.get("/avito/webhook-status", requireAuth, async (req, res) => {
+  try {
+    const accountId = req.query?.accountId != null ? String(req.query.accountId) : "";
+    const cfg = await getAvitoConfig();
+    const account = resolveAvitoAccount(cfg, accountId);
+    if (!account) return res.status(400).json({ error: "No Avito account configured" });
+    try {
+      const data = await avitoApiRequest(account, "GET", "/messenger/v3/webhook");
+      return res.json({ ok: true, data });
+    } catch (e) {
+      const isNotSupported = Number(e?.status || 0) === 404;
+      const base = getWebhookBaseUrl("", cfg);
+      const binds = Array.isArray(cfg.agentBindings) ? cfg.agentBindings.filter((b) => b.avitoAccountId === account.id) : [];
+      return res.json({
+        ok: true,
+        provider_status_endpoint_supported: !isNotSupported,
+        warning: isNotSupported ? "Provider does not expose webhook status endpoint for this account/token." : null,
+        expected_webhooks: binds.map((b) => ({ agentId: b.agentId, url: `${base}/${b.agentId}` })),
+      });
+    }
+  } catch (e) {
+    res.status(e?.status || 500).json({ error: e.message || "Failed", details: e?.payload || null });
+  }
+});
+
+app.get("/avito/token-check", requireAuth, async (req, res) => {
+  try {
+    const accountId = req.query?.accountId != null ? String(req.query.accountId) : "";
+    const cfg = await getAvitoConfig();
+    const account = resolveAvitoAccount(cfg, accountId);
+    if (!account) return res.status(400).json({ error: "No Avito account configured" });
+    const data = await avitoApiRequest(account, "GET", "/core/v1/items", undefined, { per_page: 1, page: 1 });
+    res.json({ ok: true, account_id: account.accountId || null, data });
+  } catch (e) {
+    res.status(e?.status || 500).json({ ok: false, error: e.message || "Failed", details: e?.payload || null });
+  }
+});
+
+app.get("/avito/items", requireAuth, async (req, res) => {
+  try {
+    const { accountId = "", per_page = 20, page = 1, status = "" } = req.query || {};
+    const cfg = await getAvitoConfig();
+    const account = resolveAvitoAccount(cfg, accountId);
+    if (!account) return res.status(400).json({ error: "No Avito account configured" });
+    const data = await avitoApiRequest(
+      account,
+      "GET",
+      "/core/v1/items",
+      undefined,
+      { per_page, page, ...(status ? { status } : {}) },
+    );
+    res.json(data);
+  } catch (e) {
+    res.status(e?.status || 500).json({ error: e.message || "Failed", details: e?.payload || null });
+  }
+});
+
+app.get("/avito/items/:itemId", requireAuth, async (req, res) => {
+  try {
+    const { accountId = "" } = req.query || {};
+    const cfg = await getAvitoConfig();
+    const account = resolveAvitoAccount(cfg, accountId);
+    if (!account) return res.status(400).json({ error: "No Avito account configured" });
+    if (!account.accountId) return res.status(400).json({ error: "accountId is required in Avito account config" });
+    const data = await avitoApiRequest(
+      account,
+      "GET",
+      `/core/v1/accounts/${encodeURIComponent(account.accountId)}/items/${encodeURIComponent(String(req.params.itemId))}/`,
+    );
+    res.json(data);
+  } catch (e) {
+    res.status(e?.status || 500).json({ error: e.message || "Failed", details: e?.payload || null });
+  }
+});
+
+app.put("/avito/items/:itemId/vas", requireAuth, async (req, res) => {
+  try {
+    const { accountId = "" } = req.query || {};
+    const cfg = await getAvitoConfig();
+    const account = resolveAvitoAccount(cfg, accountId);
+    if (!account) return res.status(400).json({ error: "No Avito account configured" });
+    if (!account.accountId) return res.status(400).json({ error: "accountId is required in Avito account config" });
+    const data = await avitoApiRequest(
+      account,
+      "PUT",
+      `/core/v1/accounts/${encodeURIComponent(account.accountId)}/items/${encodeURIComponent(String(req.params.itemId))}/vas`,
+      req.body || {},
+    );
+    res.json({ ok: true, data });
+  } catch (e) {
+    res.status(e?.status || 500).json({ error: e.message || "Failed", details: e?.payload || null });
+  }
+});
+
+app.get("/avito/messenger/chats", requireAuth, async (req, res) => {
+  try {
+    const { accountId = "", page = 1, per_page = 20 } = req.query || {};
+    const cfg = await getAvitoConfig();
+    const account = resolveAvitoAccount(cfg, accountId);
+    if (!account) return res.status(400).json({ error: "No Avito account configured" });
+    const data = await avitoApiRequest(
+      account,
+      "GET",
+      `/messenger/v2/accounts/${encodeURIComponent(account.accountId)}/chats`,
+      undefined,
+      { page, per_page },
+    );
+    res.json(data);
+  } catch (e) {
+    res.status(e?.status || 500).json({ error: e.message || "Failed", details: e?.payload || null });
+  }
+});
+
+app.get("/avito/messenger/chats/:chatId/messages", requireAuth, async (req, res) => {
+  try {
+    const { accountId = "", page = 1, per_page = 50 } = req.query || {};
+    const cfg = await getAvitoConfig();
+    const account = resolveAvitoAccount(cfg, accountId);
+    if (!account) return res.status(400).json({ error: "No Avito account configured" });
+    if (!account.accountId) return res.status(400).json({ error: "accountId is required in Avito account config" });
+    const data = await avitoApiRequest(
+      account,
+      "GET",
+      `/messenger/v3/accounts/${encodeURIComponent(account.accountId)}/chats/${encodeURIComponent(String(req.params.chatId))}/messages`,
+      undefined,
+      { page, per_page },
+    );
+    res.json(data);
+  } catch (e) {
+    res.status(e?.status || 500).json({ error: e.message || "Failed", details: e?.payload || null });
+  }
+});
+
+app.post("/avito/messenger/chats/:chatId/messages", requireAuth, async (req, res) => {
+  try {
+    const { accountId = "" } = req.query || {};
+    const text = String(req.body?.text || "").trim();
+    if (!text) return res.status(400).json({ error: "text required" });
+    const cfg = await getAvitoConfig();
+    const account = resolveAvitoAccount(cfg, accountId);
+    if (!account) return res.status(400).json({ error: "No Avito account configured" });
+    if (!account.accountId) return res.status(400).json({ error: "accountId is required in Avito account config" });
+    const data = await avitoApiRequest(
+      account,
+      "POST",
+      `/messenger/v3/accounts/${encodeURIComponent(account.accountId)}/chats/${encodeURIComponent(String(req.params.chatId))}/messages`,
+      { message: { text } },
+    );
+    res.json({ ok: true, data });
+  } catch (e) {
+    res.status(e?.status || 500).json({ error: e.message || "Failed", details: e?.payload || null });
+  }
+});
+
+app.post("/avito/sync", requireAuth, async (req, res) => {
+  try {
+    const cfg = await getAvitoConfig();
+    const account = resolveAvitoAccount(cfg, req.body?.accountId || "");
+    if (!account) return res.status(400).json({ error: "No Avito account configured" });
+    if (!account.accountId) return res.status(400).json({ error: "accountId is required in Avito account config" });
+    const chatsResp = await avitoApiRequest(
+      account,
+      "GET",
+      `/messenger/v2/accounts/${encodeURIComponent(account.accountId)}/chats`,
+      undefined,
+      { per_page: 20, page: 1 },
+    );
+    const chats = Array.isArray(chatsResp?.chats) ? chatsResp.chats : Array.isArray(chatsResp?.results) ? chatsResp.results : [];
+    let imported = 0;
+    for (const c of chats.slice(0, 10)) {
+      const chatId = c?.id != null ? String(c.id) : c?.chat_id != null ? String(c.chat_id) : "";
+      if (!chatId) continue;
+      const msgs = await avitoApiRequest(
+        account,
+        "GET",
+        `/messenger/v3/accounts/${encodeURIComponent(account.accountId)}/chats/${encodeURIComponent(chatId)}/messages`,
+        undefined,
+        { per_page: 20, page: 1 },
+      );
+      const rows = Array.isArray(msgs?.messages) ? msgs.messages : Array.isArray(msgs?.results) ? msgs.results : [];
+      for (const m of rows) {
+        const text = m?.content?.text != null ? String(m.content.text) : m?.text != null ? String(m.text) : "";
+        if (!text.trim()) continue;
+        await ingestAvitoMessageToCrm(req.body?.agentId ? String(req.body.agentId) : "", {
+          chatId,
+          userId: m?.user_id != null ? String(m.user_id) : "",
+          text: text.trim(),
+          at: m?.created_at ? new Date(String(m.created_at)).toISOString() : new Date().toISOString(),
+          raw: m,
+        });
+        imported += 1;
+      }
+    }
+    await appendAvitoEventLog("sync", { imported }, { accountId: account.id || account.accountId });
+    res.json({ ok: true, imported, chats_seen: chats.length });
+  } catch (e) {
+    res.status(e?.status || 500).json({ error: e.message || "Failed", details: e?.payload || null });
+  }
+});
+
+app.post("/avito/clero/sync-all", requireAuth, async (_req, res) => {
+  try {
+    const listRaw = await readJsonSetting(AVITO_EVENTS_SETTING_KEY, []);
+    const list = Array.isArray(listRaw) ? listRaw : [];
+
+    // Collect webhook_event entries with payload.payload.type === "message" from clients
+    const clientMsgs = list
+      .filter(
+        (ev) =>
+          ev.eventType === "webhook_event" &&
+          ev.payload?.payload?.type === "message" &&
+          ev.payload?.payload?.value?.chatid &&
+          isClientAvitoMessage(ev.payload?.payload?.value?.authorid)
+      )
+      .map((ev) => ({
+        chatid: String(ev.payload.payload.value.chatid),
+        authorid: String(ev.payload.payload.value.authorid),
+        text: String(ev.payload.payload.value.content?.text || "").trim(),
+        created: ev.payload.payload.value.created || ev.at || new Date(0).toISOString(),
+      }))
+      .filter((m) => m.text);
+
+    // Group by chatid, sort by created ASC, take first 3
+    const byChat = {};
+    for (const m of clientMsgs) {
+      if (!byChat[m.chatid]) byChat[m.chatid] = [];
+      byChat[m.chatid].push(m);
+    }
+    for (const chatid of Object.keys(byChat)) {
+      byChat[chatid].sort((a, b) => String(a.created).localeCompare(String(b.created)));
+      byChat[chatid] = byChat[chatid].slice(0, 3);
+    }
+
+    const cleroSent = await getCleroSentChats();
+    let sent = 0;
+    let skipped = 0;
+    const errors = [];
+
+    for (const [chatid, msgs] of Object.entries(byChat)) {
+      if (cleroSent[chatid]) {
+        skipped++;
+        continue;
+      }
+      const text = msgs.map((m) => m.text).join("\n---\n");
+      const authorid = msgs[0].authorid;
+      try {
+        await markCleroSent(chatid);
+        await sendToClero(chatid, authorid, text);
+        await writeAvitoLogLine(`clero sync-all sent chatid=${chatid}`);
+        sent++;
+      } catch (e) {
+        errors.push({ chatid, error: e?.message || "unknown" });
+        await writeAvitoLogLine(`clero sync-all error chatid=${chatid}: ${e?.message}`);
+      }
+    }
+
+    return res.json({ ok: true, sent, skipped, errors });
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || "Failed" });
+  }
+});
+
+async function handleAvitoIncomingWebhook(req, res) {
+  try {
+    const agentId = String(req.params.agentId || "").trim();
+    if (!agentId || !isUuid(agentId)) return res.status(400).json({ error: "Invalid agentId" });
+    const cfg = await getAvitoConfig();
+    const binding = (cfg.agentBindings || []).find((b) => b.agentId === agentId);
+    const account = resolveAvitoAccount(cfg, binding?.avitoAccountId || "");
+    const fallbackSecret = String(process.env.AVITO_WEBHOOK_SECRET || "").trim();
+    const secret = String(account?.webhookSecret || fallbackSecret || "").trim();
+    const signCheck = verifyAvitoSignature(req, secret);
+    if (!signCheck.ok) {
+      await appendAvitoEventLog("webhook_rejected", req.body || {}, { reason: signCheck.reason, agentId });
+      await writeAvitoLogLine(`webhook rejected agent=${agentId} reason=${signCheck.reason}`);
+      return res.status(401).json({ error: "Invalid webhook signature" });
+    }
+
+    const payload = req.body || {};
+    const msg = extractAvitoWebhookMessage(payload);
+    let mapped = null;
+    if (msg) {
+      mapped = await ingestAvitoMessageToCrm(agentId, msg);
+      await sendTelegramNotification(
+        cfg,
+        `Avito: новое сообщение\nАгент: ${agentId}\nЧат: ${msg.chatId}\nТекст: ${msg.text.slice(0, 800)}`,
+      );
+    }
+
+    // Forward first client message per chat to Clero CRM
+    const avitoVal = payload?.payload?.value;
+    if (avitoVal && avitoVal.chatid && isClientAvitoMessage(avitoVal.authorid)) {
+      const text = String(avitoVal.content?.text || "").trim();
+      if (text) {
+        try {
+          const cleroSent = await getCleroSentChats();
+          if (!cleroSent[String(avitoVal.chatid)]) {
+            await markCleroSent(String(avitoVal.chatid));
+            await sendToClero(String(avitoVal.chatid), String(avitoVal.authorid), text);
+            await writeAvitoLogLine(`clero sent chatid=${avitoVal.chatid}`);
+          }
+        } catch (cleroErr) {
+          await writeAvitoLogLine(`clero error chatid=${avitoVal.chatid}: ${cleroErr?.message}`);
+        }
+      }
+    }
+
+    await appendAvitoEventLog("webhook_event", payload, { agentId, mapped });
+    await writeAvitoLogLine(`webhook ok agent=${agentId} message=${msg ? "yes" : "no"}`);
+    return res.json({ ok: true, mapped });
+  } catch (e) {
+    await writeAvitoLogLine(`webhook error: ${e?.message || "unknown"}`);
+    return res.status(500).json({ error: e.message || "Failed" });
+  }
+}
+
+app.post("/incoming/:agentId", handleAvitoIncomingWebhook);
+app.post("/avito/webhook/:agentId", handleAvitoIncomingWebhook);
+
 // ============================================================
 // COMMERCIAL OFFERS API  /api/kp
 // ============================================================
@@ -3066,6 +3772,89 @@ app.delete("/api/kp/:slug", requireAuth, async (req, res) => {
 });
 
 // ============================================================
+
+
+// ============================================================
+// CASES — portfolio cases CRUD
+// ============================================================
+
+// Public: list active cases
+app.get("/cases", async (_req, res) => {
+  try {
+    const cases = await prisma.case.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+    });
+    res.json(cases);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// Admin: list all cases
+app.get("/admin/cases", requireAuth, async (_req, res) => {
+  try {
+    const cases = await prisma.case.findMany({
+      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+    });
+    res.json(cases);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// Admin: create case
+app.post("/admin/cases", requireAuth, async (req, res) => {
+  try {
+    const { title, slug, category = "Сайты", badge, description, metric, url, color, coverImage, isActive = true, isFeatured = false } = req.body;
+    if (!title || !slug) return res.status(400).json({ error: "title and slug are required" });
+    const existing = await prisma.case.findUnique({ where: { slug } });
+    if (existing) return res.status(409).json({ error: "slug already exists" });
+    const maxOrder = await prisma.case.aggregate({ _max: { sortOrder: true } });
+    const c = await prisma.case.create({
+      data: { title, slug, category, badge: badge || null, description: description || null, metric: metric || null, url: url || null, color: color || "from-slate-100 to-zinc-200", coverImage: coverImage || null, sortOrder: (maxOrder._max.sortOrder ?? 0) + 1, isActive, isFeatured },
+    });
+    res.status(201).json(c);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// Admin: update case
+app.put("/admin/cases/:id", requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { title, slug, category, badge, description, metric, url, color, coverImage, sortOrder, isActive, isFeatured } = req.body;
+    const data = {};
+    if (title !== undefined) data.title = title;
+    if (slug !== undefined) data.slug = slug;
+    if (category !== undefined) data.category = category;
+    if (badge !== undefined) data.badge = badge || null;
+    if (description !== undefined) data.description = description || null;
+    if (metric !== undefined) data.metric = metric || null;
+    if (url !== undefined) data.url = url || null;
+    if (color !== undefined) data.color = color;
+    if (coverImage !== undefined) data.coverImage = coverImage || null;
+    if (sortOrder !== undefined) data.sortOrder = parseInt(sortOrder);
+    if (isActive !== undefined) data.isActive = Boolean(isActive);
+    if (isFeatured !== undefined) data.isFeatured = Boolean(isFeatured);
+    const c = await prisma.case.update({ where: { id }, data });
+    res.json(c);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// Admin: delete case
+app.delete("/admin/cases/:id", requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.case.delete({ where: { id } });
+    res.status(204).end();
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
 
 process.on("unhandledRejection", (reason) => {
   console.error("[cms-server] unhandledRejection", reason);
