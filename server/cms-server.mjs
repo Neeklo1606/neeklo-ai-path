@@ -3499,6 +3499,68 @@ app.post("/avito/sync", requireAuth, async (req, res) => {
   }
 });
 
+app.post("/avito/clero/sync-all", requireAuth, async (_req, res) => {
+  try {
+    const listRaw = await readJsonSetting(AVITO_EVENTS_SETTING_KEY, []);
+    const list = Array.isArray(listRaw) ? listRaw : [];
+
+    // Collect webhook_event entries with payload.payload.type === "message" from clients
+    const clientMsgs = list
+      .filter(
+        (ev) =>
+          ev.eventType === "webhook_event" &&
+          ev.payload?.payload?.type === "message" &&
+          ev.payload?.payload?.value?.chatid &&
+          isClientAvitoMessage(ev.payload?.payload?.value?.authorid)
+      )
+      .map((ev) => ({
+        chatid: String(ev.payload.payload.value.chatid),
+        authorid: String(ev.payload.payload.value.authorid),
+        text: String(ev.payload.payload.value.content?.text || "").trim(),
+        created: ev.payload.payload.value.created || ev.at || "",
+      }))
+      .filter((m) => m.text);
+
+    // Group by chatid, sort by created ASC, take first 3
+    const byChat = {};
+    for (const m of clientMsgs) {
+      if (!byChat[m.chatid]) byChat[m.chatid] = [];
+      byChat[m.chatid].push(m);
+    }
+    for (const chatid of Object.keys(byChat)) {
+      byChat[chatid].sort((a, b) => String(a.created).localeCompare(String(b.created)));
+      byChat[chatid] = byChat[chatid].slice(0, 3);
+    }
+
+    const cleroSent = await getCleroSentChats();
+    let sent = 0;
+    let skipped = 0;
+    const errors = [];
+
+    for (const [chatid, msgs] of Object.entries(byChat)) {
+      if (cleroSent[chatid]) {
+        skipped++;
+        continue;
+      }
+      const text = msgs.map((m) => m.text).join("\n---\n");
+      const authorid = msgs[0].authorid;
+      try {
+        await sendToClero(chatid, authorid, text);
+        await markCleroSent(chatid);
+        await writeAvitoLogLine(`clero sync-all sent chatid=${chatid}`);
+        sent++;
+      } catch (e) {
+        errors.push({ chatid, error: e?.message || "unknown" });
+        await writeAvitoLogLine(`clero sync-all error chatid=${chatid}: ${e?.message}`);
+      }
+    }
+
+    return res.json({ ok: true, sent, skipped, errors });
+  } catch (e) {
+    return res.status(500).json({ error: e?.message || "Failed" });
+  }
+});
+
 async function handleAvitoIncomingWebhook(req, res) {
   try {
     const agentId = String(req.params.agentId || "").trim();
