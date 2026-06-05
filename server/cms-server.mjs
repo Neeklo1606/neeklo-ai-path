@@ -3578,6 +3578,35 @@ app.post("/avito/clero/sync-all", requireAuth, async (req, res) => {
   }
 });
 
+// ============================================================
+// CLERO PROXY  /api/clero/avito-webhook
+// Receives from sendToClero (loopback) → forwards to Clero API
+// with Authorization Bearer CLEROAPITOKEN.
+// ============================================================
+app.post("/api/clero/avito-webhook", async (req, res) => {
+  try {
+    const token = String(process.env.CLEROAPITOKEN || "").trim();
+    if (!token) {
+      return res.status(500).json({ error: "CLEROAPITOKEN not configured" });
+    }
+    const body = req.body || {};
+    const resp = await fetch("https://clero.so/api/v1/integrations/api-chat/message/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const text = await resp.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+    return res.status(resp.status).json(data);
+  } catch (e) {
+    return res.status(502).json({ error: e?.message || "Proxy error" });
+  }
+});
+
 async function handleAvitoIncomingWebhook(req, res) {
   try {
     const agentId = String(req.params.agentId || "").trim();
