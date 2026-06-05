@@ -251,3 +251,174 @@ model PrototypeJob {
   @@unique([resultSlug])
   @@map("prototype_jobs")
 }
+
+/// Portfolio case / project for the public website
+model Case {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  category    String   @default("Сайты")
+  badge       String?
+  description String?
+  metric      String?
+  url         String?
+  color       String   @default("from-slate-100 to-zinc-200")
+  coverImage  String?  @map("cover_image")
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  isFeatured  Boolean  @default(false) @map("is_featured")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  videos      CaseVideo[]
+
+  @@index([isActive, sortOrder])
+  @@map("cases")
+}
+
+/// Blog article for the public website
+model BlogPost {
+  id              Int       @id @default(autoincrement())
+  title           String
+  slug            String    @unique
+  category        String    @default("AI")
+  excerpt         String?
+  content         String?
+  coverImage      String?   @map("cover_image")
+  readTime        String    @default("5 мин") @map("read_time")
+  metaTitle       String?   @map("meta_title")
+  metaDescription String?   @map("meta_description")
+  isPublished     Boolean   @default(false) @map("is_published")
+  publishedAt     DateTime? @map("published_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([isPublished, publishedAt])
+  @@map("blog_posts")
+}
+
+/// Video category for portfolio videos
+model VideoCategory {
+  id          Int         @id @default(autoincrement())
+  name        String
+  slug        String      @unique
+  description String?
+  sortOrder   Int         @default(0) @map("sort_order")
+  videos      CaseVideo[]
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  @@map("video_categories")
+}
+
+/// Portfolio video linked to a case and category
+model CaseVideo {
+  id           Int            @id @default(autoincrement())
+  title        String
+  description  String?
+  client       String?
+  videoUrl     String         @map("video_url")
+  thumbnailUrl String?        @map("thumbnail_url")
+  duration     Int?
+  fileSize     Int?           @map("file_size")
+  categoryId   Int?           @map("category_id")
+  category     VideoCategory? @relation(fields: [categoryId], references: [id])
+  caseId       Int?           @map("case_id")
+  case         Case?          @relation(fields: [caseId], references: [id])
+  sortOrder    Int            @default(0) @map("sort_order")
+  isPublished  Boolean        @default(true) @map("is_published")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  @@index([isPublished, categoryId])
+  @@map("case_videos")
+}
+
+/// Full CRM contact (leads, clients)
+model CrmContact {
+  id         String        @id @default(cuid())
+  name       String
+  phone      String?
+  telegram   String?
+  email      String?
+  company    String?
+  source     String?       @default("website")
+  score      Int           @default(0)
+  status     String        @default("new")
+  notes      String?       @db.Text
+  assignee   String?
+  tags       String?
+  deals      CrmDeal[]
+  activities CrmActivity[]
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  @@map("crm_contacts")
+}
+
+/// CRM deal for kanban board
+model CrmDeal {
+  id         String        @id @default(cuid())
+  title      String
+  contactId  String?       @map("contact_id")
+  contact    CrmContact?   @relation(fields: [contactId], references: [id])
+  stage      String        @default("new")
+  amount     Int?
+  currency   String        @default("RUB")
+  service    String?
+  priority   String        @default("medium")
+  dueDate    DateTime?     @map("due_date")
+  assignee   String?
+  notes      String?       @db.Text
+  color      String?
+  sortOrder  Int           @default(0) @map("sort_order")
+  activities CrmActivity[]
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  @@map("crm_deals")
+}
+
+/// Activity / note in timeline
+model CrmActivity {
+  id        String      @id @default(cuid())
+  type      String      @default("note")
+  text      String      @db.Text
+  contactId String?     @map("contact_id")
+  contact   CrmContact? @relation(fields: [contactId], references: [id])
+  dealId    String?     @map("deal_id")
+  deal      CrmDeal?    @relation(fields: [dealId], references: [id])
+  author    String?
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  @@map("crm_activities")
+}
+
+/// Internal knowledge base article
+model KnowledgeArticle {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String   @db.Text
+  category    String   @default("general")
+  tags        String?
+  isPinned    Boolean  @default(false) @map("is_pinned")
+  isPublished Boolean  @default(true)  @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt      @map("updated_at")
+
+  @@map("knowledge_articles")
+}
+
+/// Company regulation / SOP
+model Regulation {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text
+  category  String   @default("general")
+  version   String   @default("1.0")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt     @map("updated_at")
+
+  @@map("regulations")
+}
