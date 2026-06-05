@@ -50,3 +50,27 @@ describe("buildCleroPayload", () => {
     expect(p.message).toContain("---");
   });
 });
+
+import { vi } from "vitest";
+
+describe("sendToCleroRaw", () => {
+  it("POSTs correct payload and returns ok on 200", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+    const { sendToCleroRaw } = await import("../../server/clero-helpers.mjs?v=send1");
+    const result = await sendToCleroRaw("chat1", "999", "Хочу купить", mockFetch);
+    expect(result.ok).toBe(true);
+    expect(mockFetch).toHaveBeenCalledOnce();
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toBe("https://neeklo.ru/api/clero/avito-webhook");
+    expect(opts.method).toBe("POST");
+    const body = JSON.parse(opts.body);
+    expect(body.chatid).toBe("avitochat1");
+    expect(body.source).toBe("avito");
+  });
+
+  it("throws on non-200 response", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
+    const { sendToCleroRaw } = await import("../../server/clero-helpers.mjs?v=send2");
+    await expect(sendToCleroRaw("c", "a", "t", mockFetch)).rejects.toThrow("Clero 503");
+  });
+});

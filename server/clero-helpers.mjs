@@ -18,3 +18,14 @@ export function buildCleroPayload(chatId, authorId, messageText) {
     timestamp: new Date().toISOString(),
   };
 }
+
+export async function sendToCleroRaw(chatId, authorId, messageText, fetchFn = fetch) {
+  const payload = buildCleroPayload(chatId, authorId, messageText);
+  const resp = await fetchFn(CLERO_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!resp.ok) throw new Error(`Clero ${resp.status}`);
+  return { ok: true, status: resp.status };
+}

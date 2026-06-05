@@ -36,6 +36,7 @@ import {
   CLERO_ENDPOINT,
   isClientAvitoMessage,
   buildCleroPayload,
+  sendToCleroRaw,
 } from "./clero-helpers.mjs";
 import {
   getBillingConfig,
@@ -604,6 +605,10 @@ async function markCleroSent(chatId) {
   const current = await getCleroSentChats();
   current[String(chatId)] = true;
   await writeJsonSetting(CLERO_SENT_SETTING_KEY, current);
+}
+
+async function sendToClero(chatId, authorId, messageText) {
+  return sendToCleroRaw(chatId, authorId, messageText);
 }
 
 async function appendAvitoEventLog(eventType, payload, extra = {}) {
