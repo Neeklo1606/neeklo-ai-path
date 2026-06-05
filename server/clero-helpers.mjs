@@ -13,8 +13,8 @@ export function buildCleroPayload(chatId, authorId, messageText) {
   const sourceId = Number(process.env.CLERO_SOURCE_ID) || 176;
   const apiToken = String(process.env.CLEROAPITOKEN || "");
   return {
-    apitoken: apiToken,
-    source_id: sourceId,
+    api_token: apiToken,
+    sourceid: sourceId,
     sessionid: `avito${chatId}`,
     direction: "inbound",
     text: messageText,

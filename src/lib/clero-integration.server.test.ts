@@ -36,11 +36,11 @@ describe("buildCleroPayload", () => {
   it("builds correct Clero API Chat payload shape", async () => {
     const { buildCleroPayload } = await import("../../server/clero-helpers.mjs");
     const p = buildCleroPayload("abc123", "999999", "Привет, хочу купить");
-    expect(p.source_id).toBe(176);
+    expect(p.sourceid).toBe(176);
     expect(p.sessionid).toBe("avitoabc123");
     expect(p.direction).toBe("inbound");
     expect(p.text).toBe("Привет, хочу купить");
-    expect(typeof p.apitoken).toBe("string");
+    expect(typeof p.api_token).toBe("string");
     expect(p.metadata.avitochatid).toBe("abc123");
     expect(p.metadata.clientname).toBe("999999");
     expect(p.metadata.authorid).toBe("999999");
