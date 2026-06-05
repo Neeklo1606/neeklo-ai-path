@@ -232,6 +232,21 @@ export default function AdminAvitoPage() {
     },
   });
 
+  const syncToCleroMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await adminApi.post<{ sent: number; skipped: number; errors: { chatid: string; error: string }[] }>(
+        "/avito/clero/sync-all",
+      );
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Clero: отправлено ${data.sent}, пропущено ${data.skipped}${data.errors.length ? `, ошибок: ${data.errors.length}` : ""}`);
+    },
+    onError: (error) => {
+      toast.error(`Ошибка синхронизации с Clero: ${err(error)}`);
+    },
+  });
+
   const err = (e: unknown) =>
     axios.isAxiosError(e) ? (e.response?.data as { error?: string })?.error || e.message : (e as Error).message;
 
@@ -496,7 +511,18 @@ export default function AdminAvitoPage() {
 
       {activeSection === "chats" && (
         <section className="rounded-2xl border border-[#E8E6E0] bg-white p-5 space-y-4 shadow-sm">
-          <h2 className="font-heading text-lg font-bold">Диалоги Avito</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading text-lg font-bold">Диалоги Avito</h2>
+            <Button
+              type="button"
+              variant="outline"
+              className={secondaryBtnClass}
+              onClick={() => syncToCleroMutation.mutate()}
+              disabled={syncToCleroMutation.isPending}
+            >
+              {syncToCleroMutation.isPending ? "Синхронизация..." : "Отправить все в Clero"}
+            </Button>
+          </div>
           <div className="grid gap-3 md:grid-cols-[280px_1fr]">
             <div className="rounded-xl border border-[#EEE] max-h-[560px] overflow-auto">
               {chatRows.map((c, idx) => {
