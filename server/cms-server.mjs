@@ -3596,8 +3596,8 @@ async function handleAvitoIncomingWebhook(req, res) {
         try {
           const cleroSent = await getCleroSentChats();
           if (!cleroSent[String(avitoVal.chatid)]) {
-            await sendToClero(String(avitoVal.chatid), String(avitoVal.authorid), text);
             await markCleroSent(String(avitoVal.chatid));
+            await sendToClero(String(avitoVal.chatid), String(avitoVal.authorid), text);
             await writeAvitoLogLine(`clero sent chatid=${avitoVal.chatid}`);
           }
         } catch (cleroErr) {
