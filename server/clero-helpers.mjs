@@ -14,7 +14,7 @@ export function buildCleroPayload(chatId, authorId, messageText) {
   const apiToken = String(process.env.CLEROAPITOKEN || "");
   return {
     apitoken: apiToken,
-    sourceid: sourceId,
+    source_id: sourceId,
     sessionid: `avito${chatId}`,
     direction: "inbound",
     text: messageText,
