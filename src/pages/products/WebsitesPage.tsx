@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
 
@@ -206,6 +207,7 @@ export default function WebsitesPage() {
 
       {/* HERO */}
       <section className="px-4 pt-10 pb-8 md:pt-16 md:pb-12 max-w-5xl mx-auto">
+        <Breadcrumb items={[{ label: "Главная", href: "/" }, { label: "Услуги", href: "/services" }, { label: "Сайты" }]} />
         <span className="inline-block text-[10px] font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--tx-muted)" }}>
           РАЗРАБОТКА · ПОД КЛЮЧ
         </span>

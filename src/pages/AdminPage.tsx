@@ -113,12 +113,9 @@ const agentData = {
     {metric:'Follow-up',norm:'24ч после КП',warning:'24-48ч',critical:'> 48ч'},
   ],
   products: [
-    {name:'AI-ролики',from:25000,to:150000,days:5,desc:'Runway, Kling, Sora. Сценарий + генерация + монтаж + озвучка.'},
-    {name:'Сайт под ключ',from:95000,to:400000,days:14,desc:'Дизайн + верстка React/Lovable + SEO + аналитика.'},
-    {name:'Telegram Mini App',from:65000,to:300000,days:21,desc:'UI/UX + frontend + backend + оплата Stars/ЮKassa.'},
-    {name:'AI-агент',from:150000,to:500000,days:14,desc:'GPT-4 + сценарии + CRM-интеграция + аналитика.'},
-    {name:'Лендинг',from:35000,to:120000,days:7,desc:'Прототип за 2 дня + адаптив + форма + CRM.'},
-    {name:'Автоматизация',from:60000,to:300000,days:14,desc:'n8n/Make + API-связки + CRM-интеграции.'},
+    {name:'Сайты под ключ',from:65000,to:400000,days:14,desc:'Дизайн + разработка + CRM + AI-ассистент + Админ панель. /products/websites',href:'/products/websites'},
+    {name:'ИИ агенты',from:85000,to:500000,days:7,desc:'AI-ассистент 24/7, Telegram-боты, автоматизация процессов. /products/ai-agents',href:'/products/ai-agents'},
+    {name:'ИИ видео и контент',from:15000,to:150000,days:1,desc:'Reels, рекламные ролики, анимация, монтаж под ключ. /products/video',href:'/products/video'},
   ],
   company: {
     name:'neeklo.studio',legal:'ИП Клочко Н.Н. · ИНН 263520430560',email:'neeklostudio@gmail.com',

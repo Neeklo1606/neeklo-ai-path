@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Send, Mail, MessageSquare } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import Footer from "@/components/Footer";
 import { SolutionGrid } from "@/components/home/SolutionGrid";
 import { useBrief } from "@/context/BriefContext";
@@ -9,8 +10,9 @@ const ease = [0.16, 1, 0.3, 1] as const;
 
 export default function ServicesPage() {
   usePageMeta({
-    title: "Услуги — neeklo",
-    description: "Готовые решения для бизнеса: сайты с AI, Telegram-боты, видео с нейросетями. От 15 000 ₽.",
+    title: "Все услуги — neeklo",
+    description: "Сайты с AI и CRM, ИИ агенты, Telegram-боты, видео под ключ. От 15 000 ₽.",
+    og: { url: "/services" },
   });
   const { open: openBrief } = useBrief();
 
@@ -27,6 +29,7 @@ export default function ServicesPage() {
           transition={{ duration: 0.45, ease }}
           className="py-12"
         >
+          <Breadcrumb items={[{ label: "Главная", href: "/" }, { label: "Все услуги" }]} />
           <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--tx-faint)", marginBottom: 8 }}>
             УСЛУГИ
           </p>
@@ -34,7 +37,7 @@ export default function ServicesPage() {
             className="font-bold text-2xl md:text-3xl"
             style={{ fontFamily: "'Onest', sans-serif", letterSpacing: "-0.02em", color: "var(--tx)", marginBottom: 10 }}
           >
-            Готовые решения для бизнеса
+            Все услуги
           </h1>
           <p style={{ fontSize: 15, color: "var(--tx-muted)", lineHeight: 1.6, maxWidth: 480 }}>
             Выберите направление или опишите задачу — подберём формат.
