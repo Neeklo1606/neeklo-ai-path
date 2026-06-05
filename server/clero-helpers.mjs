@@ -11,17 +11,17 @@ export function isClientAvitoMessage(authorId) {
 
 export function buildCleroPayload(chatId, authorId, messageText) {
   const sourceId = Number(process.env.CLERO_SOURCE_ID) || 176;
+  const apiToken = String(process.env.CLEROAPITOKEN || "");
   return {
-    source_id: sourceId,
+    apitoken: apiToken,
+    sourceid: sourceId,
     sessionid: `avito${chatId}`,
     direction: "inbound",
-    role: "user",
     text: messageText,
     metadata: {
-      source: "avito",
-      chatid: String(chatId),
       clientname: String(authorId),
-      timestamp: new Date().toISOString(),
+      avitochatid: String(chatId),
+      authorid: String(authorId),
     },
   };
 }
