@@ -595,6 +595,17 @@ async function saveAvitoChatMap(map) {
   await writeJsonSetting(AVITO_CHAT_MAP_SETTING_KEY, safeJsonObject(map, {}));
 }
 
+async function getCleroSentChats() {
+  const val = await readJsonSetting(CLERO_SENT_SETTING_KEY, {});
+  return typeof val === "object" && val !== null && !Array.isArray(val) ? val : {};
+}
+
+async function markCleroSent(chatId) {
+  const current = await getCleroSentChats();
+  current[String(chatId)] = true;
+  await writeJsonSetting(CLERO_SENT_SETTING_KEY, current);
+}
+
 async function appendAvitoEventLog(eventType, payload, extra = {}) {
   const listRaw = await readJsonSetting(AVITO_EVENTS_SETTING_KEY, []);
   const list = Array.isArray(listRaw) ? listRaw : [];
