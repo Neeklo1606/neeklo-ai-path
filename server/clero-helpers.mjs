@@ -12,7 +12,7 @@ export function isClientAvitoMessage(authorId) {
 export function buildCleroPayload(chatId, authorId, messageText) {
   const sourceId = Number(process.env.CLERO_SOURCE_ID) || 176;
   return {
-    sourceid: sourceId,
+    source_id: sourceId,
     sessionid: `avito${chatId}`,
     direction: "inbound",
     role: "user",
