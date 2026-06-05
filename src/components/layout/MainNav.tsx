@@ -9,8 +9,10 @@ import ThemeToggle from '@/components/ThemeToggle'
 const TELEGRAM_URL = 'https://t.me/neeekn'
 
 const NAV_LINKS = [
-  { label: 'Услуги',   href: '/services' },
-  { label: 'Работы',   href: '/cases' },
+  { label: 'Сайты',     href: '/products/websites' },
+  { label: 'AI-агенты', href: '/products/ai-agents' },
+  { label: 'Видео',     href: '/products/video' },
+  { label: 'Кейсы',    href: '/cases' },
   { label: 'Блог',     href: '/blog' },
   { label: 'Контакты', href: '/contact' },
 ]
