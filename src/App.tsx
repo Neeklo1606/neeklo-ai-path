@@ -78,6 +78,9 @@ const CookiesPage = lazy(() => import("./routes/cookies"));
 const BlogPage = lazy(() => import("./pages/BlogPage"));
 const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
 const ProductPage = lazy(() => import("./pages/products/ProductPage"));
+const WebsitesPage = lazy(() => import("./pages/products/WebsitesPage"));
+const AIAgentsPage = lazy(() => import("./pages/products/AIAgentsPage"));
+const VideoPage = lazy(() => import("./pages/products/VideoPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 
 const queryClient = new QueryClient();
@@ -234,6 +237,9 @@ const AppContent = ({
             </Route>
 
             <Route path="/contact" element={<P><ContactPage /></P>} />
+            <Route path="/products/websites" element={<P><WebsitesPage /></P>} />
+            <Route path="/products/ai-agents" element={<P><AIAgentsPage /></P>} />
+            <Route path="/products/video" element={<P><VideoPage /></P>} />
             <Route path="/products/:slug" element={<P><ProductPage /></P>} />
             <Route path="/kp" element={<KpShowcasePage />} />
             <Route path="/kp/:slug" element={<KpSlugPage />} />
