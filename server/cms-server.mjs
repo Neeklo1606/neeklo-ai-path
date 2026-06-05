@@ -511,6 +511,10 @@ const AVITO_EVENTS_SETTING_KEY = "integrations.avito.events";
 const AVITO_API_BASE = "https://api.avito.ru";
 const AVITO_MAX_EVENTS = 500;
 
+const CLERO_SENT_SETTING_KEY = "integrations.avito.clero_sent";
+const CLERO_ENDPOINT = "https://neeklo.ru/api/clero/avito-webhook";
+const NIKITA_AVITO_AUTHOR_ID = "104436874";
+
 function safeJsonObject(value, fallback = {}) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return fallback;
   return value;
