@@ -3587,6 +3587,25 @@ async function handleAvitoIncomingWebhook(req, res) {
         `Avito: новое сообщение\nАгент: ${agentId}\nЧат: ${msg.chatId}\nТекст: ${msg.text.slice(0, 800)}`,
       );
     }
+
+    // Forward first client message per chat to Clero CRM
+    const avitoVal = payload?.payload?.value;
+    if (avitoVal && avitoVal.chatid && isClientAvitoMessage(avitoVal.authorid)) {
+      const text = String(avitoVal.content?.text || "").trim();
+      if (text) {
+        try {
+          const cleroSent = await getCleroSentChats();
+          if (!cleroSent[String(avitoVal.chatid)]) {
+            await sendToClero(String(avitoVal.chatid), String(avitoVal.authorid), text);
+            await markCleroSent(String(avitoVal.chatid));
+            await writeAvitoLogLine(`clero sent chatid=${avitoVal.chatid}`);
+          }
+        } catch (cleroErr) {
+          await writeAvitoLogLine(`clero error chatid=${avitoVal.chatid}: ${cleroErr?.message}`);
+        }
+      }
+    }
+
     await appendAvitoEventLog("webhook_event", payload, { agentId, mapped });
     await writeAvitoLogLine(`webhook ok agent=${agentId} message=${msg ? "yes" : "no"}`);
     return res.json({ ok: true, mapped });
