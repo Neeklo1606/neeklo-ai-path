@@ -601,10 +601,26 @@ async function getCleroSentChats() {
   return typeof val === "object" && val !== null && !Array.isArray(val) ? val : {};
 }
 
+// In-process mutex prevents concurrent reads stomping each other within a single Node process.
+let _markCleroSentQueue = Promise.resolve();
+
 async function markCleroSent(chatId) {
-  const current = await getCleroSentChats();
-  current[String(chatId)] = true;
-  await writeJsonSetting(CLERO_SENT_SETTING_KEY, current);
+  _markCleroSentQueue = _markCleroSentQueue.then(async () => {
+    // Atomic jsonb_set at DB level — safe against concurrent processes / replicas.
+    await prisma.$executeRaw`
+      INSERT INTO cms_settings (key, value, is_public, updated_at)
+      VALUES (
+        ${CLERO_SENT_SETTING_KEY},
+        jsonb_build_object(${String(chatId)}, true),
+        false,
+        now()
+      )
+      ON CONFLICT (key) DO UPDATE
+        SET value      = COALESCE(cms_settings.value, '{}'::jsonb) || jsonb_build_object(${String(chatId)}, true),
+            updated_at = now()
+    `;
+  });
+  return _markCleroSentQueue;
 }
 
 async function sendToClero(chatId, authorId, messageText) {
@@ -3499,8 +3515,9 @@ app.post("/avito/sync", requireAuth, async (req, res) => {
   }
 });
 
-app.post("/avito/clero/sync-all", requireAuth, async (_req, res) => {
+app.post("/avito/clero/sync-all", requireAuth, async (req, res) => {
   try {
+    const force = req.query.force === "true" || req.body?.force === true;
     const listRaw = await readJsonSetting(AVITO_EVENTS_SETTING_KEY, []);
     const list = Array.isArray(listRaw) ? listRaw : [];
 
@@ -3538,7 +3555,7 @@ app.post("/avito/clero/sync-all", requireAuth, async (_req, res) => {
     const errors = [];
 
     for (const [chatid, msgs] of Object.entries(byChat)) {
-      if (cleroSent[chatid]) {
+      if (!force && cleroSent[chatid]) {
         skipped++;
         continue;
       }
