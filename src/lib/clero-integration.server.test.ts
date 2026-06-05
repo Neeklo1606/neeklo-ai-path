@@ -11,6 +11,25 @@ describe("isClientAvitoMessage", () => {
     expect(isClientAvitoMessage("999999")).toBe(true);
     expect(isClientAvitoMessage(12345)).toBe(true);
   });
+
+  it("uses NIKITA_AVITO_AUTHOR_ID env var when set", async () => {
+    const originalEnv = process.env.NIKITA_AVITO_AUTHOR_ID;
+    try {
+      process.env.NIKITA_AVITO_AUTHOR_ID = "999888777";
+      // Re-import to pick up env change — use a cache-busting query param
+      const { isClientAvitoMessage: fn } = await import(
+        "../../server/clero-helpers.mjs?envtest=1"
+      );
+      expect(fn("999888777")).toBe(false);  // custom owner ID → blocked
+      expect(fn("104436874")).toBe(true);   // old default → now a client
+    } finally {
+      if (originalEnv === undefined) {
+        delete process.env.NIKITA_AVITO_AUTHOR_ID;
+      } else {
+        process.env.NIKITA_AVITO_AUTHOR_ID = originalEnv;
+      }
+    }
+  });
 });
 
 describe("buildCleroPayload", () => {
@@ -25,7 +44,7 @@ describe("buildCleroPayload", () => {
     expect(() => new Date(p.timestamp).toISOString()).not.toThrow();
   });
 
-  it("trims and joins multiple messages", async () => {
+  it("preserves message text with separators", async () => {
     const { buildCleroPayload } = await import("../../server/clero-helpers.mjs");
     const p = buildCleroPayload("abc123", "999999", "Сообщение 1\n---\nСообщение 2");
     expect(p.message).toContain("---");
