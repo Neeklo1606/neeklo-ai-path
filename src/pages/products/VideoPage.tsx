@@ -6,7 +6,7 @@ import {
   ChevronDown, ArrowRight,
 } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
 

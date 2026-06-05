@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
 

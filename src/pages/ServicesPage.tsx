@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Send, Mail, MessageSquare } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import Footer from "@/components/Footer";
 import { SolutionGrid } from "@/components/home/SolutionGrid";
 import { useBrief } from "@/context/BriefContext";
