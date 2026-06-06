@@ -38,11 +38,11 @@ describe("buildCleroPayload", () => {
     const p = buildCleroPayload("abc123", "999999", "Привет, хочу купить");
     expect(p.sourceid).toBe(176);
     expect(p.sessionid).toBe("avitoabc123");
-    expect(p.direction).toBe("inbound");
+    expect(p.sessionname).toBe("Avito user 999999");
     expect(p.text).toBe("Привет, хочу купить");
-    expect(typeof p.api_token).toBe("string");
+    expect(typeof p.apitoken).toBe("string");
     expect(p.metadata.avitochatid).toBe("abc123");
-    expect(p.metadata.clientname).toBe("999999");
+    expect(p.metadata.clientname).toBe("Avito user 999999");
     expect(p.metadata.authorid).toBe("999999");
   });
 
@@ -66,8 +66,9 @@ describe("sendToCleroRaw", () => {
     expect(url).toBe("https://neeklo.ru/api/clero/avito-webhook");
     expect(opts.method).toBe("POST");
     const body = JSON.parse(opts.body);
+    expect(body.sourceid).toBe(176);
     expect(body.sessionid).toBe("avitochat1");
-    expect(body.direction).toBe("inbound");
+    expect(typeof body.apitoken).toBe("string");
     expect(body.text).toBe("Хочу купить");
     expect(body.metadata.avitochatid).toBe("chat1");
   });

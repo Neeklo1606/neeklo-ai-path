@@ -12,16 +12,18 @@ export function isClientAvitoMessage(authorId) {
 export function buildCleroPayload(chatId, authorId, messageText) {
   const sourceId = Number(process.env.CLERO_SOURCE_ID) || 176;
   const apiToken = String(process.env.CLEROAPITOKEN || "");
+  const clientName = `Avito user ${authorId}`;
   return {
-    api_token: apiToken,
     sourceid: sourceId,
+    apitoken: apiToken,
     sessionid: `avito${chatId}`,
-    direction: "inbound",
+    sessionname: clientName,
     text: messageText,
     metadata: {
-      clientname: String(authorId),
+      clientname: clientName,
       avitochatid: String(chatId),
       authorid: String(authorId),
+      phone: "",
     },
   };
 }
