@@ -179,7 +179,7 @@ function CaseCard({
   onOpenModal: (c: ApiCase) => void;
 }) {
   const isExternal = !!item.url;
-  const firstVideo = item.videos[0] ?? null;
+  const firstVideo = item.videos?.[0] ?? null;
   const hasMedia = !!(item.coverImage || firstVideo);
   const thumb = firstVideo?.thumbnailUrl ?? item.coverImage;
 
@@ -394,7 +394,7 @@ function CaseModal({
 }) {
   const { open: openBrief } = useBrief();
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
-  const firstVideo = c.videos[0] ?? null;
+  const firstVideo = c.videos?.[0] ?? null;
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(false);
 
