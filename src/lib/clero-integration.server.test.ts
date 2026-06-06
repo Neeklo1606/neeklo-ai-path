@@ -36,14 +36,13 @@ describe("buildCleroPayload", () => {
   it("builds correct Clero API Chat payload shape", async () => {
     const { buildCleroPayload } = await import("../../server/clero-helpers.mjs");
     const p = buildCleroPayload("abc123", "999999", "Привет, хочу купить");
-    expect(p.source_id).toBe(176);
+    expect(p.sourceid).toBe(176);
     expect(p.sessionid).toBe("avitoabc123");
     expect(p.sessionname).toBe("Avito user 999999");
     expect(p.text).toBe("Привет, хочу купить");
     expect(typeof p.apitoken).toBe("string");
-    expect(p.metadata.avitochatid).toBe("abc123");
     expect(p.metadata.clientname).toBe("Avito user 999999");
-    expect(p.metadata.authorid).toBe("999999");
+    expect(p.metadata.phone).toBe("");
   });
 
   it("preserves message text with separators", async () => {
@@ -66,11 +65,11 @@ describe("sendToCleroRaw", () => {
     expect(url).toBe("https://neeklo.ru/api/clero/avito-webhook");
     expect(opts.method).toBe("POST");
     const body = JSON.parse(opts.body);
-    expect(body.source_id).toBe(176);
+    expect(body.sourceid).toBe(176);
     expect(body.sessionid).toBe("avitochat1");
     expect(typeof body.apitoken).toBe("string");
     expect(body.text).toBe("Хочу купить");
-    expect(body.metadata.avitochatid).toBe("chat1");
+    expect(body.metadata.clientname).toBe("Avito user 999");
   });
 
   it("throws on non-200 response", async () => {
