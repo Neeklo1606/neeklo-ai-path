@@ -199,6 +199,25 @@ export default function AdminAvitoPage() {
     },
   });
 
+  const tokenRefreshMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await adminApi.post<{ ok: boolean; tokenExpiresAt: string; accessTokenPrefix: string }>(
+        "/avito/token-refresh",
+        { accountId: activeAccountId || undefined },
+      );
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["avito", "config"] });
+      qc.invalidateQueries({ queryKey: ["avito", "items"] });
+      qc.invalidateQueries({ queryKey: ["avito", "chats"] });
+      toast.success(`Токен обновлён${data.tokenExpiresAt ? `, истекает: ${data.tokenExpiresAt}` : ""}`);
+    },
+    onError: (error) => {
+      toast.error(`Ошибка обновления токена: ${err(error)}`);
+    },
+  });
+
   const syncMutation = useMutation({
     mutationFn: async () => {
       const { data } = await adminApi.post("/avito/sync", {
@@ -451,6 +470,9 @@ export default function AdminAvitoPage() {
             </Button>
             <Button type="button" variant="outline" className={secondaryBtnClass} onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
               {syncMutation.isPending ? "Синхронизация..." : "Avito sync"}
+            </Button>
+            <Button type="button" variant="outline" className={`${secondaryBtnClass} border-amber-400 text-amber-700 hover:bg-amber-50`} onClick={() => tokenRefreshMutation.mutate()} disabled={tokenRefreshMutation.isPending}>
+              {tokenRefreshMutation.isPending ? "Обновление..." : "🔄 Обновить токен"}
             </Button>
           </div>
           {(registerWebhook.isError || tokenCheckQ.isError || webhookStatusQ.isError || syncMutation.isError) && (

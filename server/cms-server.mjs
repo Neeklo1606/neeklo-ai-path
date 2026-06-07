@@ -587,6 +587,44 @@ async function saveAvitoConfig(config) {
   return normalized;
 }
 
+async function refreshAvitoToken(account) {
+  if (!account?.clientId || !account?.clientSecret || !account?.refreshToken) {
+    throw new Error("clientId, clientSecret and refreshToken required for token refresh");
+  }
+  const resp = await fetch(`${AVITO_API_BASE}/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      client_id: account.clientId,
+      client_secret: account.clientSecret,
+      refresh_token: account.refreshToken,
+    }).toString(),
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => "");
+    throw new Error(`Avito token refresh failed ${resp.status}: ${text}`);
+  }
+  const data = await resp.json();
+  const newAccessToken = String(data.access_token || "");
+  const newRefreshToken = String(data.refresh_token || account.refreshToken);
+  const expiresIn = Number(data.expires_in || 0);
+  const expiresAt = expiresIn > 0
+    ? new Date(Date.now() + expiresIn * 1000).toISOString()
+    : "";
+
+  // Persist updated tokens to config
+  const cfg = await getAvitoConfig();
+  cfg.accounts = (cfg.accounts || []).map((a) =>
+    a.id === account.id
+      ? { ...a, accessToken: newAccessToken, refreshToken: newRefreshToken, tokenExpiresAt: expiresAt }
+      : a
+  );
+  await saveAvitoConfig(cfg);
+
+  return { ...account, accessToken: newAccessToken, refreshToken: newRefreshToken, tokenExpiresAt: expiresAt };
+}
+
 async function getAvitoChatMap() {
   const val = await readJsonSetting(AVITO_CHAT_MAP_SETTING_KEY, {});
   return safeJsonObject(val, {});
@@ -661,7 +699,7 @@ function resolveAvitoAccount(config, accountId) {
   return accounts.find((a) => a.isActive) || accounts[0] || null;
 }
 
-async function avitoApiRequest(account, method, endpointPath, body, query = {}) {
+async function avitoApiRequest(account, method, endpointPath, body, query = {}, _retried = false) {
   if (!account?.accessToken) {
     const err = new Error("Avito accessToken is required");
     err.status = 400;
@@ -685,6 +723,15 @@ async function avitoApiRequest(account, method, endpointPath, body, query = {}) 
     data = text ? JSON.parse(text) : {};
   } catch {
     data = { raw: text };
+  }
+  // Auto-refresh on 401/403 if we have credentials and haven't retried yet
+  if ((resp.status === 401 || resp.status === 403) && !_retried && account.clientId && account.refreshToken) {
+    try {
+      const refreshed = await refreshAvitoToken(account);
+      return avitoApiRequest(refreshed, method, endpointPath, body, query, true);
+    } catch {
+      // refresh failed — fall through to throw original error
+    }
   }
   if (!resp.ok) {
     const err = new Error(`Avito API ${resp.status}`);
@@ -3337,6 +3384,19 @@ app.get("/avito/webhook-status", requireAuth, async (req, res) => {
     }
   } catch (e) {
     res.status(e?.status || 500).json({ error: e.message || "Failed", details: e?.payload || null });
+  }
+});
+
+app.post("/avito/token-refresh", requireAuth, async (req, res) => {
+  try {
+    const accountId = req.body?.accountId != null ? String(req.body.accountId) : (req.query?.accountId ?? "");
+    const cfg = await getAvitoConfig();
+    const account = resolveAvitoAccount(cfg, accountId);
+    if (!account) return res.status(400).json({ error: "No Avito account configured" });
+    const refreshed = await refreshAvitoToken(account);
+    res.json({ ok: true, tokenExpiresAt: refreshed.tokenExpiresAt, accessTokenPrefix: refreshed.accessToken.slice(0, 8) + "…" });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message || "Failed" });
   }
 });
 
