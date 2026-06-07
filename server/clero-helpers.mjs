@@ -13,16 +13,17 @@ export function buildCleroPayload(chatId, authorId, messageText) {
   const sourceId = Number(process.env.CLERO_SOURCE_ID) || 176;
   const apiToken = String(process.env.CLEROAPITOKEN || "");
   const clientName = `Avito user ${authorId}`;
+  const sessionId = `avito${chatId}`;
   return {
     source_id: sourceId,
     api_token: apiToken,
-    session_id: `avito${chatId}`,
+    session_id: sessionId,
     session_name: clientName,
+    external_message_id: `${sessionId}-first`,
+    sender_id: String(authorId),
+    sender_name: clientName,
     text: messageText,
-    metadata: {
-      client_name: clientName,
-      phone: "",
-    },
+    metadata: {},
   };
 }
 

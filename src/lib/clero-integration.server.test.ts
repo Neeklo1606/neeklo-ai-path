@@ -39,10 +39,12 @@ describe("buildCleroPayload", () => {
     expect(p.source_id).toBe(176);
     expect(p.session_id).toBe("avitoabc123");
     expect(p.session_name).toBe("Avito user 999999");
+    expect(p.sender_id).toBe("999999");
+    expect(p.sender_name).toBe("Avito user 999999");
+    expect(p.external_message_id).toBe("avitoabc123-first");
     expect(p.text).toBe("Привет, хочу купить");
     expect(typeof p.api_token).toBe("string");
-    expect(p.metadata.client_name).toBe("Avito user 999999");
-    expect(p.metadata.phone).toBe("");
+    expect(typeof p.metadata).toBe("object");
   });
 
   it("preserves message text with separators", async () => {
@@ -69,7 +71,8 @@ describe("sendToCleroRaw", () => {
     expect(body.session_id).toBe("avitochat1");
     expect(typeof body.api_token).toBe("string");
     expect(body.text).toBe("Хочу купить");
-    expect(body.metadata.client_name).toBe("Avito user 999");
+    expect(body.sender_name).toBe("Avito user 999");
+    expect(typeof body.metadata).toBe("object");
   });
 
   it("throws on non-200 response", async () => {
