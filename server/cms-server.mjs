@@ -3583,20 +3583,26 @@ app.post("/avito/clero/sync-all", requireAuth, async (req, res) => {
     const list = Array.isArray(listRaw) ? listRaw : [];
 
     // Collect webhook_event entries with payload.payload.type === "message" from clients
+    // Avito sends snake_case fields: chat_id / author_id (also support legacy chatid/authorid)
     const clientMsgs = list
-      .filter(
-        (ev) =>
-          ev.eventType === "webhook_event" &&
-          ev.payload?.payload?.type === "message" &&
-          ev.payload?.payload?.value?.chatid &&
-          isClientAvitoMessage(ev.payload?.payload?.value?.authorid)
-      )
-      .map((ev) => ({
-        chatid: String(ev.payload.payload.value.chatid),
-        authorid: String(ev.payload.payload.value.authorid),
-        text: String(ev.payload.payload.value.content?.text || "").trim(),
-        created: ev.payload.payload.value.created || ev.at || new Date(0).toISOString(),
-      }))
+      .filter((ev) => {
+        if (ev.eventType !== "webhook_event") return false;
+        const val = ev.payload?.payload?.value;
+        if (!val || ev.payload?.payload?.type !== "message") return false;
+        if (String(val.type ?? "").toLowerCase() === "system") return false;
+        const chatId = val.chat_id ?? val.chatid ?? "";
+        const authorId = val.author_id ?? val.authorid ?? "";
+        return chatId && authorId && isClientAvitoMessage(authorId);
+      })
+      .map((ev) => {
+        const val = ev.payload.payload.value;
+        return {
+          chatid: String(val.chat_id ?? val.chatid),
+          authorid: String(val.author_id ?? val.authorid),
+          text: String(val.content?.text || "").trim(),
+          created: val.created || ev.at || new Date(0).toISOString(),
+        };
+      })
       .filter((m) => m.text);
 
     // Group by chatid, sort by created ASC, take first 3
@@ -3689,19 +3695,23 @@ async function handleAvitoIncomingWebhook(req, res) {
     }
 
     // Forward first client message per chat to Clero CRM
+    // Avito sends snake_case: chat_id / author_id (also support legacy chatid/authorid)
     const avitoVal = payload?.payload?.value;
-    if (avitoVal && avitoVal.chatid && isClientAvitoMessage(avitoVal.authorid)) {
+    if (avitoVal) {
+      const chatId = String(avitoVal.chat_id ?? avitoVal.chatid ?? "").trim();
+      const authorId = String(avitoVal.author_id ?? avitoVal.authorid ?? "").trim();
+      const msgType = String(avitoVal.type ?? "").toLowerCase();
       const text = String(avitoVal.content?.text || "").trim();
-      if (text) {
+      if (chatId && authorId && text && msgType !== "system" && isClientAvitoMessage(authorId)) {
         try {
           const cleroSent = await getCleroSentChats();
-          if (!cleroSent[String(avitoVal.chatid)]) {
-            await markCleroSent(String(avitoVal.chatid));
-            await sendToClero(String(avitoVal.chatid), String(avitoVal.authorid), text);
-            await writeAvitoLogLine(`clero sent chatid=${avitoVal.chatid}`);
+          if (!cleroSent[chatId]) {
+            await markCleroSent(chatId);
+            await sendToClero(chatId, authorId, text);
+            await writeAvitoLogLine(`clero sent chatid=${chatId} authorid=${authorId}`);
           }
         } catch (cleroErr) {
-          await writeAvitoLogLine(`clero error chatid=${avitoVal.chatid}: ${cleroErr?.message}`);
+          await writeAvitoLogLine(`clero error chatid=${chatId}: ${cleroErr?.message}`);
         }
       }
     }
