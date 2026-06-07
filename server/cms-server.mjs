@@ -588,18 +588,19 @@ async function saveAvitoConfig(config) {
 }
 
 async function refreshAvitoToken(account) {
-  if (!account?.clientId || !account?.clientSecret || !account?.refreshToken) {
-    throw new Error("clientId, clientSecret and refreshToken required for token refresh");
+  if (!account?.clientId || !account?.clientSecret) {
+    throw new Error("clientId and clientSecret required for token refresh");
   }
+  // Use refresh_token if available, otherwise fall back to client_credentials
+  const hasRefreshToken = String(account.refreshToken || "").trim().length > 10;
+  const params = hasRefreshToken
+    ? { grant_type: "refresh_token", client_id: account.clientId, client_secret: account.clientSecret, refresh_token: account.refreshToken }
+    : { grant_type: "client_credentials", client_id: account.clientId, client_secret: account.clientSecret };
+
   const resp = await fetch(`${AVITO_API_BASE}/token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      client_id: account.clientId,
-      client_secret: account.clientSecret,
-      refresh_token: account.refreshToken,
-    }).toString(),
+    body: new URLSearchParams(params).toString(),
   });
   if (!resp.ok) {
     const text = await resp.text().catch(() => "");
