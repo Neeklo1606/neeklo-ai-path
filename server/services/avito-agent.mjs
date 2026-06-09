@@ -1,108 +1,159 @@
 /**
- * Avito AI Agent pipeline:
- * incoming Avito message → RAG context (Qdrant) → crm-al chat → reply to Avito
+ * Avito AI Agent pipeline — crm-al.neeklo.ru only, no Ollama.
  *
- * Namespaces:
- *  - neeklo_global       — uploaded documents / knowledge base
- *  - neeklo_pricing      — service price list
- *  - neeklo_avito_items  — current Avito listings
- *  - neeklo_avito_ins    — conversation insights
+ * Context strategy (no embeddings):
+ *  1. Service prices   — loaded from PostgreSQL ServicePrice table (passed in)
+ *  2. Avito listings   — scrolled from Qdrant neeklo_avito_items (payload-only)
+ *  3. Global KB chunks — scrolled from Qdrant neeklo_global (payload-only)
+ *  4. Insights         — scrolled from Qdrant neeklo_avito_ins (payload-only)
+ *
+ * Storage still uses Qdrant with hash-based pseudo-vectors so existing data
+ * is preserved and no external service is needed for writes.
  */
 
 import crypto from "crypto";
 import { crmAlChat, crmAlErrorMessage } from "./crm-al.service.mjs";
-import { getQdrantClient, ensureCollection, createEmbedding, searchContext, getOllamaBase } from "./ai.service.mjs";
+import { getQdrantClient, ensureCollection } from "./ai.service.mjs";
 
 export const GLOBAL_KB_COLLECTION   = "neeklo_global";
 export const PRICING_COLLECTION     = "neeklo_pricing";
 export const AVITO_ITEMS_COLLECTION = "neeklo_avito_items";
 export const AVITO_INSIGHTS_COLL    = "neeklo_avito_ins";
 
-const EMBED_MODEL = process.env.AGENT_EMBED_MODEL || "nomic-embed-text";
+// Deterministic pseudo-vector based on text hash — no Ollama needed.
+// Used only to satisfy Qdrant's vector requirement; we always scroll (not search).
+function hashVector(text, dim = 768) {
+  const buf = crypto.createHash("sha256").update(String(text || ""), "utf8").digest();
+  const vec = new Array(dim);
+  for (let i = 0; i < dim; i++) {
+    const b = buf[i % buf.length];
+    vec[i] = (b / 128.0) - 1.0; // [-1, 1]
+  }
+  return vec;
+}
 
-const DEFAULT_SYSTEM_PROMPT = `Ты — умный менеджер-консультант компании Neeklo (AI-продакшн студия). Работаешь с клиентами в Avito.
+export const DEFAULT_SYSTEM_PROMPT = `Ты — умный менеджер-консультант компании Neeklo (AI-продакшн студия). Работаешь с клиентами в Avito.
 Твоя задача — понять потребность клиента, предложить подходящее решение, уточнить детали и довести до встречи или сделки.
 
 Правила:
 1. Отвечай ТОЛЬКО на русском языке. Пиши как живой человек — тепло, профессионально, без шаблонов.
 2. Ответ строго не более 4–5 предложений. Краткость — уважение к клиенту.
-3. Используй информацию из CONTEXT (объявления, услуги, цены). Никогда не придумывай данные.
+3. Используй информацию из КОНТЕКСТ (объявления, услуги, цены). Никогда не придумывай данные.
 4. Если запрос не до конца понятен — задай ОДИН уточняющий вопрос, самый важный.
-5. Называй конкретные решения и цены если они есть в CONTEXT.
+5. Называй конкретные решения и цены если они есть в КОНТЕКСТ.
 6. Главная цель — записать на встречу или оформить заказ. Предлагай это в конце ответа.
 7. Не перечисляй все услуги подряд — анализируй запрос и предлагай только релевантное.
 8. Если клиент описывает что-то расплывчато — предложи конкретный вариант из наших услуг как пример.
 9. В конце сообщения всегда предлагай следующий шаг: созвон, встречу, уточнение деталей.
+10. НЕ СМЕШИВАЙ контексты разных клиентов — ты общаешься только с ОДНИМ клиентом в этом чате.
 
 Пример (клиент: "нужен мультик"):
-— Отлично, создание анимации — наша специализация! Скажите, для какой цели нужна анимация: реклама, обучение, развлечение? Примерная длительность роликa? Как только уточним детали — предложим варианты и стоимость. Готовы обсудить на короткой встрече — удобно?`;
+— Отлично, создание анимации — наша специализация! Скажите, для какой цели нужна анимация: реклама, обучение, развлечение? Примерная длительность ролика? Как только уточним детали — предложим варианты и стоимость. Готовы обсудить на короткой встрече — удобно?`;
 
 /**
- * Get RAG context from multiple Qdrant collections.
+ * Simple keyword relevance score: count matching words.
  */
-async function getRagContext(userMessage, opts = {}) {
-  const client = getQdrantClient();
-  const ollamaBase = getOllamaBase();
-
-  let queryVector;
-  try {
-    queryVector = await createEmbedding(ollamaBase, EMBED_MODEL, userMessage);
-  } catch (e) {
-    console.warn("[avito-agent] embed failed:", e?.message);
-    return { context: "", chunks: [] };
-  }
-
-  const collections = [
-    GLOBAL_KB_COLLECTION,
-    PRICING_COLLECTION,
-    AVITO_ITEMS_COLLECTION,
-    AVITO_INSIGHTS_COLL,
-  ];
-
-  const allChunks = [];
-
-  for (const coll of collections) {
-    try {
-      const hits = await searchContext(client, coll, queryVector, 3);
-      for (const h of hits) {
-        if (h.text && h.score > 0.35) {
-          allChunks.push({ ...h, collection: coll });
-        }
-      }
-    } catch {
-      // Collection may not exist yet — skip silently
-    }
-  }
-
-  // Sort by score descending, take top 6
-  allChunks.sort((a, b) => b.score - a.score);
-  const top = allChunks.slice(0, 6);
-
-  const context = top.map((c) => c.text).join("\n---\n");
-  return { context, chunks: top };
+function keywordScore(text, query) {
+  const t = (text || "").toLowerCase();
+  const words = (query || "").toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter(w => w.length > 2);
+  if (!words.length) return 0;
+  return words.reduce((acc, w) => acc + (t.includes(w) ? 1 : 0), 0);
 }
 
 /**
- * Build messages array for crm-al: history + current message.
- * @param {string} systemPrompt
- * @param {Array<{role:string,content:string}>} history — prior messages (role: user/assistant)
- * @param {string} context — RAG context block
+ * Scroll a Qdrant collection (payload-only, no vector search).
+ * Returns up to `limit` items.
+ */
+async function scrollCollection(client, collection, limit = 30) {
+  try {
+    const result = await client.scroll(collection, {
+      limit,
+      with_payload: true,
+      with_vector: false,
+    });
+    return Array.isArray(result?.points) ? result.points : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Build KB context string from multiple Qdrant collections + service prices.
+ * Uses keyword matching (no embeddings needed).
+ *
  * @param {string} userMessage
+ * @param {Array}  servicePrices  — from PostgreSQL ServicePrice table [{title,description,priceFrom,priceTo,category}]
+ */
+export async function buildAgentContext(userMessage, servicePrices = []) {
+  const client = getQdrantClient();
+  const parts = [];
+
+  // 1. Avito listings (scroll up to 30, rank by keyword relevance)
+  const avitoPoints = await scrollCollection(client, AVITO_ITEMS_COLLECTION, 50);
+  const rankedAvito = avitoPoints
+    .map(p => ({ text: p.payload?.text || "", score: keywordScore(p.payload?.text, userMessage) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8);
+  if (rankedAvito.length > 0) {
+    parts.push("=== АКТИВНЫЕ ОБЪЯВЛЕНИЯ ===");
+    rankedAvito.forEach(p => p.text && parts.push(p.text));
+  }
+
+  // 2. Service prices from DB (always include all)
+  if (servicePrices.length > 0) {
+    parts.push("\n=== ПРАЙС УСЛУГ ===");
+    for (const p of servicePrices) {
+      const priceRange = p.priceFrom && p.priceTo
+        ? `${p.priceFrom}–${p.priceTo} ₽`
+        : p.priceFrom ? `от ${p.priceFrom} ₽`
+        : p.priceTo ? `до ${p.priceTo} ₽`
+        : "цена по запросу";
+      parts.push(`${p.title}: ${priceRange}${p.description ? " — " + p.description : ""}`);
+    }
+  }
+
+  // 3. Global KB (uploaded docs — keyword ranked, top 5)
+  const kbPoints = await scrollCollection(client, GLOBAL_KB_COLLECTION, 100);
+  const rankedKb = kbPoints
+    .map(p => ({ text: p.payload?.text || "", score: keywordScore(p.payload?.text, userMessage) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+  if (rankedKb.filter(p => p.text).length > 0) {
+    parts.push("\n=== БАЗА ЗНАНИЙ ===");
+    rankedKb.forEach(p => p.text && parts.push(p.text));
+  }
+
+  // 4. Conversation insights (top 3)
+  const insightsPoints = await scrollCollection(client, AVITO_INSIGHTS_COLL, 20);
+  const rankedInsights = insightsPoints
+    .map(p => ({ text: p.payload?.text || "", score: keywordScore(p.payload?.text, userMessage) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+  if (rankedInsights.filter(p => p.text).length > 0) {
+    parts.push("\n=== ОПЫТ ОБЩЕНИЯ ===");
+    rankedInsights.forEach(p => p.text && parts.push(p.text));
+  }
+
+  return parts.join("\n");
+}
+
+/**
+ * Build the messages array for crm-al.
+ * Uses FULL history (not capped) to ensure agent never loses context.
  */
 function buildMessages(systemPrompt, history, context, userMessage) {
   const sysContent = `${systemPrompt}
 
-=== ИНФОРМАЦИЯ (из базы знаний) ===
-${context || "(нет релевантной информации)"}
-=== КОНЕЦ ===`;
+=== КОНТЕКСТ (из базы знаний) ===
+${context || "(нет дополнительной информации)"}
+=== КОНЕЦ КОНТЕКСТА ===`;
 
   const msgs = [{ role: "system", content: sysContent }];
 
-  // Add last N history messages (max 8 turns)
-  const recent = (history || []).slice(-16);
-  for (const m of recent) {
-    if (m.role === "user" || m.role === "assistant") {
-      msgs.push({ role: m.role, content: String(m.content || "") });
+  // Include full history — agent must remember entire conversation
+  for (const m of (history || [])) {
+    if ((m.role === "user" || m.role === "assistant") && m.content) {
+      msgs.push({ role: m.role, content: String(m.content) });
     }
   }
 
@@ -112,68 +163,148 @@ ${context || "(нет релевантной информации)"}
 
 /**
  * Process one Avito client message through the agent pipeline.
+ * History is isolated per-chat (caller must pass ONLY this chat's messages).
  *
  * @param {object} opts
- * @param {string} opts.userMessage — client's text
- * @param {Array}  opts.history — previous messages [{role,content}]
- * @param {string} [opts.systemPrompt] — override system prompt
- * @param {string} [opts.model] — crm-al model profile
- * @returns {Promise<{reply:string,chunks:Array,ragContext:string,error?:string}>}
+ * @param {string} opts.userMessage
+ * @param {Array}  opts.history        — [{role,content}] — full history of THIS chat only
+ * @param {string} [opts.systemPrompt]
+ * @param {string} [opts.model]
+ * @param {Array}  [opts.servicePrices] — from DB
+ * @returns {Promise<{reply:string,context:string,error?:string}>}
  */
-export async function processAvitoMessage({ userMessage, history = [], systemPrompt, model }) {
+export async function processAvitoMessage({ userMessage, history = [], systemPrompt, model, servicePrices = [] }) {
   const sysPrompt = systemPrompt || DEFAULT_SYSTEM_PROMPT;
 
-  // 1. Get RAG context
-  const { context, chunks } = await getRagContext(userMessage);
+  // Build context (no Ollama — uses scroll + keyword matching)
+  const context = await buildAgentContext(userMessage, servicePrices);
 
-  // 2. Build messages
+  // Build messages with full isolated history
   const messages = buildMessages(sysPrompt, history, context, userMessage);
 
-  // 3. Call crm-al
   try {
     const result = await crmAlChat(messages, { model: model || "neeklo", timeoutMs: 90_000 });
-    return {
-      reply: result.text,
-      chunks,
-      ragContext: context,
-    };
+    return { reply: result.text, context, usage: result.usage };
   } catch (e) {
-    const errorMsg = crmAlErrorMessage(e);
     console.error("[avito-agent] crm-al error:", e?.message || e);
-    return {
-      reply: null,
-      chunks,
-      ragContext: context,
-      error: errorMsg,
-    };
+    return { reply: null, context, error: crmAlErrorMessage(e) };
+  }
+}
+
+/**
+ * Detect lead intent from conversation and extract lead data.
+ * Returns null if no lead should be created yet.
+ *
+ * @param {Array<{role,content}>} history  — full conversation
+ * @param {string} chatId
+ * @returns {Promise<{shouldCreate:boolean, name?:string, phone?:string, intent?:string, summary?:string}|null>}
+ */
+export async function detectLeadIntent(history, chatId) {
+  if (!history || history.length < 2) return null;
+
+  const transcript = history
+    .slice(-12) // last 6 turns
+    .map(m => `${m.role === "user" ? "Клиент" : "Агент"}: ${m.content || ""}`)
+    .join("\n");
+
+  const prompt = `Проанализируй диалог с клиентом Avito и определи, нужно ли создать лид (потенциального клиента) в CRM.
+
+ДИАЛОГ:
+${transcript}
+
+Ответь ТОЛЬКО JSON объектом (без markdown):
+{
+  "shouldCreate": true/false,
+  "name": "имя клиента если упомянул или null",
+  "phone": "телефон если упомянул или null",
+  "intent": "краткое название интереса клиента (1-5 слов)",
+  "summary": "краткое описание потребности клиента (1-2 предложения)"
+}
+
+Создавай лид если: клиент проявил реальный интерес, задал вопрос о цене/сроках/условиях, или описал конкретную задачу.
+НЕ создавай лид если: первое сообщение, нет конкретного интереса, общие вопросы.`;
+
+  try {
+    const result = await crmAlChat([{ role: "user", content: prompt }], { model: "auto", timeoutMs: 20_000 });
+    const text = result.text || "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+    const parsed = JSON.parse(jsonMatch[0]);
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Analyze conversation and store insights in Qdrant (no Ollama — hash vector).
+ */
+export async function analyzeConversationToKb(messages, chatId) {
+  if (!messages || messages.length < 3) return { insights: [], stored: 0 };
+
+  const transcript = messages
+    .map(m => `${m.role === "user" ? "Клиент" : "Агент"}: ${m.content || ""}`)
+    .join("\n");
+
+  const prompt = `Ты — аналитик диалогов. Извлеки полезную информацию из диалога для базы знаний.
+
+ДИАЛОГ:
+${transcript.slice(0, 3000)}
+
+Извлеки ТОЛЬКО реально полезное (типичные запросы, боли, успешные ответы).
+Формат: JSON массив строк, максимум 5 элементов. Если нечего — верни [].`;
+
+  try {
+    const result = await crmAlChat([{ role: "user", content: prompt }], { model: "auto", timeoutMs: 30_000 });
+    const jsonMatch = (result.text || "").match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return { insights: [], stored: 0 };
+
+    const insights = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(insights)) return { insights: [], stored: 0 };
+
+    const client = getQdrantClient();
+    let stored = 0;
+    for (const insight of insights.slice(0, 5)) {
+      if (typeof insight !== "string" || !insight.trim()) continue;
+      try {
+        const vector = hashVector(insight);
+        await ensureCollection(client, AVITO_INSIGHTS_COLL, vector);
+        await client.upsert(AVITO_INSIGHTS_COLL, {
+          wait: true,
+          points: [{
+            id: crypto.randomUUID(),
+            vector,
+            payload: {
+              text: insight,
+              source: "avito_conversation_analysis",
+              chat_id: chatId || "",
+              analyzed_at: new Date().toISOString(),
+            },
+          }],
+        });
+        stored++;
+      } catch {}
+    }
+    return { insights, stored };
+  } catch {
+    return { insights: [], stored: 0 };
   }
 }
 
 /**
  * Upsert a single Avito item into the avito_items Qdrant collection.
- * Includes full description, params, category, address, stats.
- * @param {object} item — raw item object from Avito API
+ * Uses hash vector — no Ollama needed.
  */
 export async function upsertAvitoItemToKb(item) {
   const client = getQdrantClient();
-  const ollamaBase = getOllamaBase();
 
   const category = item.category?.name ?? item.category ?? "";
   const address = item.address ?? item.location?.address ?? item.region?.name ?? "";
   const priceStr = item.price_string
     ? String(item.price_string)
-    : item.price != null
-    ? `${item.price} ₽`
-    : "";
-
-  // Flatten params array to readable text
+    : item.price != null ? `${item.price} ₽` : "";
   const paramsText = Array.isArray(item.params)
     ? item.params.map(p => `${p.name || p.title || ""}: ${p.value || ""}`).filter(Boolean).join(", ")
-    : "";
-
-  // Stats
-  const statsText = item.stats
-    ? `Просмотры: ${item.stats.views ?? 0}, Контакты: ${item.stats.calls ?? 0}`
     : "";
 
   const text = [
@@ -184,10 +315,9 @@ export async function upsertAvitoItemToKb(item) {
     item.status ? `Статус: ${item.status}` : "",
     address ? `Адрес: ${address}` : "",
     paramsText ? `Параметры: ${paramsText}` : "",
-    statsText || "",
   ].filter(Boolean).join("\n");
 
-  const vector = await createEmbedding(ollamaBase, EMBED_MODEL, text);
+  const vector = hashVector(text);
   await ensureCollection(client, AVITO_ITEMS_COLLECTION, vector);
 
   const numId = String(item.id || item.itemId || "").replace(/\D/g, "");
@@ -208,8 +338,8 @@ export async function upsertAvitoItemToKb(item) {
         price: item.price ?? null,
         price_string: priceStr,
         status: item.status || "",
-        category: category,
-        address: address,
+        category,
+        address,
         description: item.description || "",
       },
     }],
@@ -218,18 +348,15 @@ export async function upsertAvitoItemToKb(item) {
 
 /**
  * Upsert a service price into the pricing Qdrant collection.
- * @param {object} price — { id, title, description, priceFrom, priceTo, category }
+ * Uses hash vector — no Ollama needed.
  */
 export async function upsertPriceToKb(price) {
   const client = getQdrantClient();
-  const ollamaBase = getOllamaBase();
 
   const priceRange = price.priceFrom && price.priceTo
     ? `${price.priceFrom}–${price.priceTo} ₽`
-    : price.priceFrom
-    ? `от ${price.priceFrom} ₽`
-    : price.priceTo
-    ? `до ${price.priceTo} ₽`
+    : price.priceFrom ? `от ${price.priceFrom} ₽`
+    : price.priceTo ? `до ${price.priceTo} ₽`
     : "цена по запросу";
 
   const text = [
@@ -239,7 +366,7 @@ export async function upsertPriceToKb(price) {
     price.category ? `Категория: ${price.category}` : "",
   ].filter(Boolean).join("\n");
 
-  const vector = await createEmbedding(ollamaBase, EMBED_MODEL, text);
+  const vector = hashVector(text);
   await ensureCollection(client, PRICING_COLLECTION, vector);
 
   await client.upsert(PRICING_COLLECTION, {
@@ -262,17 +389,11 @@ export async function upsertPriceToKb(price) {
 
 /**
  * Upsert a text chunk into global knowledge base collection.
- * @param {object} opts
- * @param {string} opts.id — unique id for this chunk
- * @param {string} opts.text
- * @param {string} [opts.source]
- * @param {string} [opts.filename]
+ * Uses hash vector — no Ollama needed.
  */
 export async function upsertGlobalKbChunk({ id, text, source, filename }) {
   const client = getQdrantClient();
-  const ollamaBase = getOllamaBase();
-
-  const vector = await createEmbedding(ollamaBase, EMBED_MODEL, text);
+  const vector = hashVector(text);
   await ensureCollection(client, GLOBAL_KB_COLLECTION, vector);
 
   await client.upsert(GLOBAL_KB_COLLECTION, {
@@ -283,89 +404,4 @@ export async function upsertGlobalKbChunk({ id, text, source, filename }) {
       payload: { text, source: source || "manual", filename: filename || "" },
     }],
   });
-}
-
-export { DEFAULT_SYSTEM_PROMPT };
-
-/**
- * Analyze a completed Avito conversation and extract insights for the KB.
- * Stores valuable patterns in Qdrant namespace=avito_insights.
- *
- * @param {Array<{role:string,content:string}>} messages — conversation history
- * @param {string} [chatId]
- * @returns {Promise<{insights:string[],stored:number}>}
- */
-export async function analyzeConversationToKb(messages, chatId) {
-  if (!messages || messages.length < 2) return { insights: [], stored: 0 };
-
-  const transcript = messages
-    .map(m => `${m.role === "user" ? "Клиент" : "Агент"}: ${m.content || ""}`)
-    .join("\n");
-
-  const analysisPrompt = `Ты — аналитик диалогов. Проанализируй этот диалог с клиентом и извлеки полезную информацию для базы знаний.
-
-ДИАЛОГ:
-${transcript.slice(0, 3000)}
-
-Извлеки ТОЛЬКО реально полезную информацию:
-1. Типичные запросы и боли клиентов
-2. Успешные формулировки ответов
-3. Уточняющие вопросы которые работают
-4. Конкретные потребности клиентов
-
-Ответь в формате JSON массива строк (факты/инсайты), максимум 5 элементов.
-Пример: ["Клиенты часто спрашивают о сроках создания мультика — обычно 14-21 день", "Эффективный вопрос: 'Для какого возраста делаем?'"]
-
-Если диалог неинформативен — верни пустой массив [].`;
-
-  try {
-    const result = await crmAlChat(
-      [{ role: "user", content: analysisPrompt }],
-      { model: "neeklo", timeoutMs: 30_000 }
-    );
-
-    let insights = [];
-    try {
-      const jsonMatch = result.text.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        insights = JSON.parse(jsonMatch[0]);
-        if (!Array.isArray(insights)) insights = [];
-      }
-    } catch {
-      insights = [];
-    }
-
-    const client = getQdrantClient();
-    const ollamaBase = getOllamaBase();
-
-    let stored = 0;
-    for (const insight of insights.slice(0, 5)) {
-      if (typeof insight !== "string" || !insight.trim()) continue;
-      try {
-        const vector = await createEmbedding(ollamaBase, EMBED_MODEL, insight);
-        await ensureCollection(client, AVITO_INSIGHTS_COLL, vector);
-        await client.upsert(AVITO_INSIGHTS_COLL, {
-          wait: true,
-          points: [{
-            id: crypto.randomUUID(),
-            vector,
-            payload: {
-              text: insight,
-              source: "avito_conversation_analysis",
-              chat_id: chatId || "",
-              analyzed_at: new Date().toISOString(),
-            },
-          }],
-        });
-        stored++;
-      } catch (e) {
-        console.warn("[avito-kb] insight upsert failed:", e?.message);
-      }
-    }
-
-    return { insights, stored };
-  } catch (e) {
-    console.warn("[avito-kb] analysis failed:", e?.message);
-    return { insights: [], stored: 0 };
-  }
 }

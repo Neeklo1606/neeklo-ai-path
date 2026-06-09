@@ -60,15 +60,21 @@ import {
   notifyNewLead,
   notifyNewAvitoMessage,
   notifyNewReview,
+  notifyAgentReply,
+  notifyLeadCreatedFromAvito,
   notifyAll,
 } from "./telegram-bot.mjs";
 import {
   processAvitoMessage,
+  detectLeadIntent,
   upsertPriceToKb,
   upsertGlobalKbChunk,
   upsertAvitoItemToKb,
   analyzeConversationToKb,
   GLOBAL_KB_COLLECTION,
+  AVITO_ITEMS_COLLECTION,
+  PRICING_COLLECTION,
+  AVITO_INSIGHTS_COLL,
 } from "./services/avito-agent.mjs";
 import {
   getBillingConfig,
@@ -3781,12 +3787,11 @@ async function handleAvitoIncomingWebhook(req, res) {
         `Avito: новое сообщение\nАгент: ${agentId}\nЧат: ${msg.chatId}\nТекст: ${msg.text.slice(0, 800)}`,
       ).catch(() => {});
 
-      // AI Agent auto-reply if not paused
-      // Check enabled state: database setting takes priority over env var
+      // AI Agent auto-reply — isolated per Avito chatId
       if (isClientAvitoMessage(msg.userId)) {
         setImmediate(async () => {
           try {
-            // Read enabled flag from DB (toggleable from Admin UI)
+            // Check enabled flag from DB
             const enabledRow = await prisma.cmsSetting.findUnique({ where: { key: "agent.avito_enabled" } }).catch(() => null);
             const agentEnabled = enabledRow
               ? enabledRow.value === "true" || enabledRow.value === "1"
@@ -3796,45 +3801,111 @@ async function handleAvitoIncomingWebhook(req, res) {
             const sysRow = await prisma.cmsSetting.findUnique({ where: { key: "agent.avito_system_prompt" } }).catch(() => null);
             const systemPrompt = typeof sysRow?.value === "string" ? sysRow.value : undefined;
 
-            // Check if chat is ai_paused
+            // Load CRM chat for THIS Avito chatId (isolated context)
             const map = await getAvitoChatMap();
             const crmChatId = map[msg.chatId];
+            let crmChat = null;
             if (crmChatId) {
-              const chat = await prisma.chat.findUnique({ where: { id: crmChatId } }).catch(() => null);
-              if (chat?.aiPaused) return; // Operator took over
+              crmChat = await prisma.chat.findUnique({ where: { id: crmChatId } }).catch(() => null);
+              if (crmChat?.aiPaused) return; // Operator took over
             }
 
-            // Build history from CRM chat
+            // Load FULL history for this specific chat only (no context mixing)
             let history = [];
-            if (crmChatId) {
-              const chat = await prisma.chat.findUnique({ where: { id: crmChatId } }).catch(() => null);
-              if (chat?.messages) {
-                const msgs = Array.isArray(chat.messages) ? chat.messages : [];
-                history = msgs.map((m) => ({
+            if (crmChat?.messages) {
+              const rawMsgs = Array.isArray(crmChat.messages) ? crmChat.messages : [];
+              history = rawMsgs
+                .map((m) => ({
                   role: m.source === "avito_agent" ? "assistant" : "user",
                   content: m.content || "",
-                })).filter((m) => m.content);
-              }
+                }))
+                .filter((m) => m.content);
             }
 
+            // Load service prices from DB for context
+            const servicePrices = await prisma.servicePrice.findMany({
+              where: { isActive: true },
+              orderBy: { sortOrder: "asc" },
+            }).catch(() => []);
+
+            // Process message through agent (crm-al only, no Ollama)
             const result = await processAvitoMessage({
               userMessage: msg.text,
               history,
               systemPrompt,
               model: "neeklo",
+              servicePrices,
             });
 
             if (result.reply && !result.error) {
-              // Send reply back to Avito
               const account = resolveAvitoAccount(cfg, mapped?.avitoAccountId || "");
               if (account) {
+                // Send reply to Avito
                 await avitoApiRequest(account, "POST", `/messenger/v3/accounts/${account.accountId}/chats/${msg.chatId}/messages`, {
                   message: { text: result.reply },
                   type: "text",
                 });
-                // Save agent reply to CRM chat
+
+                // Save agent reply in CRM chat
                 if (crmChatId) {
                   await appendMessageToChat(crmChatId, "assistant", result.reply, new Date().toISOString(), { source: "avito_agent" });
+                }
+
+                // Notify admins about agent reply
+                notifyAgentReply({
+                  chatId: msg.chatId,
+                  clientText: msg.text,
+                  replyText: result.reply,
+                  agentId,
+                }).catch(() => {});
+
+                // Lead intent detection — run after reply is saved
+                const updatedChat = crmChatId
+                  ? await prisma.chat.findUnique({ where: { id: crmChatId } }).catch(() => null)
+                  : null;
+                if (updatedChat?.messages) {
+                  const allMsgs = (Array.isArray(updatedChat.messages) ? updatedChat.messages : [])
+                    .map(m => ({ role: m.source === "avito_agent" ? "assistant" : "user", content: m.content || "" }))
+                    .filter(m => m.content);
+
+                  if (allMsgs.length >= 2) {
+                    const leadInfo = await detectLeadIntent(allMsgs, msg.chatId).catch(() => null);
+                    if (leadInfo?.shouldCreate) {
+                      // Create or update lead in CRM
+                      const existingLead = updatedChat.leadId
+                        ? await prisma.lead.findUnique({ where: { id: updatedChat.leadId } }).catch(() => null)
+                        : null;
+
+                      if (!existingLead) {
+                        const newLead = await prisma.lead.create({
+                          data: {
+                            name: leadInfo.name || `Avito клиент (${msg.chatId})`,
+                            phone: leadInfo.phone || null,
+                            status: "new",
+                            intentLabel: leadInfo.intent || "Интерес с Avito",
+                            summary: leadInfo.summary || "",
+                            source: "avito",
+                          },
+                        }).catch(() => null);
+
+                        if (newLead && crmChatId) {
+                          await prisma.chat.update({
+                            where: { id: crmChatId },
+                            data: { leadId: newLead.id },
+                          }).catch(() => {});
+
+                          // Notify Telegram about new lead
+                          notifyLeadCreatedFromAvito({
+                            name: newLead.name,
+                            phone: newLead.phone,
+                            intent: leadInfo.intent,
+                            summary: leadInfo.summary,
+                            chatId: msg.chatId,
+                          }).catch(() => {});
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }

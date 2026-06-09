@@ -186,6 +186,25 @@ export async function notifyNewAvitoMessage({ chatId, authorId, text: msgText, a
   return notifyAll(text);
 }
 
+/** Agent auto-reply notification. */
+export async function notifyAgentReply({ chatId, clientText, replyText, agentId }) {
+  const clientPreview = (clientText || "").slice(0, 200);
+  const replyPreview = (replyText || "").slice(0, 300);
+  const text = `🤖 <b>Агент ответил клиенту</b>\n\nАгент: <code>${agentId || "—"}</code>\nЧат: <code>${chatId || "—"}</code>\n\n<b>Клиент:</b> ${clientPreview}\n\n<b>Агент:</b> ${replyPreview}\n\nПанель: https://neeklo.ru/admin/avito/chats`;
+  return notifyAll(text, { parse_mode: "HTML" });
+}
+
+/** New lead from Avito conversation. */
+export async function notifyLeadCreatedFromAvito({ name, phone, intent, summary, chatId }) {
+  const nameStr = name || "Имя не указано";
+  const phoneStr = phone ? `\n📞 ${phone}` : "";
+  const intentStr = intent ? `\n🎯 Интерес: ${intent}` : "";
+  const summaryStr = summary ? `\n📝 ${summary}` : "";
+  const chatStr = chatId ? `\nAvito чат: <code>${chatId}</code>` : "";
+  const text = `🎯 <b>Новый лид с Avito</b>\n\n👤 ${nameStr}${phoneStr}${intentStr}${summaryStr}${chatStr}\n\nПанель: https://neeklo.ru/admin/chats`;
+  return notifyAll(text, { parse_mode: "HTML" });
+}
+
 /** New review notification. */
 export async function notifyNewReview({ author, rating, content }) {
   const stars = "⭐".repeat(Math.min(Number(rating) || 5, 5));

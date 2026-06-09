@@ -166,6 +166,7 @@ model Lead {
   name           String?
   phone          String?
   status         String   @default("new")
+  source         String   @default("website")
   readinessScore Int      @default(0) @map("readiness_score")
   intentLabel    String?  @map("intent_label")
   summary        String?  @map("summary")
