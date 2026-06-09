@@ -67,6 +67,7 @@ import {
   upsertPriceToKb,
   upsertGlobalKbChunk,
   upsertAvitoItemToKb,
+  analyzeConversationToKb,
   GLOBAL_KB_COLLECTION,
 } from "./services/avito-agent.mjs";
 import {
@@ -3297,6 +3298,25 @@ app.patch("/crm/chats/:id", requireAuth, async (req, res) => {
       data,
       include: { lead: true },
     });
+
+    // When operator takes over or chat is closed — analyze conversation for KB insights
+    if ((data.aiPaused || data.status === "closed") && process.env.AVITO_AGENT_ENABLED === "true") {
+      setImmediate(async () => {
+        try {
+          const messages = Array.isArray(c.messages) ? c.messages : [];
+          const formatted = messages.map(m => ({
+            role: m.source === "avito_agent" ? "assistant" : "user",
+            content: m.content || "",
+          })).filter(m => m.content);
+          if (formatted.length >= 2) {
+            await analyzeConversationToKb(formatted, c.id);
+          }
+        } catch (e) {
+          console.warn("[chat-analysis]", e?.message);
+        }
+      });
+    }
+
     res.json({
       id: c.id,
       lead_id: c.leadId,
@@ -4539,6 +4559,61 @@ app.delete("/admin/test-chat/history", requireAuth, async (_req, res) => {
       update: { value: [] },
     });
     res.status(204).end();
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================
+// AVITO CONVERSATION INSIGHTS  /avito/analyze-conversation
+// ============================================================
+
+/** POST /avito/analyze-conversation — analyze a CRM chat and store insights in KB */
+app.post("/avito/analyze-conversation", requireAuth, async (req, res) => {
+  try {
+    const { chatId } = req.body || {};
+    if (!chatId) return res.status(400).json({ error: "chatId required" });
+
+    const chat = await prisma.chat.findUnique({ where: { id: chatId } }).catch(() => null);
+    if (!chat) return res.status(404).json({ error: "Chat not found" });
+
+    const messages = Array.isArray(chat.messages) ? chat.messages : [];
+    const formatted = messages.map(m => ({
+      role: m.source === "avito_agent" ? "assistant" : "user",
+      content: m.content || "",
+    })).filter(m => m.content);
+
+    const result = await analyzeConversationToKb(formatted, chatId);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** GET /admin/knowledge/insights — list conversation insights from Qdrant */
+app.get("/admin/knowledge/insights", requireAuth, async (req, res) => {
+  try {
+    const client = getQdrantClient();
+    const INSIGHTS_COLL = "neeklo_avito_ins";
+    const limit = Math.min(Number(req.query.limit || 50), 200);
+    try {
+      const result = await client.scroll(INSIGHTS_COLL, {
+        limit,
+        with_payload: true,
+        with_vector: false,
+      });
+      const points = Array.isArray(result?.points) ? result.points : [];
+      res.json({
+        insights: points.map(p => ({
+          id: p.id,
+          text: p.payload?.text || "",
+          chatId: p.payload?.chat_id || "",
+          analyzedAt: p.payload?.analyzed_at || "",
+        })),
+      });
+    } catch {
+      res.json({ insights: [] });
+    }
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

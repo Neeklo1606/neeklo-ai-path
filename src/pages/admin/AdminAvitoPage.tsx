@@ -522,7 +522,39 @@ export default function AdminAvitoPage() {
 
       {activeSection === "items" && (
         <section className="rounded-2xl border border-[#E8E6E0] bg-white p-5 space-y-4 shadow-sm">
-          <h2 className="font-heading text-lg font-bold">Управление объявлениями</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading text-lg font-bold">Управление объявлениями</h2>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className={secondaryBtnClass}
+              onClick={() => itemsQ.refetch()}
+              disabled={itemsQ.isFetching}
+            >
+              {itemsQ.isFetching ? "Обновление…" : "Обновить"}
+            </Button>
+          </div>
+
+          {/* Stats summary */}
+          {itemRows.length > 0 && (
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: "Всего объявлений", value: itemRows.length },
+                { label: "Активных", value: itemRows.filter(r => String(r.status ?? r.state ?? "").toLowerCase().includes("activ") || String(r.status ?? r.state ?? "") === "active").length },
+                { label: "Общая сумма", value: itemRows.reduce((s, r) => {
+                  const p = Number(r.price ?? r.price_string?.toString().replace(/\D/g,"") ?? 0);
+                  return s + (Number.isFinite(p) ? p : 0);
+                }, 0).toLocaleString("ru-RU") + " ₽" },
+              ].map(stat => (
+                <div key={stat.label} className="rounded-xl border border-[#EEE] bg-[#FAFAF8] p-3">
+                  <p className="text-xs text-[#6A6860]">{stat.label}</p>
+                  <p className="text-xl font-semibold text-[#1C1B1A] mt-0.5">{stat.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
           {itemsQ.isLoading && <p className="text-sm text-[#6A6860]">Загрузка объявлений…</p>}
           {itemsQ.isError && (
             <p className="text-sm text-red-700">
@@ -535,7 +567,9 @@ export default function AdminAvitoPage() {
                 <tr>
                   <th className="px-3 py-2 text-left">ID</th>
                   <th className="px-3 py-2 text-left">Заголовок</th>
+                  <th className="px-3 py-2 text-left">Цена</th>
                   <th className="px-3 py-2 text-left">Статус</th>
+                  <th className="px-3 py-2 text-left">Действия</th>
                 </tr>
               </thead>
               <tbody>
@@ -543,11 +577,41 @@ export default function AdminAvitoPage() {
                   const id = String(r.id ?? r.item_id ?? `row-${i}`);
                   const title = String(r.title ?? r.name ?? "—");
                   const status = String(r.status ?? r.state ?? "—");
+                  const price = r.price_string ? String(r.price_string) : r.price ? `${r.price} ₽` : "—";
+                  const url = r.url ? String(r.url) : null;
                   return (
-                    <tr key={id} className="border-b border-[#F5F5F5]">
-                      <td className="px-3 py-2 font-mono text-xs">{id}</td>
-                      <td className="px-3 py-2">{title}</td>
-                      <td className="px-3 py-2">{status}</td>
+                    <tr key={id} className="border-b border-[#F5F5F5] hover:bg-[#FAFAF8]">
+                      <td className="px-3 py-2 font-mono text-xs text-[#6A6860]">{id}</td>
+                      <td className="px-3 py-2">
+                        {url ? (
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-600">
+                            {title}
+                          </a>
+                        ) : title}
+                      </td>
+                      <td className="px-3 py-2 text-[#6A6860]">{price}</td>
+                      <td className="px-3 py-2">
+                        <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${
+                          status === "active" ? "bg-green-100 text-green-700" :
+                          status === "blocked" ? "bg-red-100 text-red-700" :
+                          "bg-gray-100 text-gray-600"
+                        }`}>{status}</span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-xs px-2"
+                          onClick={() => {
+                            adminApi.put(`/avito/items/${id}/vas`, { accountId: activeAccountId, services: ["x2_1"] })
+                              .then(() => toast.success(`VAS применён к объявлению ${id}`))
+                              .catch(e => toast.error(`VAS ошибка: ${e?.response?.data?.error || e.message}`));
+                          }}
+                        >
+                          Поднять
+                        </Button>
+                      </td>
                     </tr>
                   );
                 })}

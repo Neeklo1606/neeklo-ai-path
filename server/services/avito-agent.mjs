@@ -251,3 +251,86 @@ export async function upsertGlobalKbChunk({ id, text, source, filename }) {
 }
 
 export { DEFAULT_SYSTEM_PROMPT };
+
+/**
+ * Analyze a completed Avito conversation and extract insights for the KB.
+ * Stores valuable patterns in Qdrant namespace=avito_insights.
+ *
+ * @param {Array<{role:string,content:string}>} messages — conversation history
+ * @param {string} [chatId]
+ * @returns {Promise<{insights:string[],stored:number}>}
+ */
+export async function analyzeConversationToKb(messages, chatId) {
+  if (!messages || messages.length < 2) return { insights: [], stored: 0 };
+
+  const transcript = messages
+    .map(m => `${m.role === "user" ? "Клиент" : "Агент"}: ${m.content || ""}`)
+    .join("\n");
+
+  const analysisPrompt = `Ты — аналитик диалогов. Проанализируй этот диалог с клиентом и извлеки полезную информацию для базы знаний.
+
+ДИАЛОГ:
+${transcript.slice(0, 3000)}
+
+Извлеки ТОЛЬКО реально полезную информацию:
+1. Типичные запросы и боли клиентов
+2. Успешные формулировки ответов
+3. Уточняющие вопросы которые работают
+4. Конкретные потребности клиентов
+
+Ответь в формате JSON массива строк (факты/инсайты), максимум 5 элементов.
+Пример: ["Клиенты часто спрашивают о сроках создания мультика — обычно 14-21 день", "Эффективный вопрос: 'Для какого возраста делаем?'"]
+
+Если диалог неинформативен — верни пустой массив [].`;
+
+  try {
+    const result = await crmAlChat(
+      [{ role: "user", content: analysisPrompt }],
+      { model: "auto", timeoutMs: 30_000 }
+    );
+
+    let insights = [];
+    try {
+      const jsonMatch = result.text.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        insights = JSON.parse(jsonMatch[0]);
+        if (!Array.isArray(insights)) insights = [];
+      }
+    } catch {
+      insights = [];
+    }
+
+    const client = getQdrantClient();
+    const ollamaBase = getOllamaBase();
+
+    let stored = 0;
+    for (const insight of insights.slice(0, 5)) {
+      if (typeof insight !== "string" || !insight.trim()) continue;
+      try {
+        const vector = await createEmbedding(ollamaBase, EMBED_MODEL, insight);
+        await ensureCollection(client, AVITO_INSIGHTS_COLL, vector);
+        await client.upsert(AVITO_INSIGHTS_COLL, {
+          wait: true,
+          points: [{
+            id: crypto.randomUUID(),
+            vector,
+            payload: {
+              text: insight,
+              source: "avito_conversation_analysis",
+              chat_id: chatId || "",
+              analyzed_at: new Date().toISOString(),
+            },
+          }],
+        });
+        stored++;
+      } catch (e) {
+        console.warn("[avito-kb] insight upsert failed:", e?.message);
+      }
+    }
+
+    return { insights, stored };
+  } catch (e) {
+    console.warn("[avito-kb] analysis failed:", e?.message);
+    return { insights: [], stored: 0 };
+  }
+}
