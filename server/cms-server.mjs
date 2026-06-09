@@ -39,7 +39,6 @@ import {
   sendToCleroRaw,
 } from "./clero-helpers.mjs";
 import {
-  crmAlChat,
   crmAlBalance,
   crmAlModels,
   crmAlUsage,
@@ -47,6 +46,12 @@ import {
   crmAlIsConfigured,
   crmAlErrorMessage,
 } from "./services/crm-al.service.mjs";
+import {
+  aiChat,
+  aiChatIsConfigured,
+  aiChatProvider,
+  aiChatErrorMessage,
+} from "./services/ai-chat.service.mjs";
 import {
   initTgBot,
   handleTgUpdate,
@@ -4399,20 +4404,25 @@ app.get("/ai-agent/usage/daily", requireAuth, async (_req, res) => {
 
 /** GET /ai-agent/status — check if configured */
 app.get("/ai-agent/status", requireAuth, (_req, res) => {
-  res.json({ configured: crmAlIsConfigured() });
+  res.json({
+    configured: aiChatIsConfigured(),
+    provider: aiChatProvider(),
+    openrouter: Boolean(process.env.OPENROUTER_API_KEY),
+    crmAl: crmAlIsConfigured(),
+  });
 });
 
-/** POST /ai-agent/chat — direct chat with crm-al agent */
+/** POST /ai-agent/chat — direct chat with AI agent (OpenRouter or crm-al) */
 app.post("/ai-agent/chat", requireAuth, async (req, res) => {
   try {
     const { messages, model, systemPrompt } = req.body || {};
     if (!Array.isArray(messages) || !messages.length) {
       return res.status(400).json({ error: "messages[] required" });
     }
-    const result = await crmAlChat(messages, { model, systemPrompt });
-    res.json(result);
+    const result = await aiChat(messages, { model, systemPrompt, timeoutMs: 60_000 });
+    res.json({ ...result, provider: result.provider || aiChatProvider() });
   } catch (e) {
-    res.status(e.status || 500).json({ error: crmAlErrorMessage(e) });
+    res.status(e.status || 500).json({ error: aiChatErrorMessage(e) });
   }
 });
 
@@ -4755,6 +4765,8 @@ app.post("/admin/test-chat/message", requireAuth, async (req, res) => {
       context: result.context || "",
       phone: phone || null,
       transferIntent: transferIntent || null,
+      model: result.model || model || "neeklo",
+      provider: result.provider || aiChatProvider(),
     });
   } catch (e) {
     res.status(500).json({ error: e.message });

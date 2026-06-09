@@ -12,7 +12,7 @@
  */
 
 import crypto from "crypto";
-import { crmAlChat, crmAlErrorMessage } from "./crm-al.service.mjs";
+import { aiChat, aiChatErrorMessage } from "./ai-chat.service.mjs";
 import { getQdrantClient, ensureCollection } from "./ai.service.mjs";
 
 export const GLOBAL_KB_COLLECTION   = "neeklo_global";
@@ -204,11 +204,11 @@ export async function processAvitoMessage({ userMessage, history = [], systemPro
   const messages = buildMessages(sysPrompt, history, context, userMessage);
 
   try {
-    const result = await crmAlChat(messages, { model: model || "neeklo", timeoutMs: 120_000 });
-    return { reply: result.text, context, usage: result.usage };
+    const result = await aiChat(messages, { model: model || "neeklo", timeoutMs: 60_000 });
+    return { reply: result.text, context, usage: result.usage, model: result.model, provider: result.provider };
   } catch (e) {
-    console.error("[avito-agent] crm-al error:", e?.message || e);
-    return { reply: null, context, error: crmAlErrorMessage(e) };
+    console.error("[avito-agent] ai error:", e?.message || e);
+    return { reply: null, context, error: aiChatErrorMessage(e) };
   }
 }
 
@@ -246,7 +246,7 @@ ${transcript}
 НЕ создавай лид если: первое сообщение, нет конкретного интереса, общие вопросы.`;
 
   try {
-    const result = await crmAlChat([{ role: "user", content: prompt }], { model: "auto", timeoutMs: 20_000 });
+    const result = await aiChat([{ role: "user", content: prompt }], { model: "auto", timeoutMs: 25_000 });
     const text = result.text || "";
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return null;
@@ -276,7 +276,7 @@ ${transcript.slice(0, 3000)}
 Формат: JSON массив строк, максимум 5 элементов. Если нечего — верни [].`;
 
   try {
-    const result = await crmAlChat([{ role: "user", content: prompt }], { model: "auto", timeoutMs: 30_000 });
+    const result = await aiChat([{ role: "user", content: prompt }], { model: "auto", timeoutMs: 30_000 });
     const jsonMatch = (result.text || "").match(/\[[\s\S]*\]/);
     if (!jsonMatch) return { insights: [], stored: 0 };
 
