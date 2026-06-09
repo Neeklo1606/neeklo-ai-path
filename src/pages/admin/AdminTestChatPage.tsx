@@ -15,6 +15,8 @@ interface ChatMessage {
   chunks?: RagChunk[];
   ragContext?: string;
   error?: string;
+  phone?: string | null;
+  transferIntent?: string | null;
 }
 
 interface RagChunk {
@@ -75,6 +77,12 @@ export default function AdminTestChatPage() {
     mutationFn: (payload: { message: string; history: { role: string; content: string }[]; model: string }) =>
       adminApi.post("/admin/test-chat/message", payload).then((r) => r.data),
     onSuccess: (data) => {
+      // Show contact/transfer alerts
+      if (data.phone) toast.success(`📞 Телефон обнаружен: ${data.phone} — уведомление отправлено в TG`);
+      if (data.transferIntent) {
+        const labels: Record<string, string> = { call: "Хочет созвониться", telegram: "Хочет в Telegram", meet: "Хочет встретиться", now: "Готов общаться сейчас" };
+        toast.info(`🔔 ${labels[data.transferIntent] || "Готов к контакту"} — уведомление в TG`);
+      }
       setMessages((prev) => [
         ...prev,
         {
@@ -82,8 +90,10 @@ export default function AdminTestChatPage() {
           content: data.reply || "",
           at: new Date().toISOString(),
           chunks: data.chunks || [],
-          ragContext: data.ragContext || "",
+          ragContext: data.context || "",
           error: data.error,
+          phone: data.phone,
+          transferIntent: data.transferIntent,
         },
       ]);
       qc.invalidateQueries({ queryKey: ["test-chat-history"] });
@@ -244,6 +254,22 @@ export default function AdminTestChatPage() {
                     msg.content
                   )}
                 </div>
+
+                {/* Contact/intent detected badges */}
+                {msg.role === "assistant" && (msg.phone || msg.transferIntent) && (
+                  <div className="flex flex-wrap gap-1 px-1">
+                    {msg.phone && (
+                      <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 font-medium">
+                        📞 {msg.phone} — уведомление в TG
+                      </span>
+                    )}
+                    {msg.transferIntent && (
+                      <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200 font-medium">
+                        🔔 {{call:"Хочет созвониться",telegram:"Хочет в Telegram",meet:"Хочет встретиться",now:"Готов сейчас"}[msg.transferIntent] || "Готов к контакту"}
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* Time + RAG toggle */}
                 <div className="flex items-center gap-2 px-1">

@@ -186,6 +186,26 @@ export async function notifyNewAvitoMessage({ chatId, authorId, text: msgText, a
   return notifyAll(text);
 }
 
+/** Client left a phone number or contact — urgent alert. */
+export async function notifyClientContact({ phone, clientText, chatId, source }) {
+  const src = source === "test" ? "Тестовый чат" : `Avito чат <code>${chatId || "—"}</code>`;
+  const preview = (clientText || "").slice(0, 200);
+  const text = `📞 <b>Клиент оставил контакт!</b>\n\n📱 <b>${phone}</b>\n\n${src}\nСообщение: ${preview}\n\n👉 Перезвоните как можно скорее!\nПанель: https://neeklo.ru/admin/chats`;
+  return notifyAll(text, { parse_mode: "HTML" });
+}
+
+/** Client wants to call / meet / go to Telegram — urgent alert. */
+export async function notifyTransferIntent({ intent, clientText, chatId, source }) {
+  const src = source === "test" ? "Тестовый чат" : `Avito чат <code>${chatId || "—"}</code>`;
+  const preview = (clientText || "").slice(0, 200);
+  const icons = { call: "📞", telegram: "💬", meet: "🤝", now: "⚡" };
+  const icon = icons[intent] || "🔔";
+  const labels = { call: "Хочет созвониться", telegram: "Хочет перейти в Telegram", meet: "Хочет встретиться", now: "Готов общаться сейчас" };
+  const label = labels[intent] || "Готов к контакту";
+  const text = `${icon} <b>${label}!</b>\n\n${src}\nСообщение: ${preview}\n\n👉 Свяжитесь с клиентом!\nПанель: https://neeklo.ru/admin/chats`;
+  return notifyAll(text, { parse_mode: "HTML" });
+}
+
 /** Agent auto-reply notification. */
 export async function notifyAgentReply({ chatId, clientText, replyText, agentId }) {
   const clientPreview = (clientText || "").slice(0, 200);

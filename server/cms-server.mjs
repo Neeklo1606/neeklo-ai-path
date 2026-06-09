@@ -62,11 +62,15 @@ import {
   notifyNewReview,
   notifyAgentReply,
   notifyLeadCreatedFromAvito,
+  notifyClientContact,
+  notifyTransferIntent,
   notifyAll,
 } from "./telegram-bot.mjs";
 import {
   processAvitoMessage,
   detectLeadIntent,
+  extractPhone,
+  detectTransferIntent,
   upsertPriceToKb,
   upsertGlobalKbChunk,
   upsertAvitoItemToKb,
@@ -3781,11 +3785,21 @@ async function handleAvitoIncomingWebhook(req, res) {
         agentId,
       }).catch(() => {});
 
-      // Also legacy single-chat notification (backward compat)
+      // Legacy single-chat notification
       sendTelegramNotification(
         cfg,
         `Avito: новое сообщение\nАгент: ${agentId}\nЧат: ${msg.chatId}\nТекст: ${msg.text.slice(0, 800)}`,
       ).catch(() => {});
+
+      // INSTANT contact/intent detection — fire before agent reply
+      const phone = extractPhone(msg.text);
+      if (phone) {
+        notifyClientContact({ phone, clientText: msg.text, chatId: msg.chatId, source: "avito" }).catch(() => {});
+      }
+      const transferIntent = detectTransferIntent(msg.text);
+      if (transferIntent) {
+        notifyTransferIntent({ intent: transferIntent, clientText: msg.text, chatId: msg.chatId, source: "avito" }).catch(() => {});
+      }
 
       // AI Agent auto-reply — isolated per Avito chatId
       if (isClientAvitoMessage(msg.userId)) {
@@ -4612,16 +4626,55 @@ app.post("/admin/test-chat/message", requireAuth, async (req, res) => {
     const { message, history = [], model } = req.body || {};
     if (!message) return res.status(400).json({ error: "message required" });
 
+    const msgText = String(message);
+
+    // INSTANT contact/intent detection — fire immediately, don't wait for LLM
+    const phone = extractPhone(msgText);
+    if (phone) {
+      notifyClientContact({ phone, clientText: msgText, chatId: "test-chat", source: "test" }).catch(() => {});
+    }
+    const transferIntent = detectTransferIntent(msgText);
+    if (transferIntent) {
+      notifyTransferIntent({ intent: transferIntent, clientText: msgText, chatId: "test-chat", source: "test" }).catch(() => {});
+    }
+
+    // Load service prices for context
+    const servicePrices = await prisma.servicePrice.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: "asc" },
+    }).catch(() => []);
+
     // Get custom system prompt from settings
     const sysRow = await prisma.cmsSetting.findUnique({ where: { key: "agent.avito_system_prompt" } }).catch(() => null);
     const systemPrompt = typeof sysRow?.value === "string" ? sysRow.value : undefined;
 
     const result = await processAvitoMessage({
-      userMessage: String(message),
+      userMessage: msgText,
       history: Array.isArray(history) ? history : [],
       systemPrompt,
-      model: model || "auto",
+      model: model || "neeklo",
+      servicePrices,
     });
+
+    // Auto lead detection from test chat too
+    const fullHistory = [
+      ...(Array.isArray(history) ? history : []),
+      { role: "user", content: msgText },
+      ...(result.reply ? [{ role: "assistant", content: result.reply }] : []),
+    ];
+    if (fullHistory.length >= 4) {
+      detectLeadIntent(fullHistory, "test-chat").then(async (leadInfo) => {
+        if (leadInfo?.shouldCreate) {
+          notifyLeadCreatedFromAvito({
+            name: leadInfo.name || "Тестовый клиент",
+            phone: phone || leadInfo.phone,
+            intent: leadInfo.intent,
+            summary: leadInfo.summary,
+            chatId: "test-chat",
+          }).catch(() => {});
+        }
+      }).catch(() => {});
+    }
 
     // Save to test chat history
     try {
@@ -4629,12 +4682,12 @@ app.post("/admin/test-chat/message", requireAuth, async (req, res) => {
       const hist = Array.isArray(histRow?.value) ? histRow.value : [];
       hist.push({
         at: new Date().toISOString(),
-        userMessage: String(message),
+        userMessage: msgText,
         reply: result.reply,
-        model: model || "auto",
-        chunksCount: result.chunks?.length || 0,
+        model: model || "neeklo",
+        phone: phone || null,
+        transferIntent: transferIntent || null,
       });
-      // Keep last 100 entries
       const trimmed = hist.slice(-100);
       await prisma.cmsSetting.upsert({
         where: { key: TEST_CHAT_HISTORY_KEY },
@@ -4646,8 +4699,9 @@ app.post("/admin/test-chat/message", requireAuth, async (req, res) => {
     res.json({
       reply: result.reply,
       error: result.error,
-      chunks: result.chunks || [],
-      ragContext: result.ragContext || "",
+      context: result.context || "",
+      phone: phone || null,
+      transferIntent: transferIntent || null,
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
