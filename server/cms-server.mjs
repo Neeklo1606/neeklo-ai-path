@@ -3821,7 +3821,7 @@ async function handleAvitoIncomingWebhook(req, res) {
               userMessage: msg.text,
               history,
               systemPrompt,
-              model: "auto",
+              model: "neeklo",
             });
 
             if (result.reply && !result.error) {

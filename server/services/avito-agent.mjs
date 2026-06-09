@@ -131,7 +131,7 @@ export async function processAvitoMessage({ userMessage, history = [], systemPro
 
   // 3. Call crm-al
   try {
-    const result = await crmAlChat(messages, { model: model || "auto", timeoutMs: 90_000 });
+    const result = await crmAlChat(messages, { model: model || "neeklo", timeoutMs: 90_000 });
     return {
       reply: result.text,
       chunks,
@@ -321,7 +321,7 @@ ${transcript.slice(0, 3000)}
   try {
     const result = await crmAlChat(
       [{ role: "user", content: analysisPrompt }],
-      { model: "auto", timeoutMs: 30_000 }
+      { model: "neeklo", timeoutMs: 30_000 }
     );
 
     let insights = [];
