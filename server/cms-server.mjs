@@ -135,6 +135,11 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
+app.use((_req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  next();
+});
 app.use(
   express.json({
     limit: "10mb",
@@ -700,8 +705,28 @@ function resolveAvitoAccount(config, accountId) {
   return accounts.find((a) => a.isActive) || accounts[0] || null;
 }
 
+function isAvitoTokenExpired(account) {
+  if (!account?.accessToken) return true;
+  const exp = account.tokenExpiresAt ? Date.parse(account.tokenExpiresAt) : 0;
+  if (!Number.isFinite(exp) || exp <= 0) return false;
+  return Date.now() >= exp - 60_000;
+}
+
 async function avitoApiRequest(account, method, endpointPath, body, query = {}, _retried = false) {
-  if (!account?.accessToken) {
+  let active = account;
+  if (
+    !_retried &&
+    active?.clientId &&
+    active?.clientSecret &&
+    (!active.accessToken || isAvitoTokenExpired(active))
+  ) {
+    try {
+      active = await refreshAvitoToken(active);
+    } catch {
+      // keep existing token and let request fail naturally
+    }
+  }
+  if (!active?.accessToken) {
     const err = new Error("Avito accessToken is required");
     err.status = 400;
     throw err;
@@ -713,7 +738,7 @@ async function avitoApiRequest(account, method, endpointPath, body, query = {}, 
   const resp = await fetch(url.toString(), {
     method,
     headers: {
-      Authorization: `Bearer ${account.accessToken}`,
+      Authorization: `Bearer ${active.accessToken}`,
       "Content-Type": "application/json",
     },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
@@ -725,10 +750,10 @@ async function avitoApiRequest(account, method, endpointPath, body, query = {}, 
   } catch {
     data = { raw: text };
   }
-  // Auto-refresh on 401/403 if we have credentials and haven't retried yet
-  if ((resp.status === 401 || resp.status === 403) && !_retried && account.clientId && account.refreshToken) {
+  // Auto-refresh on 401/403 if we have OAuth credentials (refresh_token or client_credentials)
+  if ((resp.status === 401 || resp.status === 403) && !_retried && active.clientId && active.clientSecret) {
     try {
-      const refreshed = await refreshAvitoToken(account);
+      const refreshed = await refreshAvitoToken(active);
       return avitoApiRequest(refreshed, method, endpointPath, body, query, true);
     } catch {
       // refresh failed — fall through to throw original error

@@ -76,6 +76,48 @@ function shortJson(v: unknown) {
   }
 }
 
+function avitoList(data: LooseObject | undefined, keys: string[]) {
+  if (!data) return [] as LooseObject[];
+  for (const key of keys) {
+    const val = data[key];
+    if (Array.isArray(val)) return val as LooseObject[];
+  }
+  const result = data.result as LooseObject | undefined;
+  if (result) {
+    for (const key of keys) {
+      const val = result[key];
+      if (Array.isArray(val)) return val as LooseObject[];
+    }
+  }
+  return [] as LooseObject[];
+}
+
+function avitoChatTitle(chat: LooseObject, idx: number) {
+  const users = Array.isArray(chat.users) ? (chat.users as LooseObject[]) : [];
+  const peer = users.find((u) => u.name) || users[0];
+  const ctx = chat.context as LooseObject | undefined;
+  const ctxVal = ctx?.value as LooseObject | undefined;
+  return String(
+    chat.title ??
+      chat.user_name ??
+      peer?.name ??
+      ctxVal?.title ??
+      ctx?.title ??
+      `Чат ${idx + 1}`,
+  );
+}
+
+function avitoMessageText(message: LooseObject) {
+  const content = message.content;
+  if (typeof content === "string") return content;
+  if (content && typeof content === "object" && !Array.isArray(content)) {
+    const obj = content as LooseObject;
+    if (typeof obj.text === "string") return obj.text;
+    if (typeof obj.value === "string") return obj.value;
+  }
+  return String(message.text ?? message.message ?? "");
+}
+
 export default function AdminAvitoPage() {
   usePageTitle("Avito — интеграция");
   const { section } = useParams<{ section?: string }>();
@@ -276,31 +318,11 @@ export default function AdminAvitoPage() {
     [accountList, activeAccountId],
   );
 
-  const itemRows = useMemo(() => {
-    const data = itemsQ.data as LooseObject | undefined;
-    if (!data) return [];
-    if (Array.isArray(data.items)) return data.items as LooseObject[];
-    const result = data.result as LooseObject | undefined;
-    if (result && Array.isArray(result.items)) return result.items as LooseObject[];
-    if (Array.isArray(data.results)) return data.results as LooseObject[];
-    return [];
-  }, [itemsQ.data]);
+  const itemRows = useMemo(() => avitoList(itemsQ.data as LooseObject | undefined, ["resources", "items", "results"]), [itemsQ.data]);
 
-  const chatRows = useMemo(() => {
-    const data = chatsQ.data as LooseObject | undefined;
-    if (!data) return [];
-    if (Array.isArray(data.chats)) return data.chats as LooseObject[];
-    if (Array.isArray(data.results)) return data.results as LooseObject[];
-    return [];
-  }, [chatsQ.data]);
+  const chatRows = useMemo(() => avitoList(chatsQ.data as LooseObject | undefined, ["chats", "results"]), [chatsQ.data]);
 
-  const msgRows = useMemo(() => {
-    const data = messagesQ.data as LooseObject | undefined;
-    if (!data) return [];
-    if (Array.isArray(data.messages)) return data.messages as LooseObject[];
-    if (Array.isArray(data.results)) return data.results as LooseObject[];
-    return [];
-  }, [messagesQ.data]);
+  const msgRows = useMemo(() => avitoList(messagesQ.data as LooseObject | undefined, ["messages", "results"]), [messagesQ.data]);
 
   useEffect(() => {
     if (!configQ.data) return;
@@ -502,7 +524,11 @@ export default function AdminAvitoPage() {
         <section className="rounded-2xl border border-[#E8E6E0] bg-white p-5 space-y-4 shadow-sm">
           <h2 className="font-heading text-lg font-bold">Управление объявлениями</h2>
           {itemsQ.isLoading && <p className="text-sm text-[#6A6860]">Загрузка объявлений…</p>}
-          {itemsQ.isError && <p className="text-sm text-red-700">{err(itemsQ.error)}</p>}
+          {itemsQ.isError && (
+            <p className="text-sm text-red-700">
+              {err(itemsQ.error)}. Обновите страницу (Ctrl+F5), если раньше был 403.
+            </p>
+          )}
           <div className="max-h-[560px] overflow-auto rounded-xl border border-[#EEE]">
             <table className="w-full text-sm">
               <thead className="bg-[#FAFAF8] border-b border-[#EEE]">
@@ -546,11 +572,17 @@ export default function AdminAvitoPage() {
               {syncToCleroMutation.isPending ? "Синхронизация..." : "Отправить все в Clero"}
             </Button>
           </div>
+          {chatsQ.isLoading && <p className="text-sm text-[#6A6860]">Загрузка чатов…</p>}
+          {chatsQ.isError && (
+            <p className="text-sm text-red-700">
+              {err(chatsQ.error)}. Обновите страницу (Ctrl+F5), если раньше был 403.
+            </p>
+          )}
           <div className="grid gap-3 md:grid-cols-[280px_1fr]">
             <div className="rounded-xl border border-[#EEE] max-h-[560px] overflow-auto">
               {chatRows.map((c, idx) => {
                 const id = String(c.id ?? c.chat_id ?? idx);
-                const title = String(c.title ?? c.user_name ?? c.context?.title ?? `Чат ${idx + 1}`);
+                const title = avitoChatTitle(c, idx);
                 return (
                   <button
                     key={id}
@@ -567,8 +599,11 @@ export default function AdminAvitoPage() {
             </div>
             <div className="rounded-xl border border-[#EEE] p-3 min-h-[420px] flex flex-col">
               <div className="flex-1 overflow-auto space-y-2">
+                {messagesQ.isError && selectedChatId && (
+                  <p className="text-sm text-red-700">{err(messagesQ.error)}</p>
+                )}
                 {msgRows.map((m, idx) => {
-                  const text = String(m.content?.text ?? m.text ?? m.message ?? "");
+                  const text = avitoMessageText(m);
                   const created = String(m.created_at ?? m.created ?? "");
                   const side = String(m.direction ?? m.type ?? "").toLowerCase().includes("out") ? "justify-end" : "justify-start";
                   return (
