@@ -3300,7 +3300,7 @@ app.patch("/crm/chats/:id", requireAuth, async (req, res) => {
     });
 
     // When operator takes over or chat is closed — analyze conversation for KB insights
-    if ((data.aiPaused || data.status === "closed") && process.env.AVITO_AGENT_ENABLED === "true") {
+    if (data.aiPaused || data.status === "closed") {
       setImmediate(async () => {
         try {
           const messages = Array.isArray(c.messages) ? c.messages : [];
@@ -3782,9 +3782,17 @@ async function handleAvitoIncomingWebhook(req, res) {
       ).catch(() => {});
 
       // AI Agent auto-reply if not paused
-      if (process.env.AVITO_AGENT_ENABLED === "true" && isClientAvitoMessage(msg.userId)) {
+      // Check enabled state: database setting takes priority over env var
+      if (isClientAvitoMessage(msg.userId)) {
         setImmediate(async () => {
           try {
+            // Read enabled flag from DB (toggleable from Admin UI)
+            const enabledRow = await prisma.cmsSetting.findUnique({ where: { key: "agent.avito_enabled" } }).catch(() => null);
+            const agentEnabled = enabledRow
+              ? enabledRow.value === "true" || enabledRow.value === "1"
+              : process.env.AVITO_AGENT_ENABLED === "true";
+            if (!agentEnabled) return;
+
             const sysRow = await prisma.cmsSetting.findUnique({ where: { key: "agent.avito_system_prompt" } }).catch(() => null);
             const systemPrompt = typeof sysRow?.value === "string" ? sysRow.value : undefined;
 
@@ -4452,7 +4460,7 @@ app.delete("/admin/knowledge/chunks/:id", requireAuth, async (req, res) => {
   }
 });
 
-/** POST /admin/knowledge/sync-avito-items — sync Avito listings to Qdrant */
+/** POST /admin/knowledge/sync-avito-items — sync Avito listings to Qdrant with full details */
 app.post("/admin/knowledge/sync-avito-items", requireAuth, async (req, res) => {
   try {
     const cfg = await getAvitoConfig();
@@ -4460,27 +4468,36 @@ app.post("/admin/knowledge/sync-avito-items", requireAuth, async (req, res) => {
     if (!accounts.length) return res.json({ ok: true, synced: 0, message: "No active Avito accounts" });
 
     let synced = 0;
+    const errors = [];
     for (const account of accounts) {
       try {
         const data = await avitoApiRequest(account, "GET", "/core/v1/items", null, { per_page: 100 });
         const items = data?.resources || data?.items || [];
         for (const item of items) {
-          await upsertAvitoItemToKb({
-            id: item.id || item.item_id,
-            title: item.title || "",
-            description: item.description || "",
-            price: item.price_string || item.price || null,
-            status: item.status || "",
-            url: item.url || "",
-            category: item.category?.name || "",
-          });
-          synced++;
+          try {
+            // Try to fetch full details for each item (includes description, params, etc.)
+            let fullItem = item;
+            if (account.accountId && (item.id || item.item_id)) {
+              const itemId = item.id || item.item_id;
+              const detail = await avitoApiRequest(
+                account,
+                "GET",
+                `/core/v1/accounts/${encodeURIComponent(account.accountId)}/items/${encodeURIComponent(String(itemId))}/`,
+              ).catch(() => null);
+              if (detail) fullItem = { ...item, ...detail };
+            }
+            await upsertAvitoItemToKb(fullItem);
+            synced++;
+          } catch (itemErr) {
+            errors.push(`item ${item.id}: ${itemErr.message}`);
+          }
         }
       } catch (e) {
         console.warn(`[avito-sync] account ${account.id}: ${e.message}`);
+        errors.push(`account ${account.id}: ${e.message}`);
       }
     }
-    res.json({ ok: true, synced });
+    res.json({ ok: true, synced, errors: errors.slice(0, 10) });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -4614,6 +4631,41 @@ app.get("/admin/knowledge/insights", requireAuth, async (req, res) => {
     } catch {
       res.json({ insights: [] });
     }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================
+// Generic settings API backed by CmsSetting
+// ============================================================
+
+/** GET /settings — returns all settings as [{key,value}] */
+app.get("/settings", requireAuth, async (req, res) => {
+  try {
+    const rows = await prisma.cmsSetting.findMany();
+    res.json(rows.map(r => {
+      let value = r.value;
+      try { value = JSON.parse(r.value); } catch { /* leave as string */ }
+      return { key: r.key, value };
+    }));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** PATCH /settings/:key — upsert a single setting */
+app.patch("/settings/:key", requireAuth, async (req, res) => {
+  try {
+    const key = req.params.key;
+    const { value } = req.body;
+    const strValue = typeof value === "string" ? value : JSON.stringify(value);
+    await prisma.cmsSetting.upsert({
+      where: { key },
+      update: { value: strValue },
+      create: { key, value: strValue },
+    });
+    res.json({ ok: true, key, value });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

@@ -20,18 +20,22 @@ export const AVITO_INSIGHTS_COLL    = "neeklo_avito_ins";
 
 const EMBED_MODEL = process.env.AGENT_EMBED_MODEL || "nomic-embed-text";
 
-const DEFAULT_SYSTEM_PROMPT = `Ты — умный менеджер-консультант компании Neeklo (AI-студия).
-Твоя задача — помочь клиенту найти решение, предложить подходящий сервис, уточнить детали и провести к встрече или сделке.
+const DEFAULT_SYSTEM_PROMPT = `Ты — умный менеджер-консультант компании Neeklo (AI-продакшн студия). Работаешь с клиентами в Avito.
+Твоя задача — понять потребность клиента, предложить подходящее решение, уточнить детали и довести до встречи или сделки.
 
 Правила:
-1. Отвечай ТОЛЬКО на русском языке.
-2. Ответ не более 4–5 предложений. Будь конкретным и полезным.
-3. Используй информацию из CONTEXT — цены, услуги, условия. Не придумывай данные.
-4. Задавай ОДИН уточняющий вопрос если не хватает информации.
-5. Предлагай конкретные варианты, называй цены если знаешь.
-6. Цель — записать клиента на встречу или оформить заказ.
-7. Не перечисляй все услуги подряд — фокусируйся на запросе клиента.
-8. Будь дружелюбным, живым, без шаблонных фраз.`;
+1. Отвечай ТОЛЬКО на русском языке. Пиши как живой человек — тепло, профессионально, без шаблонов.
+2. Ответ строго не более 4–5 предложений. Краткость — уважение к клиенту.
+3. Используй информацию из CONTEXT (объявления, услуги, цены). Никогда не придумывай данные.
+4. Если запрос не до конца понятен — задай ОДИН уточняющий вопрос, самый важный.
+5. Называй конкретные решения и цены если они есть в CONTEXT.
+6. Главная цель — записать на встречу или оформить заказ. Предлагай это в конце ответа.
+7. Не перечисляй все услуги подряд — анализируй запрос и предлагай только релевантное.
+8. Если клиент описывает что-то расплывчато — предложи конкретный вариант из наших услуг как пример.
+9. В конце сообщения всегда предлагай следующий шаг: созвон, встречу, уточнение деталей.
+
+Пример (клиент: "нужен мультик"):
+— Отлично, создание анимации — наша специализация! Скажите, для какой цели нужна анимация: реклама, обучение, развлечение? Примерная длительность роликa? Как только уточним детали — предложим варианты и стоимость. Готовы обсудить на короткой встрече — удобно?`;
 
 /**
  * Get RAG context from multiple Qdrant collections.
@@ -52,6 +56,7 @@ async function getRagContext(userMessage, opts = {}) {
     GLOBAL_KB_COLLECTION,
     PRICING_COLLECTION,
     AVITO_ITEMS_COLLECTION,
+    AVITO_INSIGHTS_COLL,
   ];
 
   const allChunks = [];
@@ -146,28 +151,54 @@ export async function processAvitoMessage({ userMessage, history = [], systemPro
 
 /**
  * Upsert a single Avito item into the avito_items Qdrant collection.
- * @param {object} item — { id, title, description, price, status, url, category }
+ * Includes full description, params, category, address, stats.
+ * @param {object} item — raw item object from Avito API
  */
 export async function upsertAvitoItemToKb(item) {
   const client = getQdrantClient();
   const ollamaBase = getOllamaBase();
 
+  const category = item.category?.name ?? item.category ?? "";
+  const address = item.address ?? item.location?.address ?? item.region?.name ?? "";
+  const priceStr = item.price_string
+    ? String(item.price_string)
+    : item.price != null
+    ? `${item.price} ₽`
+    : "";
+
+  // Flatten params array to readable text
+  const paramsText = Array.isArray(item.params)
+    ? item.params.map(p => `${p.name || p.title || ""}: ${p.value || ""}`).filter(Boolean).join(", ")
+    : "";
+
+  // Stats
+  const statsText = item.stats
+    ? `Просмотры: ${item.stats.views ?? 0}, Контакты: ${item.stats.calls ?? 0}`
+    : "";
+
   const text = [
     `Объявление: ${item.title || ""}`,
+    category ? `Категория: ${category}` : "",
     item.description ? `Описание: ${item.description}` : "",
-    item.price != null ? `Цена: ${item.price} ₽` : "",
+    priceStr ? `Цена: ${priceStr}` : "",
     item.status ? `Статус: ${item.status}` : "",
-    item.category ? `Категория: ${item.category}` : "",
-    item.url ? `Ссылка: ${item.url}` : "",
+    address ? `Адрес: ${address}` : "",
+    paramsText ? `Параметры: ${paramsText}` : "",
+    statsText || "",
   ].filter(Boolean).join("\n");
 
   const vector = await createEmbedding(ollamaBase, EMBED_MODEL, text);
   await ensureCollection(client, AVITO_ITEMS_COLLECTION, vector);
 
+  const numId = String(item.id || item.itemId || "").replace(/\D/g, "");
+  const pointId = numId
+    ? parseInt(numId, 10) % 2147483647 || 1
+    : Date.now() % 2147483647;
+
   await client.upsert(AVITO_ITEMS_COLLECTION, {
     wait: true,
     points: [{
-      id: `item_${String(item.id || item.itemId || "").replace(/\D/g, "") || Date.now()}`,
+      id: pointId,
       vector,
       payload: {
         text,
@@ -175,7 +206,11 @@ export async function upsertAvitoItemToKb(item) {
         item_id: String(item.id || item.itemId || ""),
         title: item.title || "",
         price: item.price ?? null,
+        price_string: priceStr,
         status: item.status || "",
+        category: category,
+        address: address,
+        description: item.description || "",
       },
     }],
   });
