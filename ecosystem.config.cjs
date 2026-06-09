@@ -17,7 +17,7 @@ const parsed =
 const env = {
   ...parsed,
   NODE_ENV: "production",
-  OLLAMA_URL: parsed.OLLAMA_URL || "http://188.124.55.89:11434",
+  OLLAMA_URL: parsed.OLLAMA_URL || "http://127.0.0.1:11434",
   QDRANT_URL: parsed.QDRANT_URL || "http://127.0.0.1:6333",
 };
 
