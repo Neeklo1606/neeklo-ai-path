@@ -64,6 +64,11 @@ const AdminCrmKanbanPage = lazy(() => import("./pages/admin/AdminCrmKanbanPage")
 const AdminKnowledgeBasePage = lazy(() => import("./pages/admin/AdminKnowledgeBasePage"));
 const AdminRegulationsPage = lazy(() => import("./pages/admin/AdminRegulationsPage"));
 const AdminAvitoPage = lazy(() => import("./pages/admin/AdminAvitoPage"));
+const AdminTelegramPage = lazy(() => import("./pages/admin/AdminTelegramPage"));
+const AdminAiAgentPage = lazy(() => import("./pages/admin/AdminAiAgentPage"));
+const AdminGlobalKnowledgePage = lazy(() => import("./pages/admin/AdminGlobalKnowledgePage"));
+const AdminPricingPage = lazy(() => import("./pages/admin/AdminPricingPage"));
+const AdminTestChatPage = lazy(() => import("./pages/admin/AdminTestChatPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const KpShowcasePage = lazy(() => import("./pages/kp/KpShowcasePage"));
 const KpSlugPage = lazy(() => import("./pages/kp/KpSlugPage"));
@@ -233,6 +238,13 @@ const AppContent = ({
                 <Route path="crm/kanban" element={<S><AdminCrmKanbanPage /></S>} />
                 <Route path="settings" element={<S><AdminSettingsPage /></S>} />
                 <Route path="settings/item/:settingKey" element={<S><AdminSettingEditor /></S>} />
+
+                {/* New AI + TG features */}
+                <Route path="telegram" element={<S><AdminTelegramPage /></S>} />
+                <Route path="ai-agent" element={<S><AdminAiAgentPage /></S>} />
+                <Route path="global-knowledge" element={<S><AdminGlobalKnowledgePage /></S>} />
+                <Route path="pricing" element={<S><AdminPricingPage /></S>} />
+                <Route path="test-chat" element={<S><AdminTestChatPage /></S>} />
               </Route>
             </Route>
 

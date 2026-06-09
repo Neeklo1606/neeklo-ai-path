@@ -5,7 +5,8 @@ import {
   LayoutDashboard, Users, KanbanSquare, MessageCircle,
   Briefcase, Film, Wrench, BookOpen, FileText,
   Library, ScrollText, Image, Settings, LogOut,
-  ExternalLink, ChevronRight, Store
+  ExternalLink, ChevronRight, Store, Bot, Send,
+  DollarSign, MessageSquare, Database
 } from "lucide-react";
 
 type NavItem = { to: string; icon: React.ReactNode; label: string; end?: boolean };
@@ -23,6 +24,16 @@ const sections: { title: string; items: NavItem[] }[] = [
       { to: "/admin/crm/contacts", icon: <Users size={15} />, label: "Контакты" },
       { to: "/admin/crm/kanban", icon: <KanbanSquare size={15} />, label: "Проекты" },
       { to: "/admin/chats", icon: <MessageCircle size={15} />, label: "Чаты" },
+      { to: "/admin/telegram", icon: <Send size={15} />, label: "Telegram бот" },
+    ],
+  },
+  {
+    title: "AI Агент",
+    items: [
+      { to: "/admin/ai-agent", icon: <Bot size={15} />, label: "Агент" },
+      { to: "/admin/global-knowledge", icon: <Database size={15} />, label: "База знаний" },
+      { to: "/admin/pricing", icon: <DollarSign size={15} />, label: "Прайс услуг" },
+      { to: "/admin/test-chat", icon: <MessageSquare size={15} />, label: "Тест-чат" },
     ],
   },
   {
@@ -37,7 +48,7 @@ const sections: { title: string; items: NavItem[] }[] = [
   {
     title: "Команда",
     items: [
-      { to: "/admin/knowledge-base", icon: <Library size={15} />, label: "База знаний" },
+      { to: "/admin/knowledge-base", icon: <Library size={15} />, label: "Ассистенты KB" },
       { to: "/admin/regulations", icon: <ScrollText size={15} />, label: "Регламенты" },
     ],
   },

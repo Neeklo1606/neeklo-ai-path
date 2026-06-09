@@ -409,6 +409,24 @@ model KnowledgeArticle {
   @@map("knowledge_articles")
 }
 
+/// Service price list item
+model ServicePrice {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  priceFrom   Int?     @map("price_from")
+  priceTo     Int?     @map("price_to")
+  currency    String   @default("RUB")
+  category    String   @default("general")
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, sortOrder])
+  @@map("service_prices")
+}
+
 /// Company regulation / SOP
 model Regulation {
   id        String   @id @default(cuid())

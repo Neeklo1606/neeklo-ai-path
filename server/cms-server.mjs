@@ -39,6 +39,37 @@ import {
   sendToCleroRaw,
 } from "./clero-helpers.mjs";
 import {
+  crmAlChat,
+  crmAlBalance,
+  crmAlModels,
+  crmAlUsage,
+  crmAlUsageDaily,
+  crmAlIsConfigured,
+  crmAlErrorMessage,
+} from "./services/crm-al.service.mjs";
+import {
+  initTgBot,
+  handleTgUpdate,
+  setTgWebhook,
+  getTgWebhookInfo,
+  getTgAdminRequests,
+  getApprovedTgChats,
+  approveTgAdminRequest,
+  rejectTgAdminRequest,
+  revokeTgAccess,
+  notifyNewLead,
+  notifyNewAvitoMessage,
+  notifyNewReview,
+  notifyAll,
+} from "./telegram-bot.mjs";
+import {
+  processAvitoMessage,
+  upsertPriceToKb,
+  upsertGlobalKbChunk,
+  upsertAvitoItemToKb,
+  GLOBAL_KB_COLLECTION,
+} from "./services/avito-agent.mjs";
+import {
   getBillingConfig,
   computeUsageCost,
   rateLimitByKeyHash,
@@ -128,6 +159,7 @@ async function reindexAssistantKnowledge(assistant) {
 
 
 const prisma = new PrismaClient();
+initTgBot(prisma);
 
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
   console.warn("[cms-server] Set JWT_SECRET (min 32 chars) for production.");
@@ -3132,7 +3164,7 @@ app.get("/crm/leads", requireAuth, async (_req, res) => {
 
 app.post("/crm/leads", requireAuth, async (req, res) => {
   try {
-    const { name, phone, status, readiness_score, intent_label, summary } = req.body || {};
+    const { name, phone, status, readiness_score, intent_label, summary, source } = req.body || {};
     const lead = await prisma.lead.create({
       data: {
         name: name != null ? String(name) : null,
@@ -3143,6 +3175,7 @@ app.post("/crm/leads", requireAuth, async (req, res) => {
         ...(summary != null ? { summary: String(summary) } : {}),
       },
     });
+    notifyNewLead({ name: lead.name, phone: lead.phone, source: source || intent_label || null }).catch(() => {});
     res.json({
       id: lead.id,
       name: lead.name,
@@ -3713,10 +3746,75 @@ async function handleAvitoIncomingWebhook(req, res) {
     let mapped = null;
     if (msg) {
       mapped = await ingestAvitoMessageToCrm(agentId, msg);
-      await sendTelegramNotification(
+
+      // TG notification to all approved admins
+      notifyNewAvitoMessage({
+        chatId: msg.chatId,
+        authorId: msg.userId,
+        text: msg.text,
+        agentId,
+      }).catch(() => {});
+
+      // Also legacy single-chat notification (backward compat)
+      sendTelegramNotification(
         cfg,
         `Avito: новое сообщение\nАгент: ${agentId}\nЧат: ${msg.chatId}\nТекст: ${msg.text.slice(0, 800)}`,
-      );
+      ).catch(() => {});
+
+      // AI Agent auto-reply if not paused
+      if (process.env.AVITO_AGENT_ENABLED === "true" && isClientAvitoMessage(msg.userId)) {
+        setImmediate(async () => {
+          try {
+            const sysRow = await prisma.cmsSetting.findUnique({ where: { key: "agent.avito_system_prompt" } }).catch(() => null);
+            const systemPrompt = typeof sysRow?.value === "string" ? sysRow.value : undefined;
+
+            // Check if chat is ai_paused
+            const map = await getAvitoChatMap();
+            const crmChatId = map[msg.chatId];
+            if (crmChatId) {
+              const chat = await prisma.chat.findUnique({ where: { id: crmChatId } }).catch(() => null);
+              if (chat?.aiPaused) return; // Operator took over
+            }
+
+            // Build history from CRM chat
+            let history = [];
+            if (crmChatId) {
+              const chat = await prisma.chat.findUnique({ where: { id: crmChatId } }).catch(() => null);
+              if (chat?.messages) {
+                const msgs = Array.isArray(chat.messages) ? chat.messages : [];
+                history = msgs.map((m) => ({
+                  role: m.source === "avito_agent" ? "assistant" : "user",
+                  content: m.content || "",
+                })).filter((m) => m.content);
+              }
+            }
+
+            const result = await processAvitoMessage({
+              userMessage: msg.text,
+              history,
+              systemPrompt,
+              model: "auto",
+            });
+
+            if (result.reply && !result.error) {
+              // Send reply back to Avito
+              const account = resolveAvitoAccount(cfg, mapped?.avitoAccountId || "");
+              if (account) {
+                await avitoApiRequest(account, "POST", `/messenger/v3/accounts/${account.accountId}/chats/${msg.chatId}/messages`, {
+                  message: { text: result.reply },
+                  type: "text",
+                });
+                // Save agent reply to CRM chat
+                if (crmChatId) {
+                  await appendMessageToChat(crmChatId, "assistant", result.reply, new Date().toISOString(), { source: "avito_agent" });
+                }
+              }
+            }
+          } catch (agentErr) {
+            console.warn("[avito-agent] auto-reply error:", agentErr?.message || agentErr);
+          }
+        });
+      }
     }
 
     // Forward first client message per chat to Clero CRM
@@ -3990,6 +4088,463 @@ app.delete("/admin/cases/:id", requireAuth, async (req, res) => {
     res.status(500).json({ error: String(e) });
   }
 });
+
+// ============================================================
+// TELEGRAM BOT  /tg/*
+// ============================================================
+
+/** POST /tg/webhook — Telegram sends updates here */
+app.post("/tg/webhook", async (req, res) => {
+  try {
+    await handleTgUpdate(req.body || {});
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("[tg/webhook]", e);
+    res.json({ ok: false });
+  }
+});
+
+/** POST /tg/setup-webhook — register webhook URL with Telegram */
+app.post("/tg/setup-webhook", requireAuth, async (req, res) => {
+  try {
+    const base = String(req.body?.baseUrl || process.env.APP_BASE_URL || "https://neeklo.ru").replace(/\/$/, "");
+    const result = await setTgWebhook(`${base}/cms-api/tg/webhook`);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** GET /tg/webhook-info — get current webhook status */
+app.get("/tg/webhook-info", requireAuth, async (_req, res) => {
+  try {
+    const info = await getTgWebhookInfo();
+    res.json(info);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** GET /tg/admin-requests — list all admin access requests */
+app.get("/tg/admin-requests", requireAuth, async (_req, res) => {
+  try {
+    const requests = await getTgAdminRequests();
+    res.json(requests);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** POST /tg/admin-requests/:chatId/approve — approve an access request */
+app.post("/tg/admin-requests/:chatId/approve", requireAuth, async (req, res) => {
+  try {
+    const result = await approveTgAdminRequest(req.params.chatId);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** POST /tg/admin-requests/:chatId/reject — reject an access request */
+app.post("/tg/admin-requests/:chatId/reject", requireAuth, async (req, res) => {
+  try {
+    const result = await rejectTgAdminRequest(req.params.chatId);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** DELETE /tg/admin-requests/:chatId — revoke access */
+app.delete("/tg/admin-requests/:chatId", requireAuth, async (req, res) => {
+  try {
+    await revokeTgAccess(req.params.chatId);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** GET /tg/approved-chats — list approved chat IDs */
+app.get("/tg/approved-chats", requireAuth, async (_req, res) => {
+  try {
+    const chats = await getApprovedTgChats();
+    res.json(chats);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** POST /tg/notify — broadcast manual message to all approved chats */
+app.post("/tg/notify", requireAuth, async (req, res) => {
+  try {
+    const { text } = req.body || {};
+    if (!text) return res.status(400).json({ error: "text required" });
+    const results = await notifyAll(String(text));
+    res.json({ ok: true, sent: results.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================
+// AI AGENT (crm-al)  /ai-agent/*
+// ============================================================
+
+/** GET /ai-agent/balance — current balance */
+app.get("/ai-agent/balance", requireAuth, async (_req, res) => {
+  try {
+    const data = await crmAlBalance();
+    res.json(data);
+  } catch (e) {
+    res.status(e.status || 500).json({ error: crmAlErrorMessage(e) });
+  }
+});
+
+/** GET /ai-agent/models — available models for this key */
+app.get("/ai-agent/models", requireAuth, async (_req, res) => {
+  try {
+    const data = await crmAlModels();
+    res.json(data);
+  } catch (e) {
+    res.status(e.status || 500).json({ error: crmAlErrorMessage(e) });
+  }
+});
+
+/** GET /ai-agent/usage — usage stats */
+app.get("/ai-agent/usage", requireAuth, async (_req, res) => {
+  try {
+    const data = await crmAlUsage();
+    res.json(data);
+  } catch (e) {
+    res.status(e.status || 500).json({ error: crmAlErrorMessage(e) });
+  }
+});
+
+/** GET /ai-agent/usage/daily — daily usage breakdown */
+app.get("/ai-agent/usage/daily", requireAuth, async (_req, res) => {
+  try {
+    const data = await crmAlUsageDaily();
+    res.json(data);
+  } catch (e) {
+    res.status(e.status || 500).json({ error: crmAlErrorMessage(e) });
+  }
+});
+
+/** GET /ai-agent/status — check if configured */
+app.get("/ai-agent/status", requireAuth, (_req, res) => {
+  res.json({ configured: crmAlIsConfigured() });
+});
+
+/** POST /ai-agent/chat — direct chat with crm-al agent */
+app.post("/ai-agent/chat", requireAuth, async (req, res) => {
+  try {
+    const { messages, model, systemPrompt } = req.body || {};
+    if (!Array.isArray(messages) || !messages.length) {
+      return res.status(400).json({ error: "messages[] required" });
+    }
+    const result = await crmAlChat(messages, { model, systemPrompt });
+    res.json(result);
+  } catch (e) {
+    res.status(e.status || 500).json({ error: crmAlErrorMessage(e) });
+  }
+});
+
+// ============================================================
+// SERVICE PRICING  /admin/prices
+// ============================================================
+
+/** GET /admin/prices — list all prices */
+app.get("/admin/prices", requireAuth, async (_req, res) => {
+  try {
+    const prices = await prisma.servicePrice.findMany({
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    });
+    res.json(prices);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** GET /prices — public price list (active only) */
+app.get("/prices", async (_req, res) => {
+  try {
+    const prices = await prisma.servicePrice.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    });
+    res.json(prices);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** POST /admin/prices — create price item */
+app.post("/admin/prices", requireAuth, async (req, res) => {
+  try {
+    const { title, description, priceFrom, priceTo, currency, category, isActive, sortOrder } = req.body || {};
+    if (!title) return res.status(400).json({ error: "title required" });
+    const price = await prisma.servicePrice.create({
+      data: {
+        title: String(title),
+        description: description != null ? String(description) : null,
+        priceFrom: priceFrom != null ? Number(priceFrom) : null,
+        priceTo: priceTo != null ? Number(priceTo) : null,
+        currency: currency || "RUB",
+        category: category || "general",
+        isActive: isActive !== false,
+        sortOrder: sortOrder != null ? Number(sortOrder) : 0,
+      },
+    });
+    upsertPriceToKb(price).catch((e) => console.warn("[pricing-kb]", e?.message));
+    res.status(201).json(price);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** PUT /admin/prices/:id — update price item */
+app.put("/admin/prices/:id", requireAuth, async (req, res) => {
+  try {
+    const { title, description, priceFrom, priceTo, currency, category, isActive, sortOrder } = req.body || {};
+    const price = await prisma.servicePrice.update({
+      where: { id: req.params.id },
+      data: {
+        ...(title !== undefined && { title: String(title) }),
+        ...(description !== undefined && { description: description === null ? null : String(description) }),
+        ...(priceFrom !== undefined && { priceFrom: priceFrom === null ? null : Number(priceFrom) }),
+        ...(priceTo !== undefined && { priceTo: priceTo === null ? null : Number(priceTo) }),
+        ...(currency !== undefined && { currency: String(currency) }),
+        ...(category !== undefined && { category: String(category) }),
+        ...(isActive !== undefined && { isActive: Boolean(isActive) }),
+        ...(sortOrder !== undefined && { sortOrder: Number(sortOrder) }),
+      },
+    });
+    upsertPriceToKb(price).catch((e) => console.warn("[pricing-kb]", e?.message));
+    res.json(price);
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ error: "Not found" });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** DELETE /admin/prices/:id — delete price item */
+app.delete("/admin/prices/:id", requireAuth, async (req, res) => {
+  try {
+    await prisma.servicePrice.delete({ where: { id: req.params.id } });
+    res.status(204).end();
+  } catch (e) {
+    if (e.code === "P2025") return res.status(404).json({ error: "Not found" });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================
+// GLOBAL KNOWLEDGE BASE  /admin/knowledge/*
+// ============================================================
+
+const uploadKbGlobal = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
+
+/** POST /admin/knowledge/upload — upload file to global KB */
+app.post("/admin/knowledge/upload", requireAuth, uploadKbGlobal.single("file"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "file required" });
+    const text = await extractTextFromFile(req.file.buffer, req.file.mimetype, req.file.originalname);
+    if (!text.trim()) return res.status(400).json({ error: "No text extracted from file" });
+
+    const chunks = chunkText(text);
+    let upserted = 0;
+    for (let i = 0; i < chunks.length; i++) {
+      await upsertGlobalKbChunk({
+        id: `${Date.now()}_${i}`,
+        text: chunks[i],
+        source: `file:${req.file.originalname}`,
+        filename: req.file.originalname,
+      });
+      upserted++;
+    }
+    res.json({ ok: true, filename: req.file.originalname, chunks: upserted });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** POST /admin/knowledge/text — add raw text to global KB */
+app.post("/admin/knowledge/text", requireAuth, async (req, res) => {
+  try {
+    const { text, source } = req.body || {};
+    if (!text) return res.status(400).json({ error: "text required" });
+    const chunks = chunkText(String(text));
+    let upserted = 0;
+    for (let i = 0; i < chunks.length; i++) {
+      await upsertGlobalKbChunk({
+        id: `manual_${Date.now()}_${i}`,
+        text: chunks[i],
+        source: source || "manual",
+      });
+      upserted++;
+    }
+    res.json({ ok: true, chunks: upserted });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** GET /admin/knowledge/chunks — list global KB chunks */
+app.get("/admin/knowledge/chunks", requireAuth, async (req, res) => {
+  try {
+    const client = getQdrantClient();
+    const limit = Math.min(Number(req.query.limit || 50), 200);
+    const offset = Number(req.query.offset || 0);
+    try {
+      const result = await client.scroll(GLOBAL_KB_COLLECTION, {
+        limit,
+        offset,
+        with_payload: true,
+        with_vector: false,
+      });
+      const points = Array.isArray(result?.points) ? result.points : [];
+      res.json({
+        chunks: points.map((p) => ({
+          id: p.id,
+          text: p.payload?.text || "",
+          source: p.payload?.source || "",
+          filename: p.payload?.filename || "",
+        })),
+        total: result?.next_page_offset ?? points.length,
+      });
+    } catch {
+      res.json({ chunks: [], total: 0 });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** DELETE /admin/knowledge/chunks/:id — delete a global KB chunk */
+app.delete("/admin/knowledge/chunks/:id", requireAuth, async (req, res) => {
+  try {
+    const client = getQdrantClient();
+    await client.delete(GLOBAL_KB_COLLECTION, { points: [req.params.id] });
+    res.status(204).end();
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** POST /admin/knowledge/sync-avito-items — sync Avito listings to Qdrant */
+app.post("/admin/knowledge/sync-avito-items", requireAuth, async (req, res) => {
+  try {
+    const cfg = await getAvitoConfig();
+    const accounts = Array.isArray(cfg.accounts) ? cfg.accounts.filter((a) => a.isActive !== false) : [];
+    if (!accounts.length) return res.json({ ok: true, synced: 0, message: "No active Avito accounts" });
+
+    let synced = 0;
+    for (const account of accounts) {
+      try {
+        const data = await avitoApiRequest(account, "GET", "/core/v1/items", null, { per_page: 100 });
+        const items = data?.resources || data?.items || [];
+        for (const item of items) {
+          await upsertAvitoItemToKb({
+            id: item.id || item.item_id,
+            title: item.title || "",
+            description: item.description || "",
+            price: item.price_string || item.price || null,
+            status: item.status || "",
+            url: item.url || "",
+            category: item.category?.name || "",
+          });
+          synced++;
+        }
+      } catch (e) {
+        console.warn(`[avito-sync] account ${account.id}: ${e.message}`);
+      }
+    }
+    res.json({ ok: true, synced });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================
+// TEST CHAT  /admin/test-chat/*
+// ============================================================
+
+const TEST_CHAT_HISTORY_KEY = "test.chat_history";
+
+/** POST /admin/test-chat/message — send test message through agent pipeline */
+app.post("/admin/test-chat/message", requireAuth, async (req, res) => {
+  try {
+    const { message, history = [], model } = req.body || {};
+    if (!message) return res.status(400).json({ error: "message required" });
+
+    // Get custom system prompt from settings
+    const sysRow = await prisma.cmsSetting.findUnique({ where: { key: "agent.avito_system_prompt" } }).catch(() => null);
+    const systemPrompt = typeof sysRow?.value === "string" ? sysRow.value : undefined;
+
+    const result = await processAvitoMessage({
+      userMessage: String(message),
+      history: Array.isArray(history) ? history : [],
+      systemPrompt,
+      model: model || "auto",
+    });
+
+    // Save to test chat history
+    try {
+      const histRow = await prisma.cmsSetting.findUnique({ where: { key: TEST_CHAT_HISTORY_KEY } }).catch(() => null);
+      const hist = Array.isArray(histRow?.value) ? histRow.value : [];
+      hist.push({
+        at: new Date().toISOString(),
+        userMessage: String(message),
+        reply: result.reply,
+        model: model || "auto",
+        chunksCount: result.chunks?.length || 0,
+      });
+      // Keep last 100 entries
+      const trimmed = hist.slice(-100);
+      await prisma.cmsSetting.upsert({
+        where: { key: TEST_CHAT_HISTORY_KEY },
+        create: { key: TEST_CHAT_HISTORY_KEY, value: trimmed },
+        update: { value: trimmed },
+      });
+    } catch {}
+
+    res.json({
+      reply: result.reply,
+      error: result.error,
+      chunks: result.chunks || [],
+      ragContext: result.ragContext || "",
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** GET /admin/test-chat/history — get test chat history */
+app.get("/admin/test-chat/history", requireAuth, async (_req, res) => {
+  try {
+    const row = await prisma.cmsSetting.findUnique({ where: { key: TEST_CHAT_HISTORY_KEY } }).catch(() => null);
+    res.json(Array.isArray(row?.value) ? row.value : []);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** DELETE /admin/test-chat/history — clear test chat history */
+app.delete("/admin/test-chat/history", requireAuth, async (_req, res) => {
+  try {
+    await prisma.cmsSetting.upsert({
+      where: { key: TEST_CHAT_HISTORY_KEY },
+      create: { key: TEST_CHAT_HISTORY_KEY, value: [] },
+      update: { value: [] },
+    });
+    res.status(204).end();
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================
 
 process.on("unhandledRejection", (reason) => {
   console.error("[cms-server] unhandledRejection", reason);
