@@ -751,6 +751,22 @@ function resolveAvitoAccount(config, accountId) {
   return accounts.find((a) => a.isActive) || accounts[0] || null;
 }
 
+/** Avito Messenger: read messages via v3, send via v1 (v3 POST returns 405). */
+function avitoReadMessagesPath(accountId, chatId) {
+  return `/messenger/v3/accounts/${encodeURIComponent(accountId)}/chats/${encodeURIComponent(chatId)}/messages`;
+}
+
+function avitoSendMessagePath(accountId, chatId) {
+  return `/messenger/v1/accounts/${encodeURIComponent(accountId)}/chats/${encodeURIComponent(chatId)}/messages`;
+}
+
+async function avitoSendChatMessage(account, chatId, text) {
+  return avitoApiRequest(account, "POST", avitoSendMessagePath(account.accountId, chatId), {
+    message: { text: String(text) },
+    type: "text",
+  });
+}
+
 function isAvitoTokenExpired(account) {
   if (!account?.accessToken) return true;
   const exp = account.tokenExpiresAt ? Date.parse(account.tokenExpiresAt) : 0;
@@ -3600,7 +3616,7 @@ app.get("/avito/messenger/chats/:chatId/messages", requireAuth, async (req, res)
     const data = await avitoApiRequest(
       account,
       "GET",
-      `/messenger/v3/accounts/${encodeURIComponent(account.accountId)}/chats/${encodeURIComponent(String(req.params.chatId))}/messages`,
+      avitoReadMessagesPath(account.accountId, String(req.params.chatId)),
       undefined,
       { page, per_page },
     );
@@ -3619,12 +3635,7 @@ app.post("/avito/messenger/chats/:chatId/messages", requireAuth, async (req, res
     const account = resolveAvitoAccount(cfg, accountId);
     if (!account) return res.status(400).json({ error: "No Avito account configured" });
     if (!account.accountId) return res.status(400).json({ error: "accountId is required in Avito account config" });
-    const data = await avitoApiRequest(
-      account,
-      "POST",
-      `/messenger/v3/accounts/${encodeURIComponent(account.accountId)}/chats/${encodeURIComponent(String(req.params.chatId))}/messages`,
-      { message: { text } },
-    );
+    const data = await avitoSendChatMessage(account, String(req.params.chatId), text);
     res.json({ ok: true, data });
   } catch (e) {
     res.status(e?.status || 500).json({ error: e.message || "Failed", details: e?.payload || null });
@@ -3652,7 +3663,7 @@ app.post("/avito/sync", requireAuth, async (req, res) => {
       const msgs = await avitoApiRequest(
         account,
         "GET",
-        `/messenger/v3/accounts/${encodeURIComponent(account.accountId)}/chats/${encodeURIComponent(chatId)}/messages`,
+        avitoReadMessagesPath(account.accountId, chatId),
         undefined,
         { per_page: 20, page: 1 },
       );
@@ -3859,6 +3870,8 @@ async function handleAvitoIncomingWebhook(req, res) {
               orderBy: { sortOrder: "asc" },
             }).catch(() => []);
 
+            console.log(`[avito-agent] processing chat=${msg.chatId} from=${msg.userId}`);
+
             // Process message through agent (crm-al only, no Ollama)
             const result = await processAvitoMessage({
               userMessage: msg.text,
@@ -3869,7 +3882,7 @@ async function handleAvitoIncomingWebhook(req, res) {
             });
 
             if (result.error && !result.reply) {
-              // Agent returned error without reply — notify manager
+              console.warn(`[avito-agent] no reply chat=${msg.chatId}:`, result.error);
               notifyAgentError({
                 chatId: msg.chatId,
                 clientText: msg.text,
@@ -3880,12 +3893,19 @@ async function handleAvitoIncomingWebhook(req, res) {
 
             if (result.reply && !result.error) {
               const account = resolveAvitoAccount(cfg, mapped?.avitoAccountId || "");
+              if (!account) {
+                console.warn(`[avito-agent] no Avito account for chat=${msg.chatId}`);
+                notifyAgentError({
+                  chatId: msg.chatId,
+                  clientText: msg.text,
+                  error: "Avito account not configured",
+                  agentId,
+                }).catch(() => {});
+              }
               if (account) {
-                // Send reply to Avito
-                await avitoApiRequest(account, "POST", `/messenger/v3/accounts/${account.accountId}/chats/${msg.chatId}/messages`, {
-                  message: { text: result.reply },
-                  type: "text",
-                });
+                // Send reply to Avito (v1 API — v3 POST returns 405)
+                await avitoSendChatMessage(account, msg.chatId, result.reply);
+                console.log(`[avito-agent] reply sent chat=${msg.chatId} len=${result.reply.length}`);
 
                 // Save agent reply in CRM chat
                 if (crmChatId) {

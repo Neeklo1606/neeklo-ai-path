@@ -105,8 +105,14 @@ export async function buildAgentContext(userMessage, servicePrices = []) {
   const client = getQdrantClient();
   const parts = [];
 
-  // 1. Avito listings (scroll up to 30, rank by keyword relevance)
-  const avitoPoints = await scrollCollection(client, AVITO_ITEMS_COLLECTION, 50);
+  // Scroll all collections in parallel for speed
+  const [avitoPoints, kbPoints, insightsPoints] = await Promise.all([
+    scrollCollection(client, AVITO_ITEMS_COLLECTION, 30),
+    scrollCollection(client, GLOBAL_KB_COLLECTION, 40),
+    scrollCollection(client, AVITO_INSIGHTS_COLL, 15),
+  ]);
+
+  // 1. Avito listings — keyword ranked
   const rankedAvito = avitoPoints
     .map(p => ({ text: p.payload?.text || "", score: keywordScore(p.payload?.text, userMessage) }))
     .sort((a, b) => b.score - a.score)
@@ -129,8 +135,7 @@ export async function buildAgentContext(userMessage, servicePrices = []) {
     }
   }
 
-  // 3. Global KB (uploaded docs — keyword ranked, top 5)
-  const kbPoints = await scrollCollection(client, GLOBAL_KB_COLLECTION, 100);
+  // 3. Global KB — keyword ranked, top 5
   const rankedKb = kbPoints
     .map(p => ({ text: p.payload?.text || "", score: keywordScore(p.payload?.text, userMessage) }))
     .sort((a, b) => b.score - a.score)
@@ -140,8 +145,7 @@ export async function buildAgentContext(userMessage, servicePrices = []) {
     rankedKb.forEach(p => p.text && parts.push(p.text));
   }
 
-  // 4. Conversation insights (top 3)
-  const insightsPoints = await scrollCollection(client, AVITO_INSIGHTS_COLL, 20);
+  // 4. Conversation insights — top 3
   const rankedInsights = insightsPoints
     .map(p => ({ text: p.payload?.text || "", score: keywordScore(p.payload?.text, userMessage) }))
     .sort((a, b) => b.score - a.score)
@@ -200,7 +204,7 @@ export async function processAvitoMessage({ userMessage, history = [], systemPro
   const messages = buildMessages(sysPrompt, history, context, userMessage);
 
   try {
-    const result = await crmAlChat(messages, { model: model || "neeklo", timeoutMs: 90_000 });
+    const result = await crmAlChat(messages, { model: model || "neeklo", timeoutMs: 120_000 });
     return { reply: result.text, context, usage: result.usage };
   } catch (e) {
     console.error("[avito-agent] crm-al error:", e?.message || e);
