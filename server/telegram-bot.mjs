@@ -30,9 +30,13 @@ export async function sendTgMessage(chatId, text, extra = {}) {
       signal: AbortSignal.timeout(8_000),
     });
     const json = await resp.json().catch(() => ({}));
+    if (!json?.ok) {
+      console.warn(`[tg-bot] sendTgMessage failed chatId=${chatId}:`, json?.description || json);
+    }
     return json;
-  } catch {
-    return { ok: false };
+  } catch (err) {
+    console.warn(`[tg-bot] sendTgMessage error chatId=${chatId}:`, err?.message || err);
+    return { ok: false, description: err?.message || "network_error" };
   }
 }
 
@@ -84,10 +88,27 @@ export async function getTgAdminRequests() {
   return Array.isArray(val) ? val : [];
 }
 
-/** Get all approved chat IDs for notifications. */
+/** Escape text for Telegram HTML parse_mode. */
+export function escapeTgHtml(text) {
+  return String(text || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/** Get all approved chat IDs for notifications (synced from admin_requests). */
 export async function getApprovedTgChats() {
   const val = await getSetting(APPROVED_CHATS_KEY);
-  return Array.isArray(val) ? val : [];
+  const fromSetting = Array.isArray(val) ? val.map(String) : [];
+  const requests = await getTgAdminRequests();
+  const fromApproved = requests
+    .filter((r) => r.status === "approved")
+    .map((r) => String(r.chatId));
+  const merged = [...new Set([...fromSetting, ...fromApproved])];
+  if (merged.length !== fromSetting.length) {
+    await setSetting(APPROVED_CHATS_KEY, merged);
+  }
+  return merged;
 }
 
 /** Add or update an admin request. */
@@ -164,8 +185,18 @@ export async function revokeTgAccess(chatId) {
 /** Send message to all approved TG admins. */
 export async function notifyAll(text, extra = {}) {
   const chats = await getApprovedTgChats();
+  if (!chats.length) {
+    console.warn("[tg-bot] notifyAll: no approved chats");
+    return [];
+  }
   const results = await Promise.allSettled(
-    chats.map((chatId) => sendTgMessage(chatId, text, extra)),
+    chats.map(async (chatId) => {
+      const res = await sendTgMessage(chatId, text, extra);
+      if (!res?.ok) {
+        console.warn(`[tg-bot] notify failed chatId=${chatId}:`, res?.description || res);
+      }
+      return res;
+    }),
   );
   return results;
 }
@@ -181,9 +212,10 @@ export async function notifyNewLead(lead) {
 
 /** New Avito message notification. */
 export async function notifyNewAvitoMessage({ chatId, authorId, text: msgText, agentId }) {
-  const preview = (msgText || "").slice(0, 400);
+  const preview = escapeTgHtml((msgText || "").slice(0, 400));
   const time = new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow", hour: "2-digit", minute: "2-digit" });
-  const text = `📬 <b>Новое сообщение Avito</b> [${time}]\n\nЧат: <code>${chatId || "—"}</code>\n\n💬 ${preview}\n\n👉 <a href="https://neeklo.ru/admin/avito/chats">Открыть панель</a>`;
+  const safeChatId = escapeTgHtml(chatId || "—");
+  const text = `📬 <b>Новое сообщение Avito</b> [${time}]\n\nЧат: <code>${safeChatId}</code>\n\n💬 ${preview}\n\n👉 <a href="https://neeklo.ru/admin/avito/chats">Открыть панель</a>`;
   return notifyAll(text, { parse_mode: "HTML" });
 }
 

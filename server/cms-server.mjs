@@ -839,38 +839,48 @@ function verifyAvitoSignature(req, secret) {
 
 function extractAvitoWebhookMessage(payload) {
   const p = safeJsonObject(payload, {});
+
+  // Avito v3 format: { payload: { type: "message", value: { chat_id, author_id, content: { text } } } }
+  const v3Value = safeJsonObject(p?.payload?.value, null);
+  if (v3Value) {
+    const chatId = v3Value.chat_id != null ? String(v3Value.chat_id) : v3Value.chatid != null ? String(v3Value.chatid) : "";
+    const userId =
+      v3Value.author_id != null ? String(v3Value.author_id)
+      : v3Value.authorid != null ? String(v3Value.authorid)
+      : v3Value.user_id != null ? String(v3Value.user_id) : "";
+    const text = v3Value.content?.text != null ? String(v3Value.content.text) : v3Value.text != null ? String(v3Value.text) : "";
+    const at = v3Value.created != null ? new Date(Number(v3Value.created) * 1000)
+      : v3Value.published_at ? new Date(String(v3Value.published_at)) : new Date();
+    if (chatId && text.trim()) {
+      return {
+        chatId,
+        userId,
+        text: text.trim(),
+        at: Number.isNaN(at.getTime()) ? new Date().toISOString() : at.toISOString(),
+        raw: v3Value,
+      };
+    }
+  }
+
+  // Legacy formats: payload.message or payload.payload.message
   const directMessage = safeJsonObject(p.message, null);
   const nestedMessage = safeJsonObject(p.payload, null) ? safeJsonObject(p.payload.message, null) : null;
   const m = directMessage || nestedMessage || null;
   if (!m) return null;
   const chatId =
-    m.chat_id != null
-      ? String(m.chat_id)
-      : m.chatId != null
-        ? String(m.chatId)
-        : p.chat_id != null
-          ? String(p.chat_id)
-          : p.chatId != null
-            ? String(p.chatId)
-            : "";
+    m.chat_id != null ? String(m.chat_id)
+    : m.chatId != null ? String(m.chatId)
+    : p.chat_id != null ? String(p.chat_id)
+    : p.chatId != null ? String(p.chatId) : "";
   const userId =
-    m.user_id != null
-      ? String(m.user_id)
-      : m.author_id != null
-        ? String(m.author_id)
-        : m.from_id != null
-          ? String(m.from_id)
-          : p.user_id != null
-            ? String(p.user_id)
-            : "";
+    m.user_id != null ? String(m.user_id)
+    : m.author_id != null ? String(m.author_id)
+    : m.from_id != null ? String(m.from_id)
+    : p.user_id != null ? String(p.user_id) : "";
   const text =
-    m.content?.text != null
-      ? String(m.content.text)
-      : m.text != null
-        ? String(m.text)
-        : m.message != null
-          ? String(m.message)
-          : "";
+    m.content?.text != null ? String(m.content.text)
+    : m.text != null ? String(m.text)
+    : m.message != null ? String(m.message) : "";
   const at = m.created != null ? new Date(Number(m.created) * 1000) : m.created_at ? new Date(String(m.created_at)) : new Date();
   if (!chatId || !text.trim()) return null;
   return {
@@ -3780,13 +3790,13 @@ async function handleAvitoIncomingWebhook(req, res) {
     if (msg) {
       mapped = await ingestAvitoMessageToCrm(agentId, msg);
 
-      // TG notification to all approved admins
+      // TG notification to all approved admins — ALWAYS, regardless of agent state
       notifyNewAvitoMessage({
         chatId: msg.chatId,
         authorId: msg.userId,
         text: msg.text,
         agentId,
-      }).catch(() => {});
+      }).catch((e) => console.warn("[tg] avito notify error:", e?.message || e));
 
       // Legacy single-chat notification
       sendTelegramNotification(
