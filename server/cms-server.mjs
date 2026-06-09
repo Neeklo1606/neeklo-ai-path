@@ -774,7 +774,7 @@ async function avitoApiRequest(account, method, endpointPath, body, query = {}, 
       Authorization: `Bearer ${active.accessToken}`,
       "Content-Type": "application/json",
     },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    ...(body != null ? { body: JSON.stringify(body) } : {}),
   });
   const text = await resp.text();
   let data = {};
