@@ -64,6 +64,9 @@ import {
   notifyLeadCreatedFromAvito,
   notifyClientContact,
   notifyTransferIntent,
+  notifyServerError,
+  notifyAgentDisabledMessage,
+  notifyAgentError,
   notifyAll,
 } from "./telegram-bot.mjs";
 import {
@@ -3810,7 +3813,11 @@ async function handleAvitoIncomingWebhook(req, res) {
             const agentEnabled = enabledRow
               ? enabledRow.value === "true" || enabledRow.value === "1"
               : process.env.AVITO_AGENT_ENABLED === "true";
-            if (!agentEnabled) return;
+            if (!agentEnabled) {
+              // Agent disabled — remind manager to reply manually
+              notifyAgentDisabledMessage({ chatId: msg.chatId, text: msg.text, agentId }).catch(() => {});
+              return;
+            }
 
             const sysRow = await prisma.cmsSetting.findUnique({ where: { key: "agent.avito_system_prompt" } }).catch(() => null);
             const systemPrompt = typeof sysRow?.value === "string" ? sysRow.value : undefined;
@@ -3850,6 +3857,16 @@ async function handleAvitoIncomingWebhook(req, res) {
               model: "neeklo",
               servicePrices,
             });
+
+            if (result.error && !result.reply) {
+              // Agent returned error without reply — notify manager
+              notifyAgentError({
+                chatId: msg.chatId,
+                clientText: msg.text,
+                error: result.error,
+                agentId,
+              }).catch(() => {});
+            }
 
             if (result.reply && !result.error) {
               const account = resolveAvitoAccount(cfg, mapped?.avitoAccountId || "");
@@ -3925,6 +3942,12 @@ async function handleAvitoIncomingWebhook(req, res) {
             }
           } catch (agentErr) {
             console.warn("[avito-agent] auto-reply error:", agentErr?.message || agentErr);
+            notifyAgentError({
+              chatId: msg.chatId,
+              clientText: msg.text,
+              error: agentErr?.message || String(agentErr),
+              agentId,
+            }).catch(() => {});
           }
         });
       }
@@ -4827,9 +4850,40 @@ app.patch("/settings/:key", requireAuth, async (req, res) => {
 process.on("unhandledRejection", (reason) => {
   console.error("[cms-server] unhandledRejection", reason);
 });
+// ─── Global error handlers → Telegram alerts ─────────────────────────────────
+
 process.on("uncaughtException", (err) => {
   console.error("[cms-server] uncaughtException", err);
+  notifyServerError({
+    title: "uncaughtException",
+    message: err?.message || String(err),
+    source: "cms-server",
+    stack: err?.stack,
+  }).catch(() => {});
 });
+
+process.on("unhandledRejection", (reason) => {
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  const stack = reason instanceof Error ? reason.stack : undefined;
+  console.error("[cms-server] unhandledRejection", reason);
+  notifyServerError({
+    title: "unhandledRejection",
+    message: msg,
+    source: "cms-server",
+    stack,
+  }).catch(() => {});
+});
+
+// Intercept console.error to also forward critical errors to TG (throttled)
+const _origConsoleError = console.error.bind(console);
+console.error = (...args) => {
+  _origConsoleError(...args);
+  const message = args.map((a) => (a instanceof Error ? a.message : String(a))).join(" ");
+  // Only forward non-trivial errors (skip common noise)
+  if (message.length > 10 && !/ECONNREFUSED|ENOTFOUND|socket hang up/i.test(message)) {
+    notifyServerError({ title: "console.error", message, source: "cms-server" }).catch(() => {});
+  }
+};
 
 app.listen(PORT, "127.0.0.1", () => {
   console.log(`[cms-server] http://127.0.0.1:${PORT} (Prisma)`);

@@ -181,9 +181,52 @@ export async function notifyNewLead(lead) {
 
 /** New Avito message notification. */
 export async function notifyNewAvitoMessage({ chatId, authorId, text: msgText, agentId }) {
-  const preview = (msgText || "").slice(0, 300);
-  const text = `📬 <b>Новое сообщение Avito</b>\n\nАгент: <code>${agentId || "—"}</code>\nЧат: <code>${chatId || "—"}</code>\n\n${preview}\n\nПанель: https://neeklo.ru/admin/avito/chats`;
-  return notifyAll(text);
+  const preview = (msgText || "").slice(0, 400);
+  const time = new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow", hour: "2-digit", minute: "2-digit" });
+  const text = `📬 <b>Новое сообщение Avito</b> [${time}]\n\nЧат: <code>${chatId || "—"}</code>\n\n💬 ${preview}\n\n👉 <a href="https://neeklo.ru/admin/avito/chats">Открыть панель</a>`;
+  return notifyAll(text, { parse_mode: "HTML" });
+}
+
+// ─── Error / System Notifications ────────────────────────────────────────────
+
+/** Throttle: don't spam TG with the same error message. */
+const _errorCooldowns = new Map();
+function _isThrottled(key, cooldownMs = 60_000) {
+  const last = _errorCooldowns.get(key) || 0;
+  if (Date.now() - last < cooldownMs) return true;
+  _errorCooldowns.set(key, Date.now());
+  return false;
+}
+
+/**
+ * Send a server error/critical event to TG.
+ * Throttled to 1 notification per error key per minute to prevent spam.
+ */
+export async function notifyServerError({ title, message, source, stack } = {}) {
+  const key = `${title}|${(message || "").slice(0, 80)}`;
+  if (_isThrottled(key, 60_000)) return;
+  const src = source ? ` [${source}]` : "";
+  const msgPreview = (message || "").slice(0, 400);
+  const stackPreview = stack ? `\n<pre>${String(stack).slice(0, 500)}</pre>` : "";
+  const text = `🔴 <b>Ошибка сервера${src}</b>\n\n${title ? `<b>${title}</b>\n` : ""}${msgPreview}${stackPreview}\n\n⏰ ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`;
+  return notifyAll(text, { parse_mode: "HTML" });
+}
+
+/** Agent was disabled — inform manager to reply manually. */
+export async function notifyAgentDisabledMessage({ chatId, text, agentId }) {
+  const preview = (text || "").slice(0, 300);
+  const msg = `💬 <b>Новое сообщение Avito (агент выключен)</b>\n\nЧат: <code>${chatId || "—"}</code>\nАгент: <code>${agentId || "—"}</code>\n\nСообщение: ${preview}\n\n⚠️ Ответьте клиенту вручную!\nПанель: https://neeklo.ru/admin/avito/chats`;
+  return notifyAll(msg, { parse_mode: "HTML" });
+}
+
+/** Agent failed to generate reply — inform manager. */
+export async function notifyAgentError({ chatId, clientText, error, agentId }) {
+  const key = `agent-err|${chatId}`;
+  if (_isThrottled(key, 120_000)) return;
+  const preview = (clientText || "").slice(0, 200);
+  const errStr = (error || "unknown error").slice(0, 300);
+  const text = `⚠️ <b>Ошибка AI-агента</b>\n\nЧат: <code>${chatId || "—"}</code>\nАгент: <code>${agentId || "—"}</code>\n\nСообщение клиента: ${preview}\n\n❌ Ошибка: ${errStr}\n\n👉 Ответьте клиенту вручную!\nПанель: https://neeklo.ru/admin/avito/chats`;
+  return notifyAll(text, { parse_mode: "HTML" });
 }
 
 /** Client left a phone number or contact — urgent alert. */
