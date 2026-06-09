@@ -59,7 +59,7 @@ export default function AdminTestChatPage() {
   const qc = useQueryClient();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [model, setModel] = useState("auto");
+  const [model, setModel] = useState("neeklo");
   const [expandedChunks, setExpandedChunks] = useState<Set<number>>(new Set());
   const [showHistory, setShowHistory] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
