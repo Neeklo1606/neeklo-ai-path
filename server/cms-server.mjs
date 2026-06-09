@@ -4418,31 +4418,57 @@ app.post("/admin/knowledge/text", requireAuth, async (req, res) => {
   }
 });
 
-/** GET /admin/knowledge/chunks — list global KB chunks */
+/** GET /admin/knowledge/chunks — list KB chunks (supports ?collection= param) */
 app.get("/admin/knowledge/chunks", requireAuth, async (req, res) => {
   try {
     const client = getQdrantClient();
     const limit = Math.min(Number(req.query.limit || 50), 200);
     const offset = Number(req.query.offset || 0);
+    const collectionParam = req.query.collection;
+    const KNOWN_COLLECTIONS = {
+      global: GLOBAL_KB_COLLECTION,
+      avito_items: AVITO_ITEMS_COLLECTION,
+      pricing: PRICING_COLLECTION,
+      insights: AVITO_INSIGHTS_COLL,
+    };
+    const collection = KNOWN_COLLECTIONS[collectionParam] || GLOBAL_KB_COLLECTION;
+
+    // Also return counts for all collections for the UI tabs
+    const countPromises = Object.entries(KNOWN_COLLECTIONS).map(async ([key, col]) => {
+      try {
+        const info = await client.getCollection(col);
+        return [key, info?.result?.points_count ?? info?.points_count ?? 0];
+      } catch {
+        return [key, 0];
+      }
+    });
+
     try {
-      const result = await client.scroll(GLOBAL_KB_COLLECTION, {
-        limit,
-        offset,
-        with_payload: true,
-        with_vector: false,
-      });
-      const points = Array.isArray(result?.points) ? result.points : [];
+      const [scrollResult, ...counts] = await Promise.all([
+        client.scroll(collection, { limit, offset, with_payload: true, with_vector: false }),
+        ...countPromises,
+      ]);
+      const points = Array.isArray(scrollResult?.points) ? scrollResult.points : [];
+      const collectionCounts = Object.fromEntries(counts);
       res.json({
         chunks: points.map((p) => ({
           id: p.id,
-          text: p.payload?.text || "",
-          source: p.payload?.source || "",
-          filename: p.payload?.filename || "",
+          text: p.payload?.text || p.payload?.title || "",
+          source: p.payload?.source || p.payload?.category || "",
+          filename: p.payload?.filename || p.payload?.item_id || "",
+          extra: collectionParam === "avito_items" ? {
+            title: p.payload?.title,
+            price: p.payload?.price,
+            status: p.payload?.status,
+            url: p.payload?.url,
+          } : undefined,
         })),
-        total: result?.next_page_offset ?? points.length,
+        total: scrollResult?.next_page_offset ?? points.length,
+        collection: collectionParam || "global",
+        counts: collectionCounts,
       });
     } catch {
-      res.json({ chunks: [], total: 0 });
+      res.json({ chunks: [], total: 0, collection: collectionParam || "global", counts: {} });
     }
   } catch (e) {
     res.status(500).json({ error: e.message });
