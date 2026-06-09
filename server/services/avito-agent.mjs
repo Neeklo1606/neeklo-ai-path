@@ -204,7 +204,7 @@ export async function processAvitoMessage({ userMessage, history = [], systemPro
   const messages = buildMessages(sysPrompt, history, context, userMessage);
 
   try {
-    const result = await aiChat(messages, { model: model || "neeklo", timeoutMs: 60_000 });
+    const result = await aiChat(messages, { model: model || "openai/gpt-4o-mini", timeoutMs: 60_000 });
     return { reply: result.text, context, usage: result.usage, model: result.model, provider: result.provider };
   } catch (e) {
     console.error("[avito-agent] ai error:", e?.message || e);

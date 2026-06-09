@@ -314,6 +314,34 @@ export default function AdminAvitoPage() {
     refetchInterval: 2500,
   });
 
+  const chatAgentQ = useQuery({
+    queryKey: ["avito", "chat-agent", selectedChatId],
+    queryFn: async () => {
+      const { data } = await adminApi.get<{ ai_paused: boolean; intercepted: boolean }>(
+        `/avito/messenger/chats/${selectedChatId}/agent-status`,
+      );
+      return data;
+    },
+    enabled: !!selectedChatId,
+    refetchInterval: 4000,
+  });
+
+  const pauseAgentMut = useMutation({
+    mutationFn: () => adminApi.post(`/avito/messenger/chats/${selectedChatId}/pause-agent`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["avito", "chat-agent", selectedChatId] });
+      toast.success("Перехват: агент отключён для этого чата");
+    },
+  });
+
+  const resumeAgentMut = useMutation({
+    mutationFn: () => adminApi.post(`/avito/messenger/chats/${selectedChatId}/resume-agent`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["avito", "chat-agent", selectedChatId] });
+      toast.success("Агент снова отвечает в этом чате");
+    },
+  });
+
   const saveConfig = useMutation({
     mutationFn: async () => {
       const { data } = await adminApi.put<AvitoConfig>("/avito/config", draft);
@@ -436,7 +464,8 @@ export default function AdminAvitoPage() {
       setChatReply("");
       messagesQ.refetch();
       qc.invalidateQueries({ queryKey: ["avito", "events"] });
-      toast.success("Сообщение отправлено");
+      qc.invalidateQueries({ queryKey: ["avito", "chat-agent", selectedChatId] });
+      toast.success("Сообщение отправлено — агент отключён для этого чата");
     },
     onError: (error) => {
       toast.error(`Ошибка отправки сообщения: ${err(error)}`);
@@ -879,6 +908,32 @@ export default function AdminAvitoPage() {
               {chatRows.length === 0 && <p className="p-3 text-sm text-[#6A6860]">Чатов нет</p>}
             </div>
             <div className="rounded-xl border border-[#EEE] p-3 min-h-[420px] flex flex-col">
+              {selectedChatId && (
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  {chatAgentQ.data?.intercepted ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-1 text-xs font-medium text-amber-800">
+                      Перехвачен — агент не отвечает
+                    </span>
+                  ) : agentEnabled ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-800">
+                      Агент отвечает автоматически
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 border border-gray-200 px-2.5 py-1 text-xs text-gray-600">
+                      Агент выключен глобально
+                    </span>
+                  )}
+                  {chatAgentQ.data?.intercepted ? (
+                    <Button type="button" variant="outline" size="sm" className={secondaryBtnClass} onClick={() => resumeAgentMut.mutate()} disabled={resumeAgentMut.isPending}>
+                      Вернуть агенту
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="outline" size="sm" className={secondaryBtnClass} onClick={() => pauseAgentMut.mutate()} disabled={pauseAgentMut.isPending || !selectedChatId}>
+                      Перехватить чат
+                    </Button>
+                  )}
+                </div>
+              )}
               <div className="flex-1 overflow-auto space-y-2">
                 {messagesQ.isError && selectedChatId && (
                   <p className="text-sm text-red-700">{err(messagesQ.error)}</p>

@@ -772,6 +772,44 @@ async function avitoSendChatMessage(account, chatId, text) {
   });
 }
 
+/** Track agent auto-replies to avoid pausing chat on webhook echo. */
+const recentAgentSends = new Map();
+function markAgentOutgoing(avitoChatId, text) {
+  const key = `${avitoChatId}::${String(text || "").trim().slice(0, 200)}`;
+  recentAgentSends.set(key, Date.now());
+  if (recentAgentSends.size > 500) {
+    const cutoff = Date.now() - 120_000;
+    for (const [k, t] of recentAgentSends) {
+      if (t < cutoff) recentAgentSends.delete(k);
+    }
+  }
+}
+function isRecentAgentOutgoing(avitoChatId, text) {
+  const key = `${avitoChatId}::${String(text || "").trim().slice(0, 200)}`;
+  const t = recentAgentSends.get(key);
+  return Boolean(t && Date.now() - t < 120_000);
+}
+
+async function pauseAvitoAgentForAvitoChat(avitoChatId) {
+  const map = await getAvitoChatMap();
+  const crmChatId = map[avitoChatId];
+  if (!crmChatId) return;
+  await prisma.chat.update({
+    where: { id: crmChatId },
+    data: { aiPaused: true, operatorConnected: true, status: "operator_live" },
+  }).catch(() => {});
+}
+
+async function resumeAvitoAgentForAvitoChat(avitoChatId) {
+  const map = await getAvitoChatMap();
+  const crmChatId = map[avitoChatId];
+  if (!crmChatId) return;
+  await prisma.chat.update({
+    where: { id: crmChatId },
+    data: { aiPaused: false, operatorConnected: false, status: "active" },
+  }).catch(() => {});
+}
+
 function isAvitoTokenExpired(account) {
   if (!account?.accessToken) return true;
   const exp = account.tokenExpiresAt ? Date.parse(account.tokenExpiresAt) : 0;
@@ -970,12 +1008,34 @@ async function ingestAvitoMessageToCrm(agentId, msg) {
     map[msg.chatId] = crmChatId;
     await saveAvitoChatMap(map);
   }
-  await appendMessageToChat(crmChatId, "user", msg.text, msg.at, {
+  const isClient = isClientAvitoMessage(msg.userId);
+
+  // Webhook echo of agent auto-reply — already saved, don't duplicate or pause
+  if (!isClient && isRecentAgentOutgoing(msg.chatId, msg.text)) {
+    return { crmChatId };
+  }
+
+  const row = await prisma.chat.findUnique({ where: { id: crmChatId } });
+  const arr = parseChatMessagesJson(row?.messages);
+  const last = arr[arr.length - 1];
+  if (last?.content === msg.text) {
+    return { crmChatId };
+  }
+
+  const role = isClient ? "user" : "assistant";
+  await appendMessageToChat(crmChatId, role, msg.text, msg.at, {
     channel: "avito",
     avito_chat_id: msg.chatId,
     avito_user_id: msg.userId || null,
     agent_id: agentId || null,
+    from_seller: !isClient,
   });
+
+  // Operator/seller manual message = intercept — disable agent for this chat
+  if (!isClient) {
+    await pauseAvitoAgentForAvitoChat(msg.chatId);
+  }
+
   return { crmChatId };
 }
 
@@ -3640,10 +3700,51 @@ app.post("/avito/messenger/chats/:chatId/messages", requireAuth, async (req, res
     const account = resolveAvitoAccount(cfg, accountId);
     if (!account) return res.status(400).json({ error: "No Avito account configured" });
     if (!account.accountId) return res.status(400).json({ error: "accountId is required in Avito account config" });
-    const data = await avitoSendChatMessage(account, String(req.params.chatId), text);
-    res.json({ ok: true, data });
+    const chatId = String(req.params.chatId);
+    const data = await avitoSendChatMessage(account, chatId, text);
+    // Manual reply = operator intercepted this chat
+    await pauseAvitoAgentForAvitoChat(chatId);
+    res.json({ ok: true, data, agent_paused: true });
   } catch (e) {
     res.status(e?.status || 500).json({ error: e.message || "Failed", details: e?.payload || null });
+  }
+});
+
+/** GET /avito/messenger/chats/:chatId/agent-status — is agent paused (intercepted) for this chat */
+app.get("/avito/messenger/chats/:chatId/agent-status", requireAuth, async (req, res) => {
+  try {
+    const map = await getAvitoChatMap();
+    const crmChatId = map[String(req.params.chatId)] || null;
+    if (!crmChatId) return res.json({ ai_paused: false, intercepted: false, crm_chat_id: null });
+    const chat = await prisma.chat.findUnique({ where: { id: crmChatId } }).catch(() => null);
+    res.json({
+      ai_paused: Boolean(chat?.aiPaused),
+      intercepted: Boolean(chat?.aiPaused || chat?.operatorConnected),
+      operator_connected: Boolean(chat?.operatorConnected),
+      crm_chat_id: crmChatId,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** POST /avito/messenger/chats/:chatId/pause-agent — operator intercept */
+app.post("/avito/messenger/chats/:chatId/pause-agent", requireAuth, async (req, res) => {
+  try {
+    await pauseAvitoAgentForAvitoChat(String(req.params.chatId));
+    res.json({ ok: true, ai_paused: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** POST /avito/messenger/chats/:chatId/resume-agent — re-enable agent for chat */
+app.post("/avito/messenger/chats/:chatId/resume-agent", requireAuth, async (req, res) => {
+  try {
+    await resumeAvitoAgentForAvitoChat(String(req.params.chatId));
+    res.json({ ok: true, ai_paused: false });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -3854,7 +3955,10 @@ async function handleAvitoIncomingWebhook(req, res) {
             let crmChat = null;
             if (crmChatId) {
               crmChat = await prisma.chat.findUnique({ where: { id: crmChatId } }).catch(() => null);
-              if (crmChat?.aiPaused) return; // Operator took over
+              if (crmChat?.aiPaused || crmChat?.operatorConnected) {
+                console.log(`[avito-agent] skipped chat=${msg.chatId} — operator intercepted`);
+                return;
+              }
             }
 
             // Load FULL history for this specific chat only (no context mixing)
@@ -3863,7 +3967,7 @@ async function handleAvitoIncomingWebhook(req, res) {
               const rawMsgs = Array.isArray(crmChat.messages) ? crmChat.messages : [];
               history = rawMsgs
                 .map((m) => ({
-                  role: m.source === "avito_agent" ? "assistant" : "user",
+                  role: (m.source === "avito_agent" || m.from_seller || m.role === "assistant") ? "assistant" : "user",
                   content: m.content || "",
                 }))
                 .filter((m) => m.content);
@@ -3882,21 +3986,22 @@ async function handleAvitoIncomingWebhook(req, res) {
               userMessage: msg.text,
               history,
               systemPrompt,
-              model: "neeklo",
+              model: "openai/gpt-4o-mini",
               servicePrices,
             });
 
-            if (result.error && !result.reply) {
-              console.warn(`[avito-agent] no reply chat=${msg.chatId}:`, result.error);
+            const replyText = (result.reply || "").trim();
+            if (!replyText) {
+              console.warn(`[avito-agent] no reply chat=${msg.chatId}:`, result.error || "empty reply");
               notifyAgentError({
                 chatId: msg.chatId,
                 clientText: msg.text,
-                error: result.error,
+                error: result.error || "Пустой ответ модели",
                 agentId,
               }).catch(() => {});
             }
 
-            if (result.reply && !result.error) {
+            if (replyText) {
               const account = resolveAvitoAccount(cfg, mapped?.avitoAccountId || "");
               if (!account) {
                 console.warn(`[avito-agent] no Avito account for chat=${msg.chatId}`);
@@ -3909,19 +4014,20 @@ async function handleAvitoIncomingWebhook(req, res) {
               }
               if (account) {
                 // Send reply to Avito (v1 API — v3 POST returns 405)
-                await avitoSendChatMessage(account, msg.chatId, result.reply);
-                console.log(`[avito-agent] reply sent chat=${msg.chatId} len=${result.reply.length}`);
+                markAgentOutgoing(msg.chatId, replyText);
+                await avitoSendChatMessage(account, msg.chatId, replyText);
+                console.log(`[avito-agent] reply sent chat=${msg.chatId} len=${replyText.length} model=${result.model || "?"}`);
 
                 // Save agent reply in CRM chat
                 if (crmChatId) {
-                  await appendMessageToChat(crmChatId, "assistant", result.reply, new Date().toISOString(), { source: "avito_agent" });
+                  await appendMessageToChat(crmChatId, "assistant", replyText, new Date().toISOString(), { source: "avito_agent" });
                 }
 
                 // Notify admins about agent reply
                 notifyAgentReply({
                   chatId: msg.chatId,
                   clientText: msg.text,
-                  replyText: result.reply,
+                  replyText,
                   agentId,
                 }).catch(() => {});
 

@@ -1,12 +1,11 @@
 /**
  * OpenRouter API client — fast OpenAI-compatible inference.
- * Free model first, cheap OpenAI fallback on failure.
+ * Default: openai/gpt-4o-mini only (Llama 3.3 disabled).
  */
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 const OPENROUTER_KEY = () => process.env.OPENROUTER_API_KEY || "";
-const FREE_MODEL = process.env.OPENROUTER_FREE_MODEL || "meta-llama/llama-3.3-70b-instruct:free";
-const FALLBACK_MODEL = process.env.OPENROUTER_FALLBACK_MODEL || "openai/gpt-4o-mini";
+const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || process.env.OPENROUTER_FALLBACK_MODEL || "openai/gpt-4o-mini";
 
 const PROFILE_ALIASES = new Set(["neeklo", "auto", "aura"]);
 
@@ -17,13 +16,6 @@ function headers() {
     "HTTP-Referer": process.env.APP_BASE_URL || "https://neeklo.ru",
     "X-Title": "neeklo CRM Agent",
   };
-}
-
-function isRetryable(err) {
-  const status = err?.status;
-  if ([429, 404, 502, 503].includes(status)) return true;
-  const msg = String(err?.message || "").toLowerCase();
-  return /rate.?limit|unavailable|overloaded|no.*credit|insufficient|quota|capacity|not found|disabled/.test(msg);
 }
 
 async function openRouterChatOnce(messages, { model, timeoutMs = 45_000, systemPrompt } = {}) {
@@ -73,33 +65,13 @@ async function openRouterChatOnce(messages, { model, timeoutMs = 45_000, systemP
   }
 }
 
-/**
- * Chat with free model, fallback to cheap OpenAI model on failure.
- */
+/** Chat via OpenRouter — always GPT-4o-mini unless explicit model slug passed. */
 export async function openRouterChat(messages, opts = {}) {
   if (!OPENROUTER_KEY()) throw new Error("OPENROUTER_API_KEY not set");
 
   const explicit = opts.model;
-  if (explicit && !PROFILE_ALIASES.has(explicit)) {
-    return openRouterChatOnce(messages, { ...opts, model: explicit });
-  }
-
-  const models = [FREE_MODEL, FALLBACK_MODEL];
-  let lastErr;
-  for (let i = 0; i < models.length; i++) {
-    const model = models[i];
-    try {
-      const result = await openRouterChatOnce(messages, { ...opts, model });
-      if (i > 0) console.log(`[openrouter] used fallback model: ${model}`);
-      return result;
-    } catch (e) {
-      lastErr = e;
-      const isLast = i === models.length - 1;
-      if (!isRetryable(e) || isLast) break;
-      console.warn(`[openrouter] ${model} failed (${e.message}), trying fallback...`);
-    }
-  }
-  throw lastErr;
+  const model = explicit && !PROFILE_ALIASES.has(explicit) ? explicit : DEFAULT_MODEL;
+  return openRouterChatOnce(messages, { ...opts, model });
 }
 
 export function openRouterIsConfigured() {
