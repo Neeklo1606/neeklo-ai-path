@@ -4874,13 +4874,14 @@ process.on("unhandledRejection", (reason) => {
   }).catch(() => {});
 });
 
-// Intercept console.error to also forward critical errors to TG (throttled)
+// Intercept console.error for critical errors only (throttled, noise-filtered)
 const _origConsoleError = console.error.bind(console);
+const NOISE_RE = /ECONNREFUSED|ENOTFOUND|socket hang up|aborted|EPIPE|ECONNRESET|body-parser|raw-body|IncomingMessage|connect ETIMEDOUT/i;
 console.error = (...args) => {
   _origConsoleError(...args);
   const message = args.map((a) => (a instanceof Error ? a.message : String(a))).join(" ");
-  // Only forward non-trivial errors (skip common noise)
-  if (message.length > 10 && !/ECONNREFUSED|ENOTFOUND|socket hang up/i.test(message)) {
+  // Forward only genuine critical errors, skip common network/connection noise
+  if (message.length > 20 && !NOISE_RE.test(message)) {
     notifyServerError({ title: "console.error", message, source: "cms-server" }).catch(() => {});
   }
 };
