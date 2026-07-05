@@ -44,7 +44,7 @@ if [ -z "${DATABASE_URL:-}" ]; then
   echo "ERROR: DATABASE_URL is not set"
   exit 1
 fi
-if [[ "$DATABASE_URL" != *"neeklo_cms"* ]]; then
+if [[ "$DATABASE_URL" != *"neeklo_ai_path"* ]]; then
   echo "ERROR: DATABASE_URL does not look like production neeklo DB"
   exit 1
 fi
