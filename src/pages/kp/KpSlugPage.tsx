@@ -13,6 +13,7 @@ import KPNextPhase from "@/components/kp/KPNextPhase";
 import KPWhyUs     from "@/components/kp/KPWhyUs";
 import KPCta       from "@/components/kp/KPCta";
 import KPFooter    from "@/components/kp/KPFooter";
+import { TELEGRAM_URL } from "@/constants";
 
 function isExpired(createdAt: string, expiresDays: number): boolean {
   const created = new Date(createdAt).getTime();
@@ -67,7 +68,7 @@ export default function KpSlugPage() {
             Возможно, ссылка устарела или КП было отозвано. Свяжитесь с нами
             для получения актуального предложения.
           </p>
-          <a href="https://t.me/neeekn" target="_blank" rel="noopener noreferrer" className="kp-cta-btn">
+          <a href={TELEGRAM_URL} target="_blank" rel="noopener noreferrer" className="kp-cta-btn">
             Написать в Telegram
           </a>
         </div>

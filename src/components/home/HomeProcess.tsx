@@ -241,7 +241,7 @@ type Props = { lang?: string };
 
 export default function HomeProcess(_props: Props) {
   return (
-    <div style={{ borderTop: "1px solid var(--bd)" }}>
+    <div id="process" style={{ borderTop: "1px solid var(--bd)" }}>
       {/* Section header above StickyTabs */}
       <div className="mx-auto max-w-6xl px-4 md:px-6 pt-8 pb-3">
         <p

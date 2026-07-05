@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { Send, CheckCircle, MessageCircle, Clock } from "lucide-react";
-
-const TG = "https://t.me/neeekn";
+import { TELEGRAM_URL } from "@/constants";
 
 // Six burst dots evenly spaced around the circle (start at top)
 const DOT_ANGLES = [0, 60, 120, 180, 240, 300];
@@ -140,7 +139,7 @@ export default function SuccessScreen({ onClose }: Props) {
         transition={{ delay: 0.6, duration: 0.3, ease: "easeOut" }}
       >
         <a
-          href={TG}
+          href={TELEGRAM_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl mt-5 bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-opacity"

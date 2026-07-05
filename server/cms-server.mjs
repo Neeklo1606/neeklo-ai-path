@@ -2619,6 +2619,53 @@ app.post("/crm/chat-session", async (req, res) => {
   }
 });
 
+/**
+ * Публичный приём заявок с быстрой формы сайта (QuickLeadForm).
+ * Тело: { phone, source?, page? }. Создаёт Lead и шлёт Telegram-уведомление
+ * тем же каналом, что и остальные (getAvitoConfig → telegramBotToken/telegramChatId).
+ */
+app.post("/crm/public-lead", async (req, res) => {
+  try {
+    const billCfg = getBillingConfig();
+    const ipKey = `public-lead:${clientIp(req)}`;
+    if (!rateLimitByKeyHash(ipKey, Math.max(10, billCfg.rateLimitPerMin))) {
+      return res.status(429).json({ error: "Rate limit exceeded", retry_after_seconds: 60 });
+    }
+
+    const rawPhone = String(req.body?.phone || "").trim();
+    const digits = rawPhone.replace(/\D/g, "");
+    if (digits.length !== 11) {
+      return res.status(400).json({ error: "Некорректный телефон" });
+    }
+    const source = String(req.body?.source || "quick-form").slice(0, 64);
+    const page = String(req.body?.page || "").slice(0, 256);
+
+    const lead = await prisma.lead.create({
+      data: {
+        phone: rawPhone.slice(0, 32),
+        status: "new",
+        intentLabel: source,
+        summary: `Быстрая заявка с сайта${page ? ` · ${page}` : ""} (источник: ${source})`,
+      },
+    });
+
+    // Telegram-уведомление — не блокирует ответ клиенту при сбое
+    try {
+      const cfg = await getAvitoConfig();
+      await sendTelegramNotification(
+        cfg,
+        `🔔 Новая заявка с сайта\nТелефон: ${rawPhone}\nСтраница: ${page || "—"}\nИсточник: ${source}`,
+      );
+    } catch (notifyErr) {
+      console.error("public-lead telegram notify failed:", notifyErr?.message || notifyErr);
+    }
+
+    res.json({ ok: true, id: lead.id });
+  } catch (e) {
+    res.status(500).json({ error: e.message || "Failed" });
+  }
+});
+
 /** Публичная выгрузка истории чата по ID */
 app.get("/crm/chat-transcript/:id", async (req, res) => {
   try {

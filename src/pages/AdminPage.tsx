@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { TELEGRAM_HANDLE, EMAIL } from "@/constants";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { clearAuthToken } from "@/lib/auth-token";
@@ -118,8 +119,8 @@ const agentData = {
     {name:'ИИ видео и контент',from:15000,to:150000,days:1,desc:'Reels, рекламные ролики, анимация, монтаж под ключ. /products/video',href:'/products/video'},
   ],
   company: {
-    name:'neeklo.studio',legal:'ИП Клочко Н.Н. · ИНН 263520430560',email:'neeklostudio@gmail.com',
-    telegram:'@neeekn',about:'AI-продакшн студия. Делаем сайты, Mini App, AI-агентов и видео. Работаем удалённо. Команда: Никита (CEO), Игорь (разработка), Данил (PM/контент), Марина/Сабина (видео).',
+    name:'neeklo.studio',legal:'ИП Клочко Н.Н. · ИНН 263520430560',email:EMAIL,
+    telegram:TELEGRAM_HANDLE,about:'AI-продакшн студия. Делаем сайты, Mini App, AI-агентов и видео. Работаем удалённо. Команда: Никита (CEO), Игорь (разработка), Данил (PM/контент), Марина/Сабина (видео).',
     process:['Бриф (1-2 дня)','КП + предоплата 50%','Разработка','Сдача + остаток 50%','Поддержка 1 мес'],
   },
 };

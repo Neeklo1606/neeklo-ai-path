@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import MainNav from "@/components/layout/MainNav";
 import BottomNav from "@/components/layout/BottomNav";
 import StickyCTA from "@/components/layout/StickyCTA";
+import SeriesRail from "@/components/layout/SeriesRail";
 import ScrollToTop from "@/components/ScrollToTop";
 import PageTransition from "@/components/PageTransition";
 import Onboarding from "@/components/Onboarding";
@@ -52,7 +53,6 @@ const AdminAssistantEditor = lazy(() => import("./pages/admin/AdminAssistantEdit
 const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
 const AdminSettingEditor = lazy(() => import("./pages/admin/AdminSettingEditor"));
 const AdminBrandingPage = lazy(() => import("./pages/admin/AdminBrandingPage"));
-const AdminCrmPage = lazy(() => import("./pages/admin/AdminCrmPage"));
 const AdminOperatorPage = lazy(() => import("./pages/admin/AdminOperatorPage"));
 const AdminAiAnalyticsPage = lazy(() => import("./pages/admin/AdminAiAnalyticsPage"));
 const AdminBillingPage = lazy(() => import("./pages/admin/AdminBillingPage"));
@@ -77,6 +77,7 @@ const ServiceWeb = lazy(() => import("./pages/services/ServiceWeb"));
 const ServiceAiAssistant = lazy(() => import("./pages/services/ServiceAiAssistant"));
 const ServiceTelegram = lazy(() => import("./pages/services/ServiceTelegram"));
 const ServiceEducation = lazy(() => import("./pages/services/ServiceEducation"));
+const ServiceConsulting = lazy(() => import("./pages/services/ServiceConsulting"));
 const PrivacyPage = lazy(() => import("./routes/privacy"));
 const OfferPage = lazy(() => import("./routes/offer"));
 const CookiesPage = lazy(() => import("./routes/cookies"));
@@ -120,6 +121,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     HIDE_NAV_ROUTES.some((r) => pathname.startsWith(r)) ||
     pathname.startsWith("/admin");
   const showManagerFab = !pathname.startsWith("/admin");
+  const isHome = pathname === "/";
 
   if (hideNav) {
     return (
@@ -137,6 +139,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       <BottomNav />
       <StickyCTA />
       {showManagerFab && <TelegramManagerButton />}
+      {isHome && <SeriesRail />}
     </div>
   );
 };
@@ -181,6 +184,7 @@ const AppContent = ({
             <Route path="/services/ai-assistant" element={<P><ServiceAiAssistant /></P>} />
             <Route path="/services/telegram" element={<P><ServiceTelegram /></P>} />
             <Route path="/services/education" element={<P><ServiceEducation /></P>} />
+            <Route path="/services/consulting" element={<P><ServiceConsulting /></P>} />
             <Route path="/services/:slug" element={<P><ServiceDetailPage /></P>} />
             <Route path="/order/:serviceId" element={<P><OrderPage /></P>} />
             <Route path="/manager-chat" element={<ManagerChatPage />} />
@@ -202,11 +206,8 @@ const AppContent = ({
                 <Route path="dashboard" element={<S><AdminDashboardPage /></S>} />
 
                 {/* CRM / Communication */}
-                <Route path="leads" element={<S><AdminCrmPage /></S>} />
-                <Route path="crm" element={<S><AdminCrmPage /></S>} />
                 <Route path="kanban" element={<S><AdminPage /></S>} />
                 <Route path="operator" element={<S><AdminOperatorPage /></S>} />
-                <Route path="chats" element={<S><AdminOperatorPage /></S>} />
                 <Route path="avito" element={<S><AdminAvitoPage /></S>} />
                 <Route path="avito/:section" element={<S><AdminAvitoPage /></S>} />
 
@@ -214,9 +215,7 @@ const AppContent = ({
                 <Route path="cases" element={<S><AdminCasesPage /></S>} />
                 <Route path="videos" element={<S><AdminVideosPage /></S>} />
                 <Route path="blog" element={<S><AdminBlogPage /></S>} />
-                <Route path="blog-posts" element={<S><AdminBlogPage /></S>} />
                 <Route path="site-pages" element={<S><AdminSitePagesPage /></S>} />
-                <Route path="services" element={<S><AdminSitePagesPage /></S>} />
 
                 {/* CMS pages (rich editor) */}
                 <Route path="pages" element={<S><AdminPagesList /></S>} />

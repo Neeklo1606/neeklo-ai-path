@@ -3,26 +3,16 @@ import { ArrowUpRight, Play, X, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import Footer from "@/components/Footer";
+import { SERVICE_TAG_LABELS, serviceTagsFor, serviceTagLabelsFor, type ServiceSlug } from "@/data/serviceTags";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 const ALL = "Все";
 const VIDEO_TAB = "Видео";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Фильтр-чипы по услугам (слаги услуг — единая связка в src/data/serviceTags.ts)
+const SERVICE_FILTERS: ServiceSlug[] = ["web", "ai-assistant", "telegram", "ai-video", "education", "consulting"];
 
-// Tags for cases (not stored in DB yet)
-const CASE_TAGS: Record<string, string[]> = {
-  povuzam:             ["EdTech", "Платформа", "Каталог"],
-  batnorton:           ["E-commerce", "Каталог", "Оплата"],
-  damotors:            ["Telegram", "Mini App", "Каталог"],
-  "ai-contracts":      ["AI", "Автоматизация", "Документы"],
-  avangard31:          ["CRM", "Недвижимость", "Бот"],
-  "bella-hasias":      ["Telegram", "SaaS", "Подписка"],
-  "ai-avito":          ["AI", "Автоматизация"],
-  "ai-platform":       ["AI", "SaaS", "Агенты"],
-  svoikhleb:           ["Telegram", "Mini App"],
-  "ai-video-business": ["Видео", "AI", "Контент"],
-};
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ApiCase {
   id: number;
@@ -94,18 +84,15 @@ export default function CasesPage() {
       .catch(() => {});
   }, []);
 
-  // Build tabs — exclude "Видео" from case categories to avoid duplicate
-  const caseCategories = [ALL, ...Array.from(
-    new Set(cases.map(c => c.category).filter(cat => cat !== VIDEO_TAB))
-  )];
-  const tabs = [...caseCategories, VIDEO_TAB];
+  // Tabs: Все + услуги + Видео (фильтрация по связке кейс↔услуга из serviceTags.ts)
+  const tabs = [ALL, ...SERVICE_FILTERS, VIDEO_TAB];
 
   const isVideoTab = activeTab === VIDEO_TAB;
   const filteredCases = isVideoTab
     ? cases // won't show, but keep reference
     : activeTab === ALL
       ? cases
-      : cases.filter(c => c.category === activeTab);
+      : cases.filter(c => serviceTagsFor(c.slug).includes(activeTab as ServiceSlug));
 
   const filteredVideos = videoFilter
     ? videos.filter(v => v.categoryId === videoFilter)
@@ -162,6 +149,9 @@ export default function CasesPage() {
           {tabs.map(tab => {
             const active = activeTab === tab;
             const count = tab === VIDEO_TAB ? videos.length : null;
+            const label = tab === ALL || tab === VIDEO_TAB
+              ? tab
+              : SERVICE_TAG_LABELS[tab as ServiceSlug];
             return (
               <button
                 key={tab}
@@ -179,7 +169,7 @@ export default function CasesPage() {
                   border: active ? "1px solid transparent" : "1px solid var(--bd)",
                 }}
               >
-                {tab}{count && count > 0 ? ` (${count})` : ""}
+                {label}{count && count > 0 ? ` (${count})` : ""}
               </button>
             );
           })}
@@ -282,11 +272,11 @@ export default function CasesPage() {
           {/* ── Cases grid ── */}
           {!isVideoTab && (
             <motion.div
-              key="cases"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              key={`cases-${activeTab}`}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.22, ease }}
             >
               {casesLoading ? (
                 /* Skeleton */
@@ -303,16 +293,28 @@ export default function CasesPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-                  {filteredCases.map((c, i) => (
-                    <motion.div
-                      key={c.id}
-                      initial={{ opacity: 0, y: 14 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.35, ease, delay: i * 0.04 }}
-                    >
-                      <CaseCard item={c} tags={CASE_TAGS[c.slug] ?? [c.badge].filter(Boolean)} />
-                    </motion.div>
-                  ))}
+                  {filteredCases.map((c, i) => {
+                    const svcLabels = serviceTagLabelsFor(c.slug);
+                    return (
+                      <motion.div
+                        key={c.id}
+                        initial={{ opacity: 0, y: 14 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, ease, delay: i * 0.04 }}
+                      >
+                        <CaseCard item={c} tags={svcLabels.length > 0 ? svcLabels : [c.badge].filter(Boolean)} />
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Пустой результат фильтра (только для конкретной услуги, не для «Все») */}
+              {!casesLoading && filteredCases.length === 0 && activeTab !== ALL && (
+                <div style={{ padding: "48px 24px", textAlign: "center", borderRadius: 20, border: "1px dashed var(--bd)" }}>
+                  <p style={{ fontSize: 14, color: "var(--tx-muted)" }}>
+                    Пока нет кейсов по этой услуге — посмотрите все работы.
+                  </p>
                 </div>
               )}
             </motion.div>
@@ -479,9 +481,11 @@ function CaseCard({ item, tags }: { item: ApiCase; tags: string[] }) {
         <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--tx)", lineHeight: 1.3, marginBottom: 4 }}>
           {item.title}
         </h3>
-        <p style={{ fontSize: 18, fontWeight: 700, color: "var(--ac-b)", lineHeight: 1.2, marginBottom: 6 }}>
-          {item.metric}
-        </p>
+        {item.metric && (
+          <p style={{ fontSize: 18, fontWeight: 700, color: "var(--accent-signal)", lineHeight: 1.2, marginBottom: 6 }}>
+            {item.metric}
+          </p>
+        )}
         <p style={{ fontSize: 12, color: "var(--tx-muted)", lineHeight: 1.55, marginBottom: 10 }}>
           {item.description}
         </p>
@@ -508,12 +512,14 @@ function CaseCard({ item, tags }: { item: ApiCase; tags: string[] }) {
   const hoverIn = (e: React.MouseEvent<HTMLElement>) => {
     const el = e.currentTarget as HTMLElement;
     el.style.borderColor = "var(--bd-hover)";
-    el.style.boxShadow = "0 4px 24px rgba(0,0,0,0.07)";
+    el.style.boxShadow = "var(--shadow-card-hover)";
+    el.style.transform = "translateY(-2px)";
   };
   const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
     const el = e.currentTarget as HTMLElement;
     el.style.borderColor = "var(--bd)";
     el.style.boxShadow = "none";
+    el.style.transform = "translateY(0)";
   };
 
   if (item.url) {

@@ -5,8 +5,7 @@ import { cn } from '@/lib/utils'
 import { MenuToggleIcon } from '@/components/ui/MenuToggleIcon'
 import { LogoIcon } from '@/components/ui/LogoIcon'
 import ThemeToggle from '@/components/ThemeToggle'
-
-const TELEGRAM_URL = 'https://t.me/neeekn'
+import { TELEGRAM_URL } from '@/constants'
 
 const NAV_LINKS = [
   { label: 'Сайты',     href: '/products/websites' },

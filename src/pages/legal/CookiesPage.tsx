@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import Footer from "@/components/Footer";
+import { EMAIL } from "@/constants";
 
 export default function CookiesPage() {
   usePageTitle("Политика Cookies · neeklo");
@@ -37,7 +38,7 @@ export default function CookiesPage() {
           </section>
           <section>
             <h2 style={{ fontFamily: "'Onest', sans-serif", fontWeight: 600, fontSize: 18, color: "var(--tx)", marginBottom: 8, marginTop: 16 }}>Контакты</h2>
-            <p style={{ fontSize: 15, color: "var(--tx-muted)", lineHeight: 1.7 }}>По вопросам использования cookies: neeklostudio@gmail.com.</p>
+            <p style={{ fontSize: 15, color: "var(--tx-muted)", lineHeight: 1.7 }}>По вопросам использования cookies: {EMAIL}.</p>
           </section>
         </div>
       </div>

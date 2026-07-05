@@ -1,11 +1,12 @@
 import { Send, Mail, MapPin, Radio, Instagram } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import Footer from "@/components/Footer";
+import { TELEGRAM_URL, TELEGRAM_HANDLE, EMAIL } from "@/constants";
 
 export default function ContactPage() {
   usePageMeta({
     title: "Контакты — neeklo",
-    description: "Никита Клочко — основатель neeklo. Разработка digital-продуктов и AI-решений. Написать: @neeekn",
+    description: `Никита Клочко — основатель neeklo. Разработка digital-продуктов и AI-решений. Написать: ${TELEGRAM_HANDLE}`,
     og: { url: "/contact" },
   });
 
@@ -91,7 +92,7 @@ export default function ContactPage() {
               <div className="space-y-4">
                 {/* Telegram личный */}
                 <a
-                  href="https://t.me/neeekn"
+                  href={TELEGRAM_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-2xl border border-border p-4 flex items-center gap-4 hover:border-primary/30 hover:bg-muted/50 transition-all duration-200 group"
@@ -108,7 +109,7 @@ export default function ContactPage() {
 
                 {/* Email */}
                 <a
-                  href="mailto:neeklostudio@gmail.com"
+                  href={`mailto:${EMAIL}`}
                   className="rounded-2xl border border-border p-4 flex items-center gap-4 hover:border-primary/30 hover:bg-muted/50 transition-all duration-200 group"
                   style={{ textDecoration: "none" }}
                 >
@@ -117,7 +118,7 @@ export default function ContactPage() {
                   </span>
                   <div>
                     <p className="text-sm font-semibold" style={{ color: "var(--tx)" }}>Email</p>
-                    <p className="text-sm text-muted-foreground">neeklostudio@gmail.com</p>
+                    <p className="text-sm text-muted-foreground">{EMAIL}</p>
                   </div>
                 </a>
 
@@ -159,7 +160,7 @@ export default function ContactPage() {
               {/* CTA кнопка */}
               <div className="mt-8">
                 <a
-                  href="https://t.me/neeekn"
+                  href={TELEGRAM_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full rounded-xl py-4 flex items-center justify-center gap-2 font-semibold text-sm transition-opacity hover:opacity-90"

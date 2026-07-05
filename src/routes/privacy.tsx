@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import Footer from "@/components/Footer";
+import { TELEGRAM_URL, TELEGRAM_HANDLE, EMAIL } from "@/constants";
 
 export default function PrivacyRoute() {
   return (
@@ -65,7 +66,7 @@ export default function PrivacyRoute() {
           <Section title="6. Права пользователя">
             Вы вправе в любой момент: запросить информацию об обрабатываемых данных; потребовать исправления
             неточных данных; потребовать удаления ваших персональных данных; отозвать ранее данное согласие.
-            Для этого напишите на почту: neeklostudio@gmail.com. Мы ответим в течение 30 дней.
+            Для этого напишите на почту: {EMAIL}. Мы ответим в течение 30 дней.
           </Section>
 
           <Section title="7. Cookies">
@@ -81,9 +82,9 @@ export default function PrivacyRoute() {
           </Section>
 
           <Section title="9. Контакты">
-            По вопросам обработки персональных данных: neeklostudio@gmail.com
+            По вопросам обработки персональных данных: {EMAIL}
             <br />
-            Telegram: <a href="https://t.me/neeekn" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ac-b)" }}>@neeekn</a>
+            Telegram: <a href={TELEGRAM_URL} target="_blank" rel="noopener noreferrer" style={{ color: "var(--ac-b)" }}>{TELEGRAM_HANDLE}</a>
           </Section>
 
         </div>

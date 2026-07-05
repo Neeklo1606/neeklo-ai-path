@@ -43,14 +43,14 @@
   --sidebar-ring:               205 20% 35%;
 
   /* ── Семантические hex-токены (тёмная) ── */
-  --bg:          #0A0A0A;
-  --surface:     #111111;
-  --surface-2:   #1A1A1A;
-  --surface-3:   #222222;
-  --bd:          #2A2A2A;
-  --bd-hover:    #3A3A3A;
-  --tx:          #F0EFED;
-  --tx-muted:    #888884;
+  --bg:          #0B0C0E;
+  --surface:     #16181B;
+  --surface-2:   #1D2024;
+  --surface-3:   #24272B;
+  --bd:          rgba(255,255,255,0.08);
+  --bd-hover:    rgba(255,255,255,0.16);
+  --tx:          #EDEEEA;
+  --tx-muted:    #8C8E89;
   --tx-faint:    #4A4A48;
   --ac:          #536878;
   --ac-l:        #6B7F8E;
@@ -60,6 +60,15 @@
   --success:     #3D7A5C;
   --warning:     #8A6A2A;
   --destructive-clr: #B04848;
+
+  /* ── Два акцента с разными зонами ответственности ──
+     signal: CTA-кнопки, цифры ROI/экономики, конверсионные элементы
+     data:   AI/live-элементы, демо-виджеты, индикаторы данных
+     Никогда не смешивать в одном компоненте. */
+  --accent-signal:       #D97A3F;
+  --accent-signal-hover: #E4935E;
+  --accent-data:         #4FA8B8;
+  --accent-data-hover:   #63C0CF;
 
   /* Hero mesh */
   --hero-from:   #0A0A0A;

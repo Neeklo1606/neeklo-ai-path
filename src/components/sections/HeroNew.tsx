@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useBrief } from "@/context/BriefContext";
 import { ArrowRight } from "lucide-react";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -37,8 +36,7 @@ type Props = {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function HeroNew({ onOpenWizard }: Props) {
-  const { open: openBrief } = useBrief();
+export default function HeroNew(_props: Props) {
   const [current, setCurrent] = useState(0);
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pauseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -70,9 +68,9 @@ export default function HeroNew({ onOpenWizard }: Props) {
     };
   }, [startAuto]);
 
-  const handleCTA = (serviceId?: string) => {
-    if (onOpenWizard) onOpenWizard(serviceId);
-    else openBrief();
+  // Главная CTA ведёт к форме заявки внизу страницы (#cta)
+  const handleCTA = () => {
+    document.getElementById("cta")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const next = (current + 1) % CARDS.length;
@@ -80,6 +78,7 @@ export default function HeroNew({ onOpenWizard }: Props) {
 
   return (
     <section
+      id="hero"
       className="w-full pt-6 pb-16 px-4 overflow-hidden relative"
       style={{ background: "var(--bg)" }}
     >
@@ -97,9 +96,9 @@ export default function HeroNew({ onOpenWizard }: Props) {
             textAlign: "center",
           }}
         >
-          Разработка сайтов
+          Ваш бизнес получает
           <br />
-          и AI-решений
+          заявки — даже ночью
         </h1>
 
         {/* Subtitle */}
@@ -113,7 +112,7 @@ export default function HeroNew({ onOpenWizard }: Props) {
             lineHeight: 1.6,
           }}
         >
-          Создаём сайты, AI-ассистентов, Telegram-ботов и рекламные видео для бизнеса.
+          Сайты, AI-ассистенты и Telegram-боты для малого бизнеса — старт за 48 часов.
         </p>
 
         {/* CTA buttons */}

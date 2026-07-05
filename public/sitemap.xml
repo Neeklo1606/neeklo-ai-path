@@ -5,12 +5,9 @@
   <url><loc>https://neeklo.ru/cases</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
   <url><loc>https://neeklo.ru/blog</loc><priority>0.8</priority><changefreq>daily</changefreq></url>
   <url><loc>https://neeklo.ru/contact</loc><priority>0.7</priority><changefreq>monthly</changefreq></url>
-  <url><loc>https://neeklo.ru/products/site-ai-crm</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://neeklo.ru/products/ai-video</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://neeklo.ru/products/telegram-bot</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://neeklo.ru/products/custom-development</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://neeklo.ru/products/ai-assistant</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://neeklo.ru/products/telegram-mini-app</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://neeklo.ru/products/websites</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://neeklo.ru/products/ai-agents</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://neeklo.ru/products/video</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
   <url><loc>https://neeklo.ru/privacy</loc><priority>0.3</priority><changefreq>yearly</changefreq></url>
   <url><loc>https://neeklo.ru/offer</loc><priority>0.3</priority><changefreq>yearly</changefreq></url>
 </urlset>

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Send } from "lucide-react";
+import { TELEGRAM_URL, TELEGRAM_HANDLE, EMAIL } from "@/constants";
 import { useBrief } from "@/context/BriefContext";
 import { LogoIcon } from "@/components/ui/LogoIcon";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -34,7 +35,7 @@ export default function Footer() {
               <div>ИНН 263520430560</div>
             </div>
             <a
-              href="https://t.me/neeekn"
+              href={TELEGRAM_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 mt-4 text-sm text-primary hover:underline transition-colors"
@@ -77,20 +78,20 @@ export default function Footer() {
             <p className={COL_HEAD}>КОНТАКТЫ</p>
             <div className="space-y-2 text-sm text-muted-foreground">
               <a
-                href="https://t.me/neeekn"
+                href={TELEGRAM_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block hover:text-foreground transition-colors duration-150"
                 style={{ textDecoration: "none" }}
               >
-                @neeekn
+                {TELEGRAM_HANDLE}
               </a>
               <a
-                href="mailto:neeklostudio@gmail.com"
+                href={`mailto:${EMAIL}`}
                 className="block hover:text-foreground transition-colors duration-150"
                 style={{ textDecoration: "none" }}
               >
-                neeklostudio@gmail.com
+                {EMAIL}
               </a>
             </div>
           </div>

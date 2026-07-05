@@ -9,7 +9,7 @@ export default function HomeSolutions({ lang }: Props) {
   const ru = lang === "ru";
 
   return (
-    <section style={{ padding: "64px 20px", borderTop: "1px solid var(--bd)" }}>
+    <section id="solutions" style={{ padding: "64px 20px", borderTop: "1px solid var(--bd)" }}>
       <div className="mx-auto" style={{ maxWidth: 1200 }}>
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -20,10 +20,10 @@ export default function HomeSolutions({ lang }: Props) {
         >
           <div>
             <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", color: "var(--tx-faint)", marginBottom: 8, textTransform: "uppercase" }}>
-              {ru ? "Продукты" : "Products"}
+              {ru ? "Решения" : "Solutions"}
             </p>
             <h2 style={{ fontSize: "clamp(26px, 3.5vw, 36px)", fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.02em", color: "var(--tx)" }}>
-              {ru ? "Готовые решения" : "Ready solutions"}
+              {ru ? "С какой задачей пришли?" : "What problem are you solving?"}
             </h2>
           </div>
         </motion.div>

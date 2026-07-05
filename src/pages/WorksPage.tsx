@@ -9,6 +9,7 @@ import { parseWorksGrid, type WorkItem } from "@/lib/cms-parsers";
 import { mediaDebugClassName } from "@/lib/cms-media";
 import { cn } from "@/lib/utils";
 import { CASES_DATA } from "@/data/cases";
+import { SERVICE_TAG_LABELS, type ServiceSlug } from "@/data/serviceTags";
 import Footer from "@/components/Footer";
 import { ArrowUpRight } from "lucide-react";
 
@@ -86,7 +87,7 @@ function StaticWorksGrid({ lang }: { lang: string }) {
                 <div className="flex flex-wrap gap-1.5" style={{ marginBottom: 10 }}>
                   {c.tags.map((tag) => (
                     <span key={tag} style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 6, background: "var(--surface-2)", color: "var(--tx-faint)", border: "1px solid var(--bd)" }}>
-                      {tag}
+                      {SERVICE_TAG_LABELS[tag as ServiceSlug] ?? tag}
                     </span>
                   ))}
                 </div>

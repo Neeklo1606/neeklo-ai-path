@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import Footer from "@/components/Footer";
+import { TELEGRAM_URL, TELEGRAM_HANDLE, EMAIL } from "@/constants";
 
 export default function OfferRoute() {
   return (
@@ -104,8 +105,8 @@ export default function OfferRoute() {
 
           <Section title="13. Контакты исполнителя">
             ИП Клочко Никита Николаевич, ИНН 263520430560
-            <br />Email: neeklostudio@gmail.com
-            <br />Telegram: <a href="https://t.me/neeekn" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ac-b)" }}>@neeekn</a>
+            <br />Email: {EMAIL}
+            <br />Telegram: <a href={TELEGRAM_URL} target="_blank" rel="noopener noreferrer" style={{ color: "var(--ac-b)" }}>{TELEGRAM_HANDLE}</a>
           </Section>
 
         </div>

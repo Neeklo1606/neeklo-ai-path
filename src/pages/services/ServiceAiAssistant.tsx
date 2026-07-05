@@ -8,6 +8,7 @@ import ServicePackages from "@/components/services/ServicePackages";
 import ServiceProcess from "@/components/services/ServiceProcess";
 import ServiceFAQ from "@/components/services/ServiceFAQ";
 import ServiceCTA from "@/components/services/ServiceCTA";
+import ServiceRelatedCases from "@/components/services/ServiceRelatedCases";
 import { hero, heroPkgs, forWhom, delivers, caseData, packages, process, faq } from "@/data/services/aiAssistant";
 
 export default function ServiceAiAssistant() {
@@ -23,6 +24,7 @@ export default function ServiceAiAssistant() {
           <ServicePackages packages={packages} />
           <ServiceProcess steps={process} />
           <ServiceFAQ items={faq} />
+          <ServiceRelatedCases serviceSlug="ai-assistant" />
           <ServiceCTA service="AI-ассистент" />
         </main>
       </div>

@@ -5,6 +5,7 @@ import KPTopbar   from "@/components/kp/KPTopbar";
 import KPPackages from "@/components/kp/KPPackages";
 import KPCta      from "@/components/kp/KPCta";
 import type { KpPackagesData, KpCtaData, KpContactsData } from "@/lib/cms-api";
+import { TELEGRAM_URL, TELEGRAM_HANDLE, EMAIL } from "@/constants";
 
 interface ShowcaseData {
   hero: {
@@ -100,12 +101,12 @@ const DEFAULT_SHOWCASE: ShowcaseData = {
     title_2: "ваш проект?",
     text: "Расскажите задачу, подготовим индивидуальное КП за 48 часов. Фиксированная смета и прозрачные этапы.",
     button_label: "Обсудить в Telegram",
-    button_url: "https://t.me/neeekn",
+    button_url: TELEGRAM_URL,
   },
   contacts: {
-    telegram_handle: "@neeekn",
-    telegram_url: "https://t.me/neeekn",
-    email: "neeklostudio@gmail.com",
+    telegram_handle: TELEGRAM_HANDLE,
+    telegram_url: TELEGRAM_URL,
+    email: EMAIL,
     site: "neeklo.ru",
     site_url: "https://neeklo.ru",
   },

@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Send } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
-
-const TG_URL = "https://t.me/neeekn";
+import { TELEGRAM_URL } from "@/constants";
 
 const TelegramManagerButton = () => {
   const [hovered, setHovered] = useState(false);
@@ -14,7 +13,7 @@ const TelegramManagerButton = () => {
   return (
     <>
       <a
-        href={TG_URL}
+        href={TELEGRAM_URL}
         target="_blank"
         rel="noopener noreferrer"
         aria-label={t("tg.writeManager")}
@@ -38,7 +37,7 @@ const TelegramManagerButton = () => {
       </a>
 
       <a
-        href={TG_URL}
+        href={TELEGRAM_URL}
         target="_blank"
         rel="noopener noreferrer"
         aria-label={t("tg.writeManager")}

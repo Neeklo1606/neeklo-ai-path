@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import Footer from "@/components/Footer";
+import { EMAIL } from "@/constants";
 
 export default function CookiesRoute() {
   return (
@@ -66,7 +67,7 @@ export default function CookiesRoute() {
 
           <Section title="6. Контакты по вопросам">
             По любым вопросам, связанным с использованием cookies на нашем сайте:
-            neeklostudio@gmail.com
+            {EMAIL}
           </Section>
 
         </div>

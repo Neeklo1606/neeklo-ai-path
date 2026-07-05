@@ -28,8 +28,8 @@
 }
 
 .svc-sidebar-label {
-  font-family: 'Space Mono', monospace;
   font-size: 9px;
+  font-weight: 600;
   letter-spacing: 0.14em;
   color: var(--tx-faint);
   text-transform: uppercase;
@@ -37,12 +37,11 @@
 }
 
 .svc-sidebar-link {
-  font-family: 'Inter', sans-serif;
   font-size: 12px;
   color: var(--tx-muted);
   text-decoration: none;
   padding: 6px 10px;
-  border-radius: 2px;
+  border-radius: 8px;
   border-left: 1px solid transparent;
   transition: all 0.15s;
   display: block;
@@ -50,9 +49,9 @@
 
 .svc-sidebar-link:hover,
 .svc-sidebar-link.active {
-  color: #C5F04A;
-  border-left-color: #C5F04A;
-  background: rgba(83,104,120,0.08);
+  color: var(--tx);
+  border-left-color: var(--bd-hover);
+  background: var(--surface-2);
 }
 
 .svc-main {
@@ -106,9 +105,8 @@
   box-sizing: border-box;
   background: var(--surface-2);
   border: 1px solid var(--bd);
-  border-radius: 2px;
+  border-radius: 12px;
   padding: 14px 16px;
-  font-family: 'Inter', sans-serif;
   font-size: 14px;
   color: var(--tx);
   outline: none;

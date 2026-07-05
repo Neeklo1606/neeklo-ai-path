@@ -12,6 +12,7 @@ import HomeStats from "@/components/home/HomeStats";
 import HomeNews from "@/components/home/HomeNews";
 import HomeFinalCTA from "@/components/home/HomeFinalCTA";
 import { useBrief } from "@/context/BriefContext";
+import { TELEGRAM_URL, EMAIL } from "@/constants";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -84,11 +85,11 @@ export default function CmsHomePage() {
       "name": "neeklo",
       "description": "AI-продакшн студия. Сайты, AI-ассистенты, Telegram-боты и видео для бизнеса.",
       "url": "https://neeklo.ru",
-      "email": "neeklostudio@gmail.com",
+      "email": EMAIL,
       "address": { "@type": "PostalAddress", "addressCountry": "RU" },
       "priceRange": "от 15 000 ₽",
       "serviceType": ["Разработка сайтов", "AI-ассистенты", "Telegram-боты", "AI-видео"],
-      "sameAs": ["https://t.me/neeekn"],
+      "sameAs": [TELEGRAM_URL],
     },
   });
 

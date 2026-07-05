@@ -8,6 +8,7 @@ import ServiceProcess from "@/components/services/ServiceProcess";
 import ServiceFAQ from "@/components/services/ServiceFAQ";
 import ServiceCTA from "@/components/services/ServiceCTA";
 import ServiceSidebar from "@/components/services/ServiceSidebar";
+import ServiceRelatedCases from "@/components/services/ServiceRelatedCases";
 import { hero, heroPkgs, forWhom, delivers, caseData, packages, process, faq } from "@/data/services/aiVideo";
 
 export default function ServiceAiVideo() {
@@ -23,6 +24,7 @@ export default function ServiceAiVideo() {
           <ServicePackages packages={packages} />
           <ServiceProcess steps={process} />
           <ServiceFAQ items={faq} />
+          <ServiceRelatedCases serviceSlug="ai-video" />
           <ServiceCTA service="AI-видеоролики" />
         </main>
       </div>

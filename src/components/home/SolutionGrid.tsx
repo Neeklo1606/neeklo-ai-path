@@ -1,11 +1,11 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Globe, Video, Bot, ArrowRight } from "lucide-react";
+import { Globe, Video, Bot, Send, LineChart, ArrowRight } from "lucide-react";
 import { solutions, type Solution } from "@/data/solutions";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
-const ICON_MAP: Record<string, React.ElementType> = { Globe, Video, Bot };
+const ICON_MAP: Record<string, React.ElementType> = { Globe, Video, Bot, Send, LineChart };
 
 // ─── Grid ──────────────────────────────────────────────────────────────────────
 

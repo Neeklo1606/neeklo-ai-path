@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TELEGRAM_URL } from "@/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageCircle, FileSearch, FileText, PenTool, Inbox, Database,
@@ -127,7 +128,7 @@ function MiniBrief() {
       <div className="text-center space-y-4">
         <p className="text-2xl font-bold" style={{ color: "var(--tx)" }}>от 85 000 ₽ · от 7 дней</p>
         <a
-          href="https://t.me/neeekn"
+          href={TELEGRAM_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center justify-center gap-2 w-full px-6 py-4 rounded-xl font-semibold text-sm transition-opacity hover:opacity-85"
@@ -203,7 +204,7 @@ export default function AIAgentsPage() {
           <span className="text-sm" style={{ color: "var(--tx-muted)" }}>от 7 дней</span>
         </div>
         <a
-          href="https://t.me/neeekn"
+          href={TELEGRAM_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-opacity hover:opacity-85"
@@ -312,7 +313,7 @@ export default function AIAgentsPage() {
           <h2 className="text-2xl md:text-3xl font-bold">Готовы автоматизировать?</h2>
           <p className="text-sm opacity-70">Отвечаем в течение 2 часов. Без оплаты на старте.</p>
           <a
-            href="https://t.me/neeekn"
+            href={TELEGRAM_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-sm transition-opacity hover:opacity-85"

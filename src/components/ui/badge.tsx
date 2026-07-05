@@ -11,7 +11,6 @@ const badgeVariants = cva(
         default: "border-transparent bg-[#1e1e1e] text-[#F0EFED]",
         secondary: "border-[rgba(255,255,255,0.1)] bg-transparent text-[#888]",
         accent: "border-transparent bg-[#536878]/30 text-[#8aaabb]",
-        lime: "border-transparent bg-[#C5F04A]/15 text-[#C5F04A]",
         destructive: "border-transparent bg-destructive/20 text-destructive",
         outline: "border-[rgba(255,255,255,0.15)] text-[#888]",
       },

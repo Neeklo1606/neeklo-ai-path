@@ -291,17 +291,20 @@ function CaseCard({
       >
         {item.title}
       </h3>
-      <p
-        style={{
-          fontSize: 20,
-          fontWeight: 700,
-          color: "var(--ac-b)",
-          marginBottom: 6,
-          lineHeight: 1.2,
-        }}
-      >
-        {item.metric}
-      </p>
+      {/* Числовой результат кейса (поле metric); если пусто — не показываем */}
+      {item.metric && (
+        <p
+          style={{
+            fontSize: 20,
+            fontWeight: 700,
+            color: "var(--accent-signal)",
+            marginBottom: 6,
+            lineHeight: 1.2,
+          }}
+        >
+          {item.metric}
+        </p>
+      )}
       <p
         style={{
           fontSize: 12,
@@ -342,11 +345,13 @@ function CaseCard({
     const el = e.currentTarget as HTMLElement;
     el.style.borderColor = "var(--bd-hover)";
     el.style.boxShadow = "var(--shadow-card-hover)";
+    el.style.transform = "translateY(-2px)";
   };
   const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
     const el = e.currentTarget as HTMLElement;
     el.style.borderColor = "var(--bd)";
     el.style.boxShadow = "none";
+    el.style.transform = "translateY(0)";
   };
 
   if (isExternal) {
@@ -560,21 +565,23 @@ function CaseModal({
         ))}
       </div>
 
-      {/* Metric */}
-      <div
-        style={{
-          padding: "12px 16px",
-          borderRadius: 12,
-          background: "var(--surface-2)",
-          border: "1px solid var(--bd)",
-          fontSize: 14,
-          fontWeight: 600,
-          color: "var(--ac-b)",
-          marginBottom: 20,
-        }}
-      >
-        ↑ {c.metric}
-      </div>
+      {/* Metric — числовой результат кейса */}
+      {c.metric && (
+        <div
+          style={{
+            padding: "12px 16px",
+            borderRadius: 12,
+            background: "var(--surface-2)",
+            border: "1px solid var(--bd)",
+            fontSize: 14,
+            fontWeight: 600,
+            color: "var(--accent-signal)",
+            marginBottom: 20,
+          }}
+        >
+          ↑ {c.metric}
+        </div>
+      )}
 
       {/* CTA */}
       <button

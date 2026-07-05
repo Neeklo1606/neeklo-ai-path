@@ -2,6 +2,16 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, Video, Globe, Smartphone, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/useLanguage";
+import ServiceRelatedCases from "@/components/services/ServiceRelatedCases";
+import type { ServiceSlug } from "@/data/serviceTags";
+
+// Связка legacy-слагов этой страницы со слагами услуг (для секции «Наши работы»)
+const SERVICE_SLUG_MAP: Record<string, ServiceSlug> = {
+  "ai-roliki": "ai-video",
+  "sajt-pod-klyuch": "web",
+  "telegram-mini-app": "telegram",
+  "ai-agent": "ai-assistant",
+};
 
 interface ServiceData {
   icon: typeof Video;
@@ -168,6 +178,11 @@ const ServiceDetailPage = () => {
           {t("sdet.orderService")}
         </Button>
       </div>
+
+      {/* Наши работы — кейсы с тегом текущей услуги */}
+      {slug && SERVICE_SLUG_MAP[slug] && (
+        <ServiceRelatedCases serviceSlug={SERVICE_SLUG_MAP[slug]} />
+      )}
     </div>
   );
 };

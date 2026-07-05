@@ -7,7 +7,7 @@ type Props = { lang: string };
 export default function HomeStats({ lang }: Props) {
   const ru = lang === "ru";
   return (
-    <section style={{ padding: "32px 20px", borderTop: "1px solid var(--bd)" }}>
+    <section id="stats" style={{ padding: "32px 20px", borderTop: "1px solid var(--bd)" }}>
       <div className="mx-auto" style={{ maxWidth: 1200 }}>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -31,8 +31,8 @@ export default function HomeStats({ lang }: Props) {
             </p>
           </div>
 
-          {/* Right — 2 numbers */}
-          <div className="flex gap-8 sm:gap-12">
+          {/* Right — студийные цифры (реальные, используются по всему сайту) */}
+          <div className="flex gap-8 sm:gap-12 flex-wrap">
             <div>
               <p style={{ fontSize: "clamp(28px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", color: "var(--tx)", lineHeight: 1 }}>
                 44+
@@ -49,8 +49,20 @@ export default function HomeStats({ lang }: Props) {
                 {ru ? "в AI и digital" : "in AI & digital"}
               </p>
             </div>
+            <div>
+              <p style={{ fontSize: "clamp(28px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", color: "var(--tx)", lineHeight: 1 }}>
+                {ru ? "48 ч" : "48 h"}
+              </p>
+              <p style={{ fontSize: 12, color: "var(--tx-muted)", marginTop: 4 }}>
+                {ru ? "до старта проекта" : "to project start"}
+              </p>
+            </div>
           </div>
         </motion.div>
+
+        {/* TODO: здесь блок отзывов, ждём контент от Никиты
+            (тексты отзывов, фото/имена клиентов или лого компаний).
+            Не добавляем плейсхолдеры — блок появится вместе с реальным контентом. */}
       </div>
     </section>
   );

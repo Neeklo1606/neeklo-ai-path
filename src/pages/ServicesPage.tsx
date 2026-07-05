@@ -5,6 +5,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import Footer from "@/components/Footer";
 import { SolutionGrid } from "@/components/home/SolutionGrid";
 import { useBrief } from "@/context/BriefContext";
+import { TELEGRAM_URL, TELEGRAM_HANDLE, EMAIL } from "@/constants";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -65,7 +66,7 @@ export default function ServicesPage() {
             <div className="flex flex-col sm:flex-row gap-4 mt-6">
               {/* Telegram */}
               <a
-                href="https://t.me/neeekn"
+                href={TELEGRAM_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded-2xl border border-[var(--bd)] p-5 flex items-center gap-4 hover:border-[var(--bd-hover)] transition-colors flex-1"
@@ -74,20 +75,20 @@ export default function ServicesPage() {
                 <Send size={20} className="text-[var(--ac-b)] shrink-0" />
                 <div>
                   <p style={{ fontSize: 11, color: "var(--tx-faint)", marginBottom: 2 }}>Telegram</p>
-                  <p className="text-[var(--ac-b)] font-semibold text-[14px]">@neeekn</p>
+                  <p className="text-[var(--ac-b)] font-semibold text-[14px]">{TELEGRAM_HANDLE}</p>
                 </div>
               </a>
 
               {/* Email */}
               <a
-                href="mailto:neeklostudio@gmail.com"
+                href={`mailto:${EMAIL}`}
                 className="rounded-2xl border border-[var(--bd)] p-5 flex items-center gap-4 hover:border-[var(--bd-hover)] transition-colors flex-1"
                 style={{ textDecoration: "none", background: "var(--surface)" }}
               >
                 <Mail size={20} style={{ color: "var(--tx-muted)", flexShrink: 0 }} />
                 <div>
                   <p style={{ fontSize: 11, color: "var(--tx-faint)", marginBottom: 2 }}>Email</p>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--tx)" }}>neeklostudio@gmail.com</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--tx)" }}>{EMAIL}</p>
                 </div>
               </a>
 

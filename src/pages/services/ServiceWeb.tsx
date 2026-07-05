@@ -8,6 +8,7 @@ import ServicePackages from "@/components/services/ServicePackages";
 import ServiceProcess from "@/components/services/ServiceProcess";
 import ServiceFAQ from "@/components/services/ServiceFAQ";
 import ServiceCTA from "@/components/services/ServiceCTA";
+import ServiceRelatedCases from "@/components/services/ServiceRelatedCases";
 import { hero, heroPkgs, forWhom, delivers, caseData, packages, process, faq } from "@/data/services/web";
 
 export default function ServiceWeb() {
@@ -23,6 +24,7 @@ export default function ServiceWeb() {
           <ServicePackages packages={packages} />
           <ServiceProcess steps={process} />
           <ServiceFAQ items={faq} />
+          <ServiceRelatedCases serviceSlug="web" />
           <ServiceCTA service="сайт" />
         </main>
       </div>
