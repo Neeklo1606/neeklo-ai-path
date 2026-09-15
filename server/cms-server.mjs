@@ -12,7 +12,6 @@ import bcrypt from "bcryptjs";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { execSync } from "child_process";
 import { PrismaClient } from "@prisma/client";
 import {
   getQdrantClient,
@@ -1056,18 +1055,6 @@ app.get("/health", (_req, res) => {
 
 app.get("/deploy/status", (_req, res) => {
   res.json(getDeployStatus());
-});
-
-app.post("/internal/deploy", (_req, res) => {
-  try {
-    const output = execSync("bash /var/www/neeklo.ru/deploy.sh", {
-      encoding: "utf-8",
-      maxBuffer: 30 * 1024 * 1024,
-    });
-    return res.json({ ok: true, output });
-  } catch (e) {
-    return res.status(500).json({ ok: false, error: e.message });
-  }
 });
 
 // ─── Auth ───
