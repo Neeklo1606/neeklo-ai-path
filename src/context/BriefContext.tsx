@@ -2,8 +2,11 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 import BriefWizard from '@/components/BriefWizard'
 import { useLanguage } from '@/hooks/useLanguage'
 
+export const DEFAULT_BRIEF_SOURCE = 'brief-wizard'
+
 interface BriefContextValue {
-  open: (serviceId?: string) => void
+  /** source — точка входа визарда, уходит в CRM (например "brief-wizard-footer") */
+  open: (serviceId?: string, source?: string) => void
   close: () => void
 }
 
@@ -12,15 +15,20 @@ const BriefContext = createContext<BriefContextValue | null>(null)
 export function BriefProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen]     = useState(false)
   const [serviceId, setServiceId] = useState<string | undefined>()
+  const [source, setSource]     = useState(DEFAULT_BRIEF_SOURCE)
   const { lang }                = useLanguage()
 
-  const open  = useCallback((id?: string) => { setServiceId(id); setIsOpen(true) }, [])
+  const open  = useCallback((id?: string, src?: string) => {
+    setServiceId(id)
+    setSource(src || DEFAULT_BRIEF_SOURCE)
+    setIsOpen(true)
+  }, [])
   const close = useCallback(() => setIsOpen(false), [])
 
   return (
     <BriefContext.Provider value={{ open, close }}>
       {children}
-      <BriefWizard open={isOpen} initialServiceId={serviceId} lang={lang} onClose={close} />
+      <BriefWizard open={isOpen} initialServiceId={serviceId} source={source} lang={lang} onClose={close} />
     </BriefContext.Provider>
   )
 }

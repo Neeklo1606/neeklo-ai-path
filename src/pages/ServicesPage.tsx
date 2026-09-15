@@ -94,7 +94,7 @@ export default function ServicesPage() {
 
               {/* Quick start */}
               <button
-                onClick={() => openBrief()}
+                onClick={() => openBrief(undefined, "brief-wizard-services")}
                 className="rounded-2xl border border-[var(--bd)] p-5 flex items-center gap-4 hover:border-[var(--bd-hover)] transition-colors flex-1 text-left"
                 style={{ background: "var(--surface)", cursor: "pointer" }}
               >

@@ -189,7 +189,7 @@ export default function ProductPage() {
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
-                  onClick={() => openBrief()}
+                  onClick={() => openBrief(undefined, "brief-wizard-product-hero")}
                   className="btn-primary flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-[15px] font-semibold"
                 >
                   Обсудить проект
@@ -391,7 +391,7 @@ export default function ProductPage() {
               {product.pricingNote}
             </p>
             <button
-              onClick={() => openBrief()}
+              onClick={() => openBrief(undefined, "brief-wizard-product-pricing")}
               className="btn-primary flex items-center gap-2 px-7 py-3.5 rounded-full text-[15px] font-semibold"
             >
               Рассчитать стоимость
@@ -469,7 +469,7 @@ export default function ProductPage() {
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
-                onClick={() => openBrief()}
+                onClick={() => openBrief(undefined, "brief-wizard-product-final")}
                 className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-[15px] font-semibold transition-opacity duration-150 hover:opacity-85"
                 style={{ background: "var(--bg)", color: "var(--tx)" }}
               >

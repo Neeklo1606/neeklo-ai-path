@@ -2619,30 +2619,63 @@ app.post("/crm/public-lead", async (req, res) => {
       return res.status(429).json({ error: "Rate limit exceeded", retry_after_seconds: 60 });
     }
 
+    // Базовые поля (QuickLeadForm): { phone, source, page }.
+    // Опциональные поля визарда брифа: { name, telegram, service, budget }.
+    // Без опциональных полей поведение прежнее: телефон обязателен, тот же summary и текст в Telegram.
     const rawPhone = String(req.body?.phone || "").trim();
     const digits = rawPhone.replace(/\D/g, "");
-    if (digits.length !== 11) {
-      return res.status(400).json({ error: "Некорректный телефон" });
+    const name = String(req.body?.name || "").trim().slice(0, 100);
+    const rawTelegram = String(req.body?.telegram || "").trim();
+    const service = String(req.body?.service || "").trim().slice(0, 64);
+    const budget = String(req.body?.budget || "").trim().slice(0, 64);
+
+    let telegram = "";
+    if (rawTelegram) {
+      if (!/^@?[A-Za-z0-9_]{3,32}$/.test(rawTelegram)) {
+        return res.status(400).json({ error: "Некорректный Telegram" });
+      }
+      telegram = `@${rawTelegram.replace(/^@/, "")}`;
+    }
+
+    if (rawPhone || !telegram) {
+      // Телефон проверяется, если передан; без Telegram он обязателен (как раньше)
+      if (digits.length !== 11) {
+        return res.status(400).json({ error: "Некорректный телефон" });
+      }
     }
     const source = String(req.body?.source || "quick-form").slice(0, 64);
     const page = String(req.body?.page || "").slice(0, 256);
 
+    const extraLines = [
+      service ? `Услуга: ${service}` : "",
+      budget ? `Бюджет: ${budget}` : "",
+      telegram ? `Telegram: ${telegram}` : "",
+    ].filter(Boolean);
+
     const lead = await prisma.lead.create({
       data: {
-        phone: rawPhone.slice(0, 32),
+        ...(name ? { name } : {}),
+        phone: rawPhone ? rawPhone.slice(0, 32) : null,
         status: "new",
         intentLabel: source,
-        summary: `Быстрая заявка с сайта${page ? ` · ${page}` : ""} (источник: ${source})`,
+        summary:
+          `Быстрая заявка с сайта${page ? ` · ${page}` : ""} (источник: ${source})` +
+          (extraLines.length ? `\n${extraLines.join("\n")}` : ""),
       },
     });
 
     // Telegram-уведомление — не блокирует ответ клиенту при сбое
     try {
       const cfg = await getAvitoConfig();
-      await sendTelegramNotification(
-        cfg,
-        `🔔 Новая заявка с сайта\nТелефон: ${rawPhone}\nСтраница: ${page || "—"}\nИсточник: ${source}`,
-      );
+      const tgLines = [
+        "🔔 Новая заявка с сайта",
+        name ? `Имя: ${name}` : "",
+        `Телефон: ${rawPhone || "—"}`,
+        ...extraLines,
+        `Страница: ${page || "—"}`,
+        `Источник: ${source}`,
+      ].filter(Boolean);
+      await sendTelegramNotification(cfg, tgLines.join("\n"));
     } catch (notifyErr) {
       console.error("public-lead telegram notify failed:", notifyErr?.message || notifyErr);
     }

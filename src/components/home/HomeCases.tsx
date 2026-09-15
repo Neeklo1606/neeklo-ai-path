@@ -405,7 +405,7 @@ function CaseModal({
 
   const handleCTA = () => {
     onClose();
-    openBrief();
+    openBrief(undefined, "brief-wizard-cases");
   };
 
   const modalContent = (

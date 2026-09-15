@@ -44,7 +44,7 @@ export default function BottomNav() {
             return (
               <button
                 key={path}
-                onClick={() => open()}
+                onClick={() => open(undefined, "brief-wizard-bottomnav")}
                 className="flex flex-col items-center justify-center gap-0.5 touch-manipulation"
                 style={{ minHeight: 44 }}
                 aria-current={active ? "page" : undefined}

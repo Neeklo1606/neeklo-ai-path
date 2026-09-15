@@ -2,9 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
-import { X, ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { X, ArrowRight, ArrowLeft, Check, Send } from "lucide-react";
 import { SOLUTIONS, BUDGET_OPTIONS } from "@/data/homeData";
 import SuccessScreen from "@/components/SuccessScreen";
+import { CMS_BASE } from "@/lib/cms-api";
+import { TELEGRAM_URL } from "@/constants";
 
 export type WizardData = {
   serviceId: string;
@@ -17,13 +19,17 @@ export type WizardData = {
 type Props = {
   open: boolean;
   initialServiceId?: string;
+  /** Точка входа для CRM: intentLabel лида = source */
+  source?: string;
   lang: string;
   onClose: () => void;
 };
 
 const STEPS = 3;
 const ease = [0.16, 1, 0.3, 1] as const;
-const STORAGE_KEY = "neeklo_wizard_brief";
+// Только локальная резервная копия. Отдельный ключ: "neeklo_wizard_brief" читает ChatPage
+// и автоматически отправляет в AI-чат — это дублировало бы заявку.
+const BACKUP_STORAGE_KEY = "neeklo_wizard_brief_backup";
 
 // ─── Phone mask ────────────────────────────────────────────────────────────────
 function formatPhone(raw: string): string {
@@ -47,12 +53,14 @@ function formatTelegram(raw: string): string {
   return "@" + clean.slice(0, 32);
 }
 
-export default function BriefWizard({ open, initialServiceId, lang, onClose }: Props) {
+export default function BriefWizard({ open, initialServiceId, source = "brief-wizard", lang, onClose }: Props) {
   const ru = lang === "ru";
 
   const [step, setStep]         = useState(1);
   const [direction, setDirection] = useState(1);
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending]     = useState(false);
+  const [sendError, setSendError] = useState(false);
 
   const [serviceId, setServiceId] = useState(initialServiceId ?? "");
   const [budget, setBudget]       = useState("");
@@ -68,6 +76,7 @@ export default function BriefWizard({ open, initialServiceId, lang, onClose }: P
   useEffect(() => {
     if (open) {
       setStep(1); setDirection(1); setSubmitted(false);
+      setSending(false); setSendError(false);
       setBudget(""); setName(""); setPhone(""); setTelegram("");
       setAgreed(false); setContactError(""); setPhoneError("");
       setServiceId(initialServiceId ?? "");
@@ -86,7 +95,9 @@ export default function BriefWizard({ open, initialServiceId, lang, onClose }: P
     setStep(next);
   }, [step]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // Enter в полях вызывает submit в обход кнопки — те же условия, что у disabled
+    if (sending || !agreed || !name.trim()) return;
     // Validate contacts
     const phoneDigits = phone.replace(/\D/g, "");
     const telegramFilled = telegram && telegram.length > 1;
@@ -115,8 +126,37 @@ export default function BriefWizard({ open, initialServiceId, lang, onClose }: P
     if (hasError) return;
 
     const data: WizardData = { serviceId, budget, name, phone, telegram };
-    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch { /* ignore storage errors */ }
-    setSubmitted(true);
+    try { sessionStorage.setItem(BACKUP_STORAGE_KEY, JSON.stringify(data)); } catch { /* ignore storage errors */ }
+
+    // В CRM и Telegram уходят русские подписи, а не id — так читаемо
+    const serviceLabel = SOLUTIONS.find((s) => s.id === serviceId)?.name.ru ?? serviceId;
+    const budgetLabel  = BUDGET_OPTIONS.find((b) => b.id === budget)?.ru ?? budget;
+
+    setSending(true);
+    setSendError(false);
+    try {
+      const res = await fetch(`${CMS_BASE}/crm/public-lead`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name: name.trim(),
+          ...(phoneFilled ? { phone } : {}),
+          ...(telegramFilled ? { telegram } : {}),
+          service: serviceLabel,
+          budget: budgetLabel,
+          source,
+          page: typeof window !== "undefined" ? window.location.pathname : "",
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Brief submit failed:", err);
+      setSendError(true);
+    } finally {
+      setSending(false);
+    }
   };
 
   const phoneDigits = phone.replace(/\D/g, "");
@@ -265,6 +305,8 @@ export default function BriefWizard({ open, initialServiceId, lang, onClose }: P
                   serviceName={selectedService?.name[ru ? "ru" : "en"] ?? ""}
                   budget={budget}
                   step3Valid={step3Valid}
+                  sending={sending}
+                  sendError={sendError}
                   onSubmit={handleSubmit}
                 />
               </motion.div>
@@ -400,7 +442,7 @@ function Step3({
   onChangeName, onChangePhone, onChangeTelegram,
   phoneError, contactError,
   agreed, onChangeAgreed,
-  serviceName, budget, step3Valid, onSubmit,
+  serviceName, budget, step3Valid, sending, sendError, onSubmit,
 }: {
   ru: boolean;
   name: string;
@@ -416,8 +458,11 @@ function Step3({
   serviceName: string;
   budget: string;
   step3Valid: boolean;
+  sending: boolean;
+  sendError: boolean;
   onSubmit: () => void;
 }) {
+  const submitDisabled = !agreed || !name.trim() || sending;
   const budgetLabel = BUDGET_OPTIONS.find((b) => b.id === budget)?.[ru ? "ru" : "en"] ?? budget;
 
   return (
@@ -527,21 +572,45 @@ function Step3({
         </span>
       </label>
 
+      {/* Network error — fallback to Telegram */}
+      {sendError && (
+        <div
+          role="alert"
+          style={{ padding: "12px 14px", borderRadius: 10, background: "var(--surface-2)", border: "1px solid rgba(239,68,68,0.4)" }}
+        >
+          <p style={{ fontSize: 13, color: "var(--tx)", marginBottom: 8 }}>
+            {ru ? "Не удалось отправить заявку. Попробуйте ещё раз или напишите нам в Telegram." : "Couldn't send the request. Try again or message us on Telegram."}
+          </p>
+          <a
+            href={TELEGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2"
+            style={{ fontSize: 13, fontWeight: 600, color: "var(--tx)", textDecoration: "underline" }}
+          >
+            <Send size={13} />
+            {ru ? "Написать в Telegram" : "Message on Telegram"}
+          </a>
+        </div>
+      )}
+
       {/* Submit */}
       <button
         onClick={onSubmit}
-        disabled={!agreed || !name.trim()}
+        disabled={submitDisabled}
         className="w-full flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.97] disabled:opacity-40"
         style={{
           height: 48, borderRadius: 12,
           background: "var(--tx)", color: "var(--bg)",
           fontSize: 15, fontWeight: 600, border: "none",
-          cursor: (!agreed || !name.trim()) ? "not-allowed" : "pointer",
+          cursor: submitDisabled ? "not-allowed" : "pointer",
           marginTop: 2,
         }}
       >
-        {ru ? "Отправить заявку" : "Submit request"}
-        <ArrowRight size={15} strokeWidth={2.5} />
+        {sending
+          ? (ru ? "Отправляем…" : "Sending…")
+          : (ru ? "Отправить заявку" : "Submit request")}
+        {!sending && <ArrowRight size={15} strokeWidth={2.5} />}
       </button>
     </div>
   );

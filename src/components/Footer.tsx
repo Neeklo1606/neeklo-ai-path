@@ -65,7 +65,7 @@ export default function Footer() {
               <FooterLink to="/contact">Контакты</FooterLink>
               <button
                 type="button"
-                onClick={() => open()}
+                onClick={() => open(undefined, "brief-wizard-footer")}
                 className="block text-sm text-muted-foreground hover:text-foreground transition-colors duration-150 text-left"
               >
                 Начать проект

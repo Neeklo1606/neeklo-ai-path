@@ -196,7 +196,7 @@ function BriefBtn() {
   const { open } = useBrief();
   return (
     <button
-      onClick={() => open()}
+      onClick={() => open(undefined, "brief-wizard-process")}
       className="btn-primary inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold"
     >
       Начать проект
