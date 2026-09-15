@@ -72,6 +72,7 @@ import {
   notifyAgentDisabledMessage,
   notifyAgentError,
   notifyAll,
+  escapeTgHtml,
 } from "./telegram-bot.mjs";
 import {
   processAvitoMessage,
@@ -950,6 +951,10 @@ function extractAvitoWebhookMessage(payload) {
   };
 }
 
+/**
+ * Legacy: отправка через Telegram-поля конфига Avito (одна попытка, без логов).
+ * С 2026-09-16 не вызывается — заявки с сайта уходят через notifyAll(). Оставлена намеренно.
+ */
 async function sendTelegramNotification(config, text) {
   const token = String(config?.telegramBotToken || "").trim();
   const chatId = String(config?.telegramChatId || "").trim();
@@ -2607,9 +2612,38 @@ app.post("/crm/chat-session", async (req, res) => {
 });
 
 /**
- * Публичный приём заявок с быстрой формы сайта (QuickLeadForm).
- * Тело: { phone, source?, page? }. Создаёт Lead и шлёт Telegram-уведомление
- * тем же каналом, что и остальные (getAvitoConfig → telegramBotToken/telegramChatId).
+ * Telegram-уведомление о заявке с сайта: всем одобренным в /admin/telegram (notifyAll —
+ * бот TG_BOT_TOKEN, до 3 попыток на чат через IPv4). Вызывается после ответа посетителю,
+ * поэтому сбой или долгие ретраи Telegram не влияют на форму. Результат по каждому чату — в лог.
+ */
+async function notifyPublicLeadTelegram(leadId, text) {
+  const tag = () => `[public-lead] ${new Date().toISOString()} lead=${leadId}`;
+  try {
+    // Тот же список, что notifyAll() прочитает следом; results идут в его порядке — нужен для chat в логе
+    const chats = await getApprovedTgChats().catch(() => []);
+    const results = await notifyAll(text);
+    if (!results.length) {
+      console.warn(`${tag()} tg SKIP: нет одобренных чатов в /admin/telegram`);
+      return;
+    }
+    results.forEach((r, i) => {
+      const v = r.status === "fulfilled" ? r.value : { ok: false, description: r.reason?.message || String(r.reason) };
+      const chat = v?.result?.chat?.id ?? (chats.length === results.length ? chats[i] : "?");
+      if (v?.ok) {
+        console.log(`${tag()} tg OK chat=${chat} message_id=${v.result?.message_id ?? "?"}`);
+      } else {
+        console.warn(`${tag()} tg FAIL chat=${chat} error_code=${v?.error_code ?? "-"} description=${v?.description || JSON.stringify(v)}`);
+      }
+    });
+  } catch (e) {
+    console.error(`${tag()} tg ERROR:`, e?.message || e);
+  }
+}
+
+/**
+ * Публичный приём заявок с сайта: QuickLeadForm { phone, source?, page? } и визард брифа
+ * (+ name, telegram, service, budget). Создаёт Lead, отвечает посетителю, затем шлёт
+ * Telegram-уведомление через notifyPublicLeadTelegram.
  */
 app.post("/crm/public-lead", async (req, res) => {
   try {
@@ -2664,23 +2698,19 @@ app.post("/crm/public-lead", async (req, res) => {
       },
     });
 
-    // Telegram-уведомление — не блокирует ответ клиенту при сбое
-    try {
-      const cfg = await getAvitoConfig();
-      const tgLines = [
-        "🔔 Новая заявка с сайта",
-        name ? `Имя: ${name}` : "",
-        `Телефон: ${rawPhone || "—"}`,
-        ...extraLines,
-        `Страница: ${page || "—"}`,
-        `Источник: ${source}`,
-      ].filter(Boolean);
-      await sendTelegramNotification(cfg, tgLines.join("\n"));
-    } catch (notifyErr) {
-      console.error("public-lead telegram notify failed:", notifyErr?.message || notifyErr);
-    }
-
     res.json({ ok: true, id: lead.id });
+
+    // Telegram — после ответа посетителю: заявка уже в БД, форма уже показала успех.
+    // sendTgMessage шлёт с parse_mode HTML — пользовательский ввод экранируем.
+    const tgLines = [
+      "🔔 Новая заявка с сайта",
+      name ? `Имя: ${escapeTgHtml(name)}` : "",
+      `Телефон: ${escapeTgHtml(rawPhone) || "—"}`,
+      ...extraLines.map(escapeTgHtml),
+      `Страница: ${escapeTgHtml(page) || "—"}`,
+      `Источник: ${escapeTgHtml(source)}`,
+    ].filter(Boolean);
+    notifyPublicLeadTelegram(lead.id, tgLines.join("\n"));
   } catch (e) {
     res.status(500).json({ error: e.message || "Failed" });
   }
