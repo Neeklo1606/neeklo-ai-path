@@ -411,20 +411,23 @@ model KnowledgeArticle {
 }
 
 /// Service price list item
+/// Таблица создана на проде вручную SQL, а не Prisma. Модель повторяет реальную
+/// структуру (varchar, nullable, timestamp(6), имя индекса), иначе `prisma db push`
+/// пересоздаёт первичный ключ и deploy.sh падает. Менять только вместе с миграцией БД.
 model ServicePrice {
-  id          String   @id @default(cuid())
-  title       String
-  description String?  @db.Text
-  priceFrom   Int?     @map("price_from")
-  priceTo     Int?     @map("price_to")
-  currency    String   @default("RUB")
-  category    String   @default("general")
-  isActive    Boolean  @default(true) @map("is_active")
-  sortOrder   Int      @default(0) @map("sort_order")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id          String    @id @default(dbgenerated("(gen_random_uuid())::text")) @db.VarChar
+  title       String    @db.VarChar
+  description String?   @db.Text
+  priceFrom   Int?      @map("price_from")
+  priceTo     Int?      @map("price_to")
+  currency    String?   @default("RUB") @db.VarChar
+  category    String?   @default("general") @db.VarChar
+  isActive    Boolean?  @default(true) @map("is_active")
+  sortOrder   Int?      @default(0) @map("sort_order")
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
 
-  @@index([isActive, sortOrder])
+  @@index([isActive, sortOrder], map: "service_prices_active_idx")
   @@map("service_prices")
 }
 
