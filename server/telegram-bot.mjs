@@ -11,6 +11,11 @@
  *  - notifyNewLead / notifyNewAvitoMessage / notifyNewReview
  */
 
+import dns from "dns";
+
+// Beget VPS: IPv6 to api.telegram.org fails (ENETUNREACH) — prefer IPv4
+dns.setDefaultResultOrder("ipv4first");
+
 const TG_TOKEN = () => process.env.TG_BOT_TOKEN || "";
 const TG_BASE  = () => `https://api.telegram.org/bot${TG_TOKEN()}`;
 
@@ -22,22 +27,36 @@ const APPROVED_CHATS_KEY = "tg.approved_chats";
 export async function sendTgMessage(chatId, text, extra = {}) {
   const token = TG_TOKEN();
   if (!token || !chatId) return { ok: false };
-  try {
-    const resp = await fetch(`${TG_BASE()}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML", ...extra }),
-      signal: AbortSignal.timeout(8_000),
-    });
-    const json = await resp.json().catch(() => ({}));
-    if (!json?.ok) {
-      console.warn(`[tg-bot] sendTgMessage failed chatId=${chatId}:`, json?.description || json);
+  const body = JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML", ...extra });
+  const url = `${TG_BASE()}/sendMessage`;
+  let lastErr = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        signal: AbortSignal.timeout(15_000),
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (json?.ok) return json;
+      lastErr = json?.description || JSON.stringify(json);
+      console.warn(`[tg-bot] sendTgMessage failed chatId=${chatId} attempt=${attempt}:`, lastErr);
+      if (attempt < 3 && /timeout|fetch failed|network/i.test(String(lastErr))) {
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
+        continue;
+      }
+      return json;
+    } catch (err) {
+      lastErr = err?.message || String(err);
+      console.warn(`[tg-bot] sendTgMessage error chatId=${chatId} attempt=${attempt}:`, lastErr);
+      if (attempt < 3) {
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
+        continue;
+      }
     }
-    return json;
-  } catch (err) {
-    console.warn(`[tg-bot] sendTgMessage error chatId=${chatId}:`, err?.message || err);
-    return { ok: false, description: err?.message || "network_error" };
   }
+  return { ok: false, description: lastErr || "network_error" };
 }
 
 /** Register webhook URL with Telegram. */
@@ -211,11 +230,14 @@ export async function notifyNewLead(lead) {
 }
 
 /** New Avito message notification. */
-export async function notifyNewAvitoMessage({ chatId, authorId, text: msgText, agentId }) {
+export async function notifyNewAvitoMessage({ chatId, authorId, text: msgText, agentId, agentDisabled = false }) {
+  const dedupKey = `avito-msg|${chatId}|${String(msgText || "").slice(0, 120)}`;
+  if (_isThrottled(dedupKey, 180_000)) return;
   const preview = escapeTgHtml((msgText || "").slice(0, 400));
   const time = new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow", hour: "2-digit", minute: "2-digit" });
   const safeChatId = escapeTgHtml(chatId || "—");
-  const text = `📬 <b>Новое сообщение Avito</b> [${time}]\n\nЧат: <code>${safeChatId}</code>\n\n💬 ${preview}\n\n👉 <a href="https://neeklo.ru/admin/avito/chats">Открыть панель</a>`;
+  const agentNote = agentDisabled ? "\n\n⚠️ <i>AI-агент выключен — ответьте клиенту вручную</i>" : "";
+  const text = `📬 <b>Новое сообщение Avito</b> [${time}]\n\nЧат: <code>${safeChatId}</code>\n\n💬 ${preview}${agentNote}\n\n👉 <a href="https://neeklo.ru/admin/avito/chats">Открыть панель</a>`;
   return notifyAll(text, { parse_mode: "HTML" });
 }
 
@@ -246,6 +268,8 @@ export async function notifyServerError({ title, message, source, stack } = {}) 
 
 /** Agent was disabled — inform manager to reply manually. */
 export async function notifyAgentDisabledMessage({ chatId, text, agentId }) {
+  const dedupKey = `avito-disabled|${chatId}|${String(text || "").slice(0, 120)}`;
+  if (_isThrottled(dedupKey, 120_000)) return;
   const preview = (text || "").slice(0, 300);
   const msg = `💬 <b>Новое сообщение Avito (агент выключен)</b>\n\nЧат: <code>${chatId || "—"}</code>\nАгент: <code>${agentId || "—"}</code>\n\nСообщение: ${preview}\n\n⚠️ Ответьте клиенту вручную!\nПанель: https://neeklo.ru/admin/avito/chats`;
   return notifyAll(msg, { parse_mode: "HTML" });

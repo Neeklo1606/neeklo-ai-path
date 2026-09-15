@@ -1012,14 +1012,14 @@ async function ingestAvitoMessageToCrm(agentId, msg) {
 
   // Webhook echo of agent auto-reply — already saved, don't duplicate or pause
   if (!isClient && isRecentAgentOutgoing(msg.chatId, msg.text)) {
-    return { crmChatId };
+    return { crmChatId, duplicate: true };
   }
 
   const row = await prisma.chat.findUnique({ where: { id: crmChatId } });
   const arr = parseChatMessagesJson(row?.messages);
   const last = arr[arr.length - 1];
   if (last?.content === msg.text) {
-    return { crmChatId };
+    return { crmChatId, duplicate: true };
   }
 
   const role = isClient ? "user" : "assistant";
@@ -3932,6 +3932,24 @@ app.post("/api/clero/avito-webhook", async (req, res) => {
   }
 });
 
+
+/** Dedupe Avito TG notifications when provider retries webhook (often x3). */
+const _avitoTgNotifyDedup = new Map();
+function claimAvitoTgNotify(chatId, text, cooldownMs = 180_000) {
+  const key = `${String(chatId || "")}|${String(text || "").slice(0, 200)}`;
+  const now = Date.now();
+  const last = _avitoTgNotifyDedup.get(key) || 0;
+  if (now - last < cooldownMs) return false;
+  _avitoTgNotifyDedup.set(key, now);
+  if (_avitoTgNotifyDedup.size > 500) {
+    const cutoff = now - cooldownMs * 2;
+    for (const [k, ts] of _avitoTgNotifyDedup) {
+      if (ts < cutoff) _avitoTgNotifyDedup.delete(k);
+    }
+  }
+  return true;
+}
+
 async function handleAvitoIncomingWebhook(req, res) {
   try {
     const agentId = String(req.params.agentId || "").trim();
@@ -3952,29 +3970,34 @@ async function handleAvitoIncomingWebhook(req, res) {
     const msg = extractAvitoWebhookMessage(payload);
     let mapped = null;
     if (msg) {
+      // Claim TG notify slot synchronously BEFORE any await (Avito retries webhook in parallel)
+      const shouldNotifyTg = claimAvitoTgNotify(msg.chatId, msg.text);
       mapped = await ingestAvitoMessageToCrm(agentId, msg);
 
-      // TG notification to all approved admins — ALWAYS, regardless of agent state
-      notifyNewAvitoMessage({
-        chatId: msg.chatId,
-        authorId: msg.userId,
-        text: msg.text,
-        agentId,
-      }).catch((e) => console.warn("[tg] avito notify error:", e?.message || e));
+      // Single TG notification per Avito message
+      if (shouldNotifyTg && !mapped?.duplicate) {
+        const enabledRow = await prisma.cmsSetting.findUnique({ where: { key: "agent.avito_enabled" } }).catch(() => null);
+        const agentEnabled = enabledRow
+          ? enabledRow.value === "true" || enabledRow.value === "1"
+          : process.env.AVITO_AGENT_ENABLED === "true";
+        notifyNewAvitoMessage({
+          chatId: msg.chatId,
+          authorId: msg.userId,
+          text: msg.text,
+          agentId,
+          agentDisabled: !agentEnabled,
+        }).catch((e) => console.warn("[tg] avito notify error:", e?.message || e));
+      }
 
-      // Legacy single-chat notification
-      sendTelegramNotification(
-        cfg,
-        `Avito: новое сообщение\nАгент: ${agentId}\nЧат: ${msg.chatId}\nТекст: ${msg.text.slice(0, 800)}`,
-      ).catch(() => {});
+      const shouldNotifyExtras = shouldNotifyTg && !mapped?.duplicate;
 
       // INSTANT contact/intent detection — fire before agent reply
       const phone = extractPhone(msg.text);
-      if (phone) {
+      if (phone && shouldNotifyExtras) {
         notifyClientContact({ phone, clientText: msg.text, chatId: msg.chatId, source: "avito" }).catch(() => {});
       }
       const transferIntent = detectTransferIntent(msg.text);
-      if (transferIntent) {
+      if (transferIntent && shouldNotifyExtras) {
         notifyTransferIntent({ intent: transferIntent, clientText: msg.text, chatId: msg.chatId, source: "avito" }).catch(() => {});
       }
 
@@ -3988,8 +4011,6 @@ async function handleAvitoIncomingWebhook(req, res) {
               ? enabledRow.value === "true" || enabledRow.value === "1"
               : process.env.AVITO_AGENT_ENABLED === "true";
             if (!agentEnabled) {
-              // Agent disabled — remind manager to reply manually
-              notifyAgentDisabledMessage({ chatId: msg.chatId, text: msg.text, agentId }).catch(() => {});
               return;
             }
 
