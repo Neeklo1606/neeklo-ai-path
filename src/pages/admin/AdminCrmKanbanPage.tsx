@@ -5,6 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { adminApi } from "@/lib/admin-api";
 import { Plus, X, Calendar, CircleDot, Loader2, GripVertical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import NotConnectedNotice from "@/components/admin/NotConnectedNotice";
 
 const STAGES = [
   { key: "new",         label: "Новые",        color: "#3B82F6", bg: "#EFF6FF" },
@@ -47,6 +48,7 @@ function DealCard({ deal, onClick, isDragging }: { deal: Deal; onClick: () => vo
 
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
+      <NotConnectedNotice what="Сделки" endpoints={["/admin/crm/deals"]} />
       <div
         onClick={onClick}
         style={{

@@ -3,6 +3,7 @@ import { adminApi } from "@/lib/admin-api";
 import { Search, Plus, X, Phone, Mail, Send, Copy, Check, ChevronDown, Loader2, Trash2, MessageCircle } from "lucide-react";
 import { StatusBadge } from "./AdminCrmDashboard";
 import { motion, AnimatePresence } from "framer-motion";
+import NotConnectedNotice from "@/components/admin/NotConnectedNotice";
 
 const SOURCES = ["website", "telegram", "ads", "referral", "other"];
 const SOURCE_LABELS: Record<string, string> = {
@@ -47,6 +48,7 @@ function ScoreBar({ score }: { score: number }) {
   const color = score >= 70 ? "#22C55E" : score >= 40 ? "#F59E0B" : "#D1D5DB";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <NotConnectedNotice what="Контакты" endpoints={["/admin/crm/contacts"]} />
       <div style={{ width: 48, height: 4, background: "#F3F4F6", borderRadius: 9999 }}>
         <div style={{ width: `${score}%`, height: "100%", background: color, borderRadius: 9999 }} />
       </div>

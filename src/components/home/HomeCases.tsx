@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, X, Play, Volume2, VolumeX } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useBrief } from "@/context/BriefContext";
+import { useCmsQuery } from "@/hooks/useCmsQuery";
+import DataState from "@/components/DataState";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -49,15 +51,9 @@ type Props = { lang: string };
 
 export default function HomeCases({ lang }: Props) {
   const ru = lang === "ru";
-  const [cases, setCases] = useState<ApiCase[]>([]);
   const [activeCase, setActiveCase] = useState<ApiCase | null>(null);
-
-  useEffect(() => {
-    fetch("/cms-api/cases")
-      .then((r) => r.json())
-      .then((data: ApiCase[]) => setCases(data))
-      .catch(() => {});
-  }, []);
+  const casesQ = useCmsQuery<ApiCase[]>(["cases"], "/cases");
+  const cases = casesQ.data ?? [];
 
   const close = useCallback(() => setActiveCase(null), []);
 
@@ -134,6 +130,14 @@ export default function HomeCases({ lang }: Props) {
             <ArrowUpRight size={14} strokeWidth={2} />
           </Link>
         </motion.div>
+
+        <DataState
+          loading={casesQ.isLoading}
+          error={casesQ.error}
+          empty={!casesQ.isLoading && !casesQ.error && cases.length === 0}
+          emptyText={ru ? "Кейсы скоро появятся" : "Cases coming soon"}
+          onRetry={() => casesQ.refetch()}
+        />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-5">
           {cases.slice(0, 4).map((c, i) => (

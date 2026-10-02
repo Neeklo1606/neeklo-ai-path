@@ -100,6 +100,10 @@ import { optimizeRasterUpload } from "./services/media-process.mjs";
 import { validateUploadFileSignature, ALLOWED_UPLOAD_MIMES } from "./services/file-signature.mjs";
 import { validatePageBlocksSchema } from "./block-schemas.mjs";
 import { getDeployStatus } from "./deploy-status.mjs";
+// Новые области выносим отдельными модулями вместо роста этого файла
+import { registerBlogRoutes } from "./routes/blog.routes.mjs";
+import { registerVideoRoutes } from "./routes/videos.routes.mjs";
+import { registerStatsRoutes } from "./routes/stats.routes.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
@@ -229,7 +233,8 @@ app.use(
     },
   }),
 );
-app.use(express.static(path.join(ROOT, "public")));
+// redirect:false — иначе каталог public/videos перехватывал API-маршрут /videos и отвечал 301
+app.use(express.static(path.join(ROOT, "public"), { redirect: false }));
 
 const PUBLIC_CHAT_COOKIE = "neeklo_crm_chat_id";
 const PUBLIC_CHAT_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
@@ -573,6 +578,11 @@ function requireAuth(req, res, next) {
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 }
+
+// ─── Модульные маршруты ───
+registerBlogRoutes(app, { prisma, requireAuth });
+registerVideoRoutes(app, { prisma, requireAuth, uploadDir: UPLOAD_DIR, publicUrlPrefix: "/uploads" });
+registerStatsRoutes(app, { prisma, requireAuth });
 
 function requireAdmin(req, res, next) {
   if (req.authUser?.role !== "ADMIN") {
@@ -1922,16 +1932,21 @@ app.get("/settings", requireAuth, async (_req, res) => {
 app.patch("/settings/:key", requireAuth, async (req, res) => {
   const key = decodeURIComponent(req.params.key);
   try {
+    // is_public меняем только если его прислали. Раньше любое сохранение без этого
+    // поля делало ключ непубличным — так ломались «Страницы сайта» и витрина /kp.
+    const existing = await prisma.cmsSetting.findUnique({ where: { key } });
+    const isPublic =
+      req.body.is_public === undefined ? existing?.isPublic ?? false : !!req.body.is_public;
     const row = await prisma.cmsSetting.upsert({
       where: { key },
       create: {
         key,
         value: req.body.value ?? null,
-        isPublic: !!req.body.is_public,
+        isPublic,
       },
       update: {
         value: req.body.value ?? null,
-        isPublic: !!req.body.is_public,
+        isPublic,
       },
     });
     res.json(settingOut(row));
@@ -5131,35 +5146,8 @@ app.get("/admin/knowledge/insights", requireAuth, async (req, res) => {
 // ============================================================
 
 /** GET /settings — returns all settings as [{key,value}] */
-app.get("/settings", requireAuth, async (req, res) => {
-  try {
-    const rows = await prisma.cmsSetting.findMany();
-    res.json(rows.map(r => {
-      let value = r.value;
-      try { value = JSON.parse(r.value); } catch { /* leave as string */ }
-      return { key: r.key, value };
-    }));
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-/** PATCH /settings/:key — upsert a single setting */
-app.patch("/settings/:key", requireAuth, async (req, res) => {
-  try {
-    const key = req.params.key;
-    const { value } = req.body;
-    const strValue = typeof value === "string" ? value : JSON.stringify(value);
-    await prisma.cmsSetting.upsert({
-      where: { key },
-      update: { value: strValue },
-      create: { key, value: strValue },
-    });
-    res.json({ ok: true, key, value });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
+// (дубли GET /settings и PATCH /settings/:key удалены: Express использовал
+//  объявления выше, а эти были недостижимы и вели себя иначе)
 
 // ============================================================
 

@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import Footer from "@/components/Footer";
 import { SERVICE_TAG_LABELS, serviceTagsFor, serviceTagLabelsFor, type ServiceSlug } from "@/data/serviceTags";
+import { useCmsQuery } from "@/hooks/useCmsQuery";
+import DataState from "@/components/DataState";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 const ALL = "Все";
@@ -55,34 +57,21 @@ export default function CasesPage() {
   });
 
   // Cases
-  const [cases, setCases] = useState<ApiCase[]>([]);
-  const [casesLoading, setCasesLoading] = useState(true);
+  const casesQ = useCmsQuery<ApiCase[]>(["cases"], "/cases");
+  const cases = casesQ.data ?? [];
+  const casesLoading = casesQ.isLoading;
 
   // Videos
-  const [videos, setVideos] = useState<VideoItem[]>([]);
-  const [videoCats, setVideoCats] = useState<VideoCat[]>([]);
+  const videosQ = useCmsQuery<VideoItem[]>(["videos"], "/videos");
+  const videoCatsQ = useCmsQuery<VideoCat[]>(["video-categories"], "/video-categories");
+  const videos = videosQ.data ?? [];
+  const videoCats = videoCatsQ.data ?? [];
   const [videoFilter, setVideoFilter] = useState<number | null>(null);
   const [playerVideo, setPlayerVideo] = useState<VideoItem | null>(null);
 
   // Navigation
   const [activeTab, setActiveTab] = useState(ALL);
 
-  useEffect(() => {
-    fetch("/cms-api/cases")
-      .then(r => r.ok ? r.json() : [])
-      .then((data: ApiCase[]) => { setCases(data); setCasesLoading(false); })
-      .catch(() => setCasesLoading(false));
-
-    fetch("/cms-api/videos")
-      .then(r => r.ok ? r.json() : [])
-      .then(setVideos)
-      .catch(() => {});
-
-    fetch("/cms-api/video-categories")
-      .then(r => r.ok ? r.json() : [])
-      .then(setVideoCats)
-      .catch(() => {});
-  }, []);
 
   // Tabs: Все + услуги + Видео (фильтрация по связке кейс↔услуга из serviceTags.ts)
   const tabs = [ALL, ...SERVICE_FILTERS, VIDEO_TAB];
@@ -258,6 +247,12 @@ export default function CasesPage() {
                 </div>
               )}
 
+              <DataState
+                loading={videosQ.isLoading}
+                error={videosQ.error}
+                onRetry={() => { videosQ.refetch(); videoCatsQ.refetch(); }}
+              />
+
               {/* Video grid */}
               {filteredVideos.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
@@ -278,7 +273,9 @@ export default function CasesPage() {
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.22, ease }}
             >
-              {casesLoading ? (
+              {casesQ.error ? (
+                <DataState loading={false} error={casesQ.error} onRetry={() => casesQ.refetch()} minHeight={220} />
+              ) : casesLoading ? (
                 /* Skeleton */
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
                   {[1, 2, 3, 4, 5, 6].map(n => (

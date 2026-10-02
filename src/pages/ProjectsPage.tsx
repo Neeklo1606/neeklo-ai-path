@@ -269,8 +269,12 @@ const ProjectSheet = ({ project: p, activeTab, setActiveTab, onClose, navigate, 
       <motion.div className="fixed inset-0 bg-black/40 z-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
       <motion.div
         className={`fixed z-[60] flex flex-col overflow-hidden ${isMobile ? "inset-x-0 bottom-0 rounded-t-[16px]" : "inset-x-0 bottom-0 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[16px] md:max-w-[600px] md:w-full"}`}
-        style={{ background: "var(--surface)", border: "1px solid var(--bd-hover)" }}
-        style={{ height: "88dvh", maxHeight: "88dvh" }}
+        style={{
+          background: "var(--surface)",
+          border: "1px solid var(--bd-hover)",
+          height: "88dvh",
+          maxHeight: "88dvh",
+        }}
         initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ duration: 0.35, ease }}
         onClick={(e) => e.stopPropagation()}
       >

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { adminApi } from "@/lib/admin-api";
 import { Plus, Search, Pin, Trash2, Save, Eye, EyeOff, X, Loader2, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import NotConnectedNotice from "@/components/admin/NotConnectedNotice";
 
 const CATEGORIES = [
   { key: "general",    label: "Общее",             emoji: "📋" },
@@ -95,6 +96,7 @@ export default function AdminKnowledgeBasePage() {
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+      <NotConnectedNotice what="Статьи базы знаний" endpoints={["/admin/knowledge-articles"]} />
       {/* Left sidebar */}
       <div style={{ width: 260, borderRight: "1px solid #E5E7EB", background: "#FAFAFA", display: "flex", flexDirection: "column", flexShrink: 0 }}>
         <div style={{ padding: "18px 16px 12px" }}>

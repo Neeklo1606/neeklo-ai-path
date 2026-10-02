@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { adminApi } from "@/lib/admin-api";
 import { Plus, Save, Trash2, FileText, Tag, CheckCircle2, Clock, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import NotConnectedNotice from "@/components/admin/NotConnectedNotice";
 
 const CATEGORIES = [
   { key: "general", label: "Общие", emoji: "📋" },
@@ -109,6 +110,7 @@ export default function AdminRegulationsPage() {
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+      <NotConnectedNotice what="Регламенты" endpoints={["/admin/regulations"]} />
       {/* Sidebar */}
       <div style={{ width: 240, borderRight: "1px solid #E5E7EB", background: "#FAFAFA", display: "flex", flexDirection: "column", flexShrink: 0 }}>
         <div style={{ padding: "18px 16px 12px" }}>

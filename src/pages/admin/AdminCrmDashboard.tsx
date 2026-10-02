@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { adminApi } from "@/lib/admin-api";
 import { Users, TrendingUp, Flame, DollarSign, ArrowRight, Clock } from "lucide-react";
+import NotConnectedNotice from "@/components/admin/NotConnectedNotice";
 
 const STAGE_LABELS: Record<string, { label: string; color: string }> = {
   new:          { label: "Новые",         color: "#3B82F6" },
@@ -67,6 +68,7 @@ export default function AdminCrmDashboard() {
 
   return (
     <div style={{ padding: "28px 32px", maxWidth: 1100 }}>
+      <NotConnectedNotice what="Сводка CRM" endpoints={["/admin/crm/stats", "/admin/crm/contacts"]} />
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: "#111", marginBottom: 4 }}>CRM — Дашборд</h1>
         <p style={{ fontSize: 13, color: "#666" }}>Обзор контактов, сделок и активности</p>

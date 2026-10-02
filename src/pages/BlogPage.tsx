@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import Footer from "@/components/Footer";
 import { news } from "@/data/news";
+import { useCmsQuery } from "@/hooks/useCmsQuery";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -12,27 +13,23 @@ export default function BlogPage() {
     description: "Статьи о сайтах, AI-ассистентах, Telegram-ботах и автоматизации бизнеса.",
   });
 
-  // ── API fetch: prefer live posts, fall back to static news ──
-  const [livePosts, setLivePosts] = useState<typeof news | null>(null);
-  useEffect(() => {
-    fetch("/cms-api/blog")
-      .then(r => r.ok ? r.json() : null)
-      .then((data: null | Array<{id:number;title:string;slug:string;category:string;excerpt:string|null;readTime:string;publishedAt:string|null;createdAt:string}>) => {
-        if (data && data.length > 0) {
-          setLivePosts(data.map(p => ({
-            id: p.id,
-            slug: p.slug,
-            category: p.category,
-            title: p.title,
-            excerpt: p.excerpt || "",
-            date: new Date(p.publishedAt || p.createdAt).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" }),
-            readTime: p.readTime,
-            href: "/blog/" + p.slug,
-          })));
-        }
-      })
-      .catch(() => {});
-  }, []);
+  // Живые статьи из БД, если они есть; иначе — статический список src/data/news.ts
+  const postsQ = useCmsQuery<Array<{ id: number; title: string; slug: string; category: string; excerpt: string | null; readTime: string; publishedAt: string | null; createdAt: string }>>(
+    ["blog", "list"],
+    "/blog",
+  );
+  const livePosts = (postsQ.data ?? []).length
+    ? (postsQ.data ?? []).map((p) => ({
+        id: p.id,
+        slug: p.slug,
+        category: p.category,
+        title: p.title,
+        excerpt: p.excerpt || "",
+        date: new Date(p.publishedAt || p.createdAt).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" }),
+        readTime: p.readTime,
+        href: "/blog/" + p.slug,
+      }))
+    : null;
   const allNews = livePosts ?? news;
 
 

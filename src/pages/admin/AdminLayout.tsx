@@ -23,7 +23,7 @@ const sections: { title: string; items: NavItem[] }[] = [
     items: [
       { to: "/admin/crm/contacts", icon: <Users size={15} />, label: "Контакты" },
       { to: "/admin/crm/kanban", icon: <KanbanSquare size={15} />, label: "Проекты" },
-      { to: "/admin/chats", icon: <MessageCircle size={15} />, label: "Чаты" },
+      { to: "/admin/operator", icon: <MessageCircle size={15} />, label: "Чаты" },
       { to: "/admin/telegram", icon: <Send size={15} />, label: "Telegram бот" },
     ],
   },
