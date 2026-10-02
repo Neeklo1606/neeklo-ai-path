@@ -34,11 +34,26 @@ export function estimateTokensFromText(parts) {
 }
 
 const WINDOW_MS = 60_000;
+const SWEEP_EVERY_MS = 60_000;
 const buckets = new Map();
+let lastSweepAt = Date.now();
+
+/**
+ * Удаляет истёкшие окна. Без этого Map рос на каждый новый IP и никогда не чистился:
+ * при сканировании ботами процесс упирался в max_memory_restart и перезапускался.
+ */
+function sweepExpired(now) {
+  if (now - lastSweepAt < SWEEP_EVERY_MS) return;
+  lastSweepAt = now;
+  for (const [k, v] of buckets) {
+    if (now >= v.resetAt) buckets.delete(k);
+  }
+}
 
 /** @returns {boolean} true if allowed */
 export function rateLimitByKeyHash(keyHash, maxPerWindow) {
   const now = Date.now();
+  sweepExpired(now);
   let b = buckets.get(keyHash);
   if (!b || now >= b.resetAt) {
     b = { n: 0, resetAt: now + WINDOW_MS };
@@ -46,6 +61,11 @@ export function rateLimitByKeyHash(keyHash, maxPerWindow) {
   }
   b.n += 1;
   return b.n <= maxPerWindow;
+}
+
+/** Для тестов и диагностики. */
+export function rateLimitBucketCount() {
+  return buckets.size;
 }
 
 /**

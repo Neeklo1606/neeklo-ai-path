@@ -32,6 +32,8 @@ module.exports = {
       instances: 1,
       autorestart: true,
       max_memory_restart: "400M",
+      // Без этого строки в pm2-логах идут без времени — разбирать инциденты тяжело
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
       env,
     },
   ],
