@@ -8,9 +8,19 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-const PRIMARY_EMAIL = process.env.BOOTSTRAP_ADMIN_EMAIL || "dsc-23@yandex.ru";
-const PRIMARY_PASSWORD = process.env.BOOTSTRAP_ADMIN_PASSWORD || "123123123";
-const PRIMARY_NAME = process.env.BOOTSTRAP_ADMIN_NAME || "Джон Уик";
+// Пароль и почта берутся только из окружения: пароль по умолчанию в репозитории
+// означал, что на любом стенде, где запускали seed, живёт админ с известным паролем.
+const PRIMARY_EMAIL = process.env.BOOTSTRAP_ADMIN_EMAIL;
+const PRIMARY_PASSWORD = process.env.BOOTSTRAP_ADMIN_PASSWORD;
+const PRIMARY_NAME = process.env.BOOTSTRAP_ADMIN_NAME || "Администратор";
+
+if (!PRIMARY_EMAIL || !PRIMARY_PASSWORD || PRIMARY_PASSWORD.length < 12) {
+  console.error(
+    "[seed] задайте BOOTSTRAP_ADMIN_EMAIL и BOOTSTRAP_ADMIN_PASSWORD (от 12 символов):\n" +
+      "  BOOTSTRAP_ADMIN_EMAIL=you@example.com BOOTSTRAP_ADMIN_PASSWORD=\"$(openssl rand -hex 12)\" npx prisma db seed",
+  );
+  process.exit(1);
+}
 
 async function main() {
   const hash = await bcrypt.hash(PRIMARY_PASSWORD, 12);

@@ -22,7 +22,9 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   build: {
-    sourcemap: true,
+    // Публичные sourcemap раздают исходники сайта всем желающим (/assets/*.js.map).
+    // Для разбора ошибок в проде карты не нужны — читаем логи сервера.
+    sourcemap: false,
   },
   resolve: {
     alias: {

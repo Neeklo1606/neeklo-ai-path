@@ -185,7 +185,37 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
 }
 
 const app = express();
-app.use(cors({ origin: true, credentials: true }));
+// CORS: только свои источники. origin:true отражал любой домен и вместе с
+// credentials:true позволял чужому сайту дёргать API от имени посетителя.
+// Переопределяется переменной CORS_ALLOWED_ORIGINS (список через запятую).
+const DEFAULT_ALLOWED_ORIGINS = [
+  "https://neeklo.ru",
+  "https://www.neeklo.ru",
+  "http://localhost:8080",
+  "http://localhost:8090",
+  "http://localhost:5173",
+  "http://127.0.0.1:8080",
+  "http://127.0.0.1:8090",
+];
+const ALLOWED_ORIGINS = new Set(
+  (process.env.CORS_ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .concat(DEFAULT_ALLOWED_ORIGINS),
+);
+app.use(
+  cors({
+    credentials: true,
+    origin: (origin, cb) => {
+      // Запросы без Origin (curl, вебхуки Avito/Telegram, server-to-server) не ограничиваем
+      if (!origin) return cb(null, true);
+      if (ALLOWED_ORIGINS.has(origin)) return cb(null, true);
+      console.warn(`[cors] запрос с чужого источника отклонён: ${origin}`);
+      return cb(null, false);
+    },
+  }),
+);
 app.use((_req, res, next) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   res.setHeader("Pragma", "no-cache");
@@ -2611,6 +2641,9 @@ app.post("/crm/chat-session", async (req, res) => {
   }
 });
 
+/** Окно, в котором повторная заявка с тем же контактом считается дублем. */
+const PUBLIC_LEAD_DEDUP_WINDOW_MS = Number(process.env.PUBLIC_LEAD_DEDUP_WINDOW_MS || 10 * 60 * 1000);
+
 /**
  * Telegram-уведомление о заявке с сайта: всем одобренным в /admin/telegram (notifyAll —
  * бот TG_BOT_TOKEN, до 3 попыток на чат через IPv4). Вызывается после ответа посетителю,
@@ -2685,6 +2718,23 @@ app.post("/crm/public-lead", async (req, res) => {
       budget ? `Бюджет: ${budget}` : "",
       telegram ? `Telegram: ${telegram}` : "",
     ].filter(Boolean);
+
+    // Отсечка повторов: тот же контакт в пределах окна не плодит лидов и уведомлений
+    // (двойной клик, обновление страницы, спам-скрипт в рамках лимита запросов).
+    const since = new Date(Date.now() - PUBLIC_LEAD_DEDUP_WINDOW_MS);
+    const duplicate = await prisma.lead
+      .findFirst({
+        where: {
+          createdAt: { gte: since },
+          ...(rawPhone ? { phone: rawPhone.slice(0, 32) } : { summary: { contains: `Telegram: ${telegram}` } }),
+        },
+        orderBy: { createdAt: "desc" },
+      })
+      .catch(() => null);
+    if (duplicate) {
+      console.log(`[public-lead] ${new Date().toISOString()} повтор заявки (${source}), лид ${duplicate.id} — пропускаем`);
+      return res.json({ ok: true, id: duplicate.id, duplicate: true });
+    }
 
     const lead = await prisma.lead.create({
       data: {
@@ -5113,19 +5163,31 @@ app.patch("/settings/:key", requireAuth, async (req, res) => {
 
 // ============================================================
 
-process.on("unhandledRejection", (reason) => {
-  console.error("[cms-server] unhandledRejection", reason);
-});
 // ─── Global error handlers → Telegram alerts ─────────────────────────────────
+// В Telegram уходят только эти два события. Раньше пересылалась любая console.error —
+// это давало лавину сообщений при сбое и могло вынести наружу строку подключения к БД.
+
+/** Вырезает секреты из текста перед отправкой в Telegram. */
+function maskSecrets(text) {
+  return String(text || "")
+    .replace(/([a-z+]+:\/\/)[^\s:@/]+:[^\s@/]+@/gi, "$1***:***@")   // postgres://user:pass@host
+    .replace(/\bbot\d{6,}:[\w-]{20,}/gi, "bot<TOKEN>")              // токен Telegram-бота
+    .replace(/\b(sk|rk)-[A-Za-z0-9_-]{16,}/g, "$1-<KEY>")            // ключи OpenAI/OpenRouter
+    .replace(/\b[Bb]earer\s+[A-Za-z0-9._-]{16,}/g, "Bearer <TOKEN>")
+    .slice(0, 1500);
+}
 
 process.on("uncaughtException", (err) => {
   console.error("[cms-server] uncaughtException", err);
   notifyServerError({
     title: "uncaughtException",
-    message: err?.message || String(err),
+    message: maskSecrets(err?.message || String(err)),
     source: "cms-server",
-    stack: err?.stack,
+    stack: maskSecrets(err?.stack),
   }).catch(() => {});
+  // Состояние процесса после такой ошибки не определено: выходим, PM2 поднимет заново.
+  // Даём секунду на отправку уведомления.
+  setTimeout(() => process.exit(1), 1000).unref();
 });
 
 process.on("unhandledRejection", (reason) => {
@@ -5134,23 +5196,12 @@ process.on("unhandledRejection", (reason) => {
   console.error("[cms-server] unhandledRejection", reason);
   notifyServerError({
     title: "unhandledRejection",
-    message: msg,
+    message: maskSecrets(msg),
     source: "cms-server",
-    stack,
+    stack: maskSecrets(stack),
   }).catch(() => {});
 });
 
-// Intercept console.error for critical errors only (throttled, noise-filtered)
-const _origConsoleError = console.error.bind(console);
-const NOISE_RE = /ECONNREFUSED|ENOTFOUND|socket hang up|aborted|EPIPE|ECONNRESET|body-parser|raw-body|IncomingMessage|connect ETIMEDOUT/i;
-console.error = (...args) => {
-  _origConsoleError(...args);
-  const message = args.map((a) => (a instanceof Error ? a.message : String(a))).join(" ");
-  // Forward only genuine critical errors, skip common network/connection noise
-  if (message.length > 20 && !NOISE_RE.test(message)) {
-    notifyServerError({ title: "console.error", message, source: "cms-server" }).catch(() => {});
-  }
-};
 
 app.listen(PORT, "127.0.0.1", () => {
   console.log(`[cms-server] http://127.0.0.1:${PORT} (Prisma)`);
