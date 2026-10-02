@@ -104,6 +104,9 @@ import { getDeployStatus } from "./deploy-status.mjs";
 import { registerBlogRoutes } from "./routes/blog.routes.mjs";
 import { registerVideoRoutes } from "./routes/videos.routes.mjs";
 import { registerStatsRoutes } from "./routes/stats.routes.mjs";
+import { registerCaseRoutes } from "./routes/cases.routes.mjs";
+import { registerPriceRoutes } from "./routes/prices.routes.mjs";
+import { registerKpRoutes } from "./routes/kp.routes.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
@@ -583,6 +586,9 @@ function requireAuth(req, res, next) {
 registerBlogRoutes(app, { prisma, requireAuth });
 registerVideoRoutes(app, { prisma, requireAuth, uploadDir: UPLOAD_DIR, publicUrlPrefix: "/uploads" });
 registerStatsRoutes(app, { prisma, requireAuth });
+registerCaseRoutes(app, { prisma, requireAuth });
+registerPriceRoutes(app, { prisma, requireAuth, upsertPriceToKb });
+registerKpRoutes(app, { prisma, requireAuth });
 
 function requireAdmin(req, res, next) {
   if (req.authUser?.role !== "ADMIN") {
@@ -4315,154 +4321,11 @@ app.post("/avito/webhook/:agentId", handleAvitoIncomingWebhook);
 // COMMERCIAL OFFERS API  /api/kp
 // ============================================================
 
-/** GET /api/kp — list published offers (public) */
-app.get("/api/kp", async (_req, res) => {
-  try {
-    const offers = await prisma.commercialOffer.findMany({
-      where: { published: true },
-      select: {
-        id: true, slug: true, clientName: true, clientIndustry: true,
-        kpNumber: true, expiresDays: true, viewsCount: true,
-        createdAt: true, updatedAt: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    res.json(offers);
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
-  }
-});
 
-/** GET /api/kp/all — list all offers including unpublished (auth required) */
-app.get("/api/kp/all", requireAuth, async (_req, res) => {
-  try {
-    const offers = await prisma.commercialOffer.findMany({
-      select: {
-        id: true, slug: true, clientName: true, clientIndustry: true,
-        kpNumber: true, expiresDays: true, published: true,
-        viewsCount: true, lastViewedAt: true, createdAt: true, updatedAt: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    res.json(offers);
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
-  }
-});
 
-/** GET /api/kp/:slug — single offer by slug (public) + increment viewsCount */
-app.get("/api/kp/:slug", async (req, res) => {
-  try {
-    const { slug } = req.params;
-    const offer = await prisma.commercialOffer.findUnique({ where: { slug } });
-    if (!offer) return res.status(404).json({ error: "КП не найдено" });
-    if (!offer.published) return res.status(404).json({ error: "КП не найдено" });
 
-    // Increment views asynchronously (don't await — don't block response)
-    prisma.commercialOffer.update({
-      where: { slug },
-      data: { viewsCount: { increment: 1 }, lastViewedAt: new Date() },
-    }).catch(() => {});
 
-    res.json(offer);
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
-  }
-});
 
-/** POST /api/kp — create offer (auth required) */
-app.post("/api/kp", requireAuth, async (req, res) => {
-  try {
-    const {
-      slug, clientName, clientIndustry, kpNumber,
-      expiresDays = 14, published = false,
-      heroData, problemsData, solutionData, packagesData,
-      includedData, timelineData, nextPhaseData, whyUsData,
-      ctaData, contactsData,
-    } = req.body;
-
-    if (!slug || !clientName || !clientIndustry || !kpNumber) {
-      return res.status(400).json({ error: "slug, clientName, clientIndustry, kpNumber — обязательны" });
-    }
-
-    const offer = await prisma.commercialOffer.create({
-      data: {
-        slug, clientName, clientIndustry, kpNumber,
-        expiresDays, published,
-        heroData: heroData || {},
-        problemsData: problemsData || {},
-        solutionData: solutionData || {},
-        packagesData: packagesData || {},
-        includedData: includedData || {},
-        timelineData: timelineData || {},
-        nextPhaseData: nextPhaseData || {},
-        whyUsData: whyUsData || {},
-        ctaData: ctaData || {},
-        contactsData: contactsData || {},
-      },
-    });
-    res.status(201).json(offer);
-  } catch (e) {
-    if (e?.code === "P2002") return res.status(409).json({ error: "Slug уже занят" });
-    res.status(500).json({ error: String(e) });
-  }
-});
-
-/** PUT /api/kp/:slug — update offer (auth required) */
-app.put("/api/kp/:slug", requireAuth, async (req, res) => {
-  try {
-    const { slug } = req.params;
-    const existing = await prisma.commercialOffer.findUnique({ where: { slug } });
-    if (!existing) return res.status(404).json({ error: "КП не найдено" });
-
-    const {
-      clientName, clientIndustry, kpNumber, expiresDays, published,
-      heroData, problemsData, solutionData, packagesData,
-      includedData, timelineData, nextPhaseData, whyUsData, ctaData, contactsData,
-    } = req.body;
-
-    const offer = await prisma.commercialOffer.update({
-      where: { slug },
-      data: {
-        ...(clientName !== undefined && { clientName }),
-        ...(clientIndustry !== undefined && { clientIndustry }),
-        ...(kpNumber !== undefined && { kpNumber }),
-        ...(expiresDays !== undefined && { expiresDays }),
-        ...(published !== undefined && { published }),
-        ...(heroData !== undefined && { heroData }),
-        ...(problemsData !== undefined && { problemsData }),
-        ...(solutionData !== undefined && { solutionData }),
-        ...(packagesData !== undefined && { packagesData }),
-        ...(includedData !== undefined && { includedData }),
-        ...(timelineData !== undefined && { timelineData }),
-        ...(nextPhaseData !== undefined && { nextPhaseData }),
-        ...(whyUsData !== undefined && { whyUsData }),
-        ...(ctaData !== undefined && { ctaData }),
-        ...(contactsData !== undefined && { contactsData }),
-      },
-    });
-    res.json(offer);
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
-  }
-});
-
-/** DELETE /api/kp/:slug — soft-delete (unpublish) offer (auth required) */
-app.delete("/api/kp/:slug", requireAuth, async (req, res) => {
-  try {
-    const { slug } = req.params;
-    const existing = await prisma.commercialOffer.findUnique({ where: { slug } });
-    if (!existing) return res.status(404).json({ error: "КП не найдено" });
-
-    await prisma.commercialOffer.update({
-      where: { slug },
-      data: { published: false },
-    });
-    res.status(204).end();
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
-  }
-});
 
 // ============================================================
 
@@ -4471,83 +4334,10 @@ app.delete("/api/kp/:slug", requireAuth, async (req, res) => {
 // CASES — portfolio cases CRUD
 // ============================================================
 
-// Public: list active cases
-app.get("/cases", async (_req, res) => {
-  try {
-    const cases = await prisma.case.findMany({
-      where: { isActive: true },
-      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
-    });
-    res.json(cases);
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
-  }
-});
 
-// Admin: list all cases
-app.get("/admin/cases", requireAuth, async (_req, res) => {
-  try {
-    const cases = await prisma.case.findMany({
-      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
-    });
-    res.json(cases);
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
-  }
-});
 
-// Admin: create case
-app.post("/admin/cases", requireAuth, async (req, res) => {
-  try {
-    const { title, slug, category = "Сайты", badge, description, metric, url, color, coverImage, isActive = true, isFeatured = false } = req.body;
-    if (!title || !slug) return res.status(400).json({ error: "title and slug are required" });
-    const existing = await prisma.case.findUnique({ where: { slug } });
-    if (existing) return res.status(409).json({ error: "slug already exists" });
-    const maxOrder = await prisma.case.aggregate({ _max: { sortOrder: true } });
-    const c = await prisma.case.create({
-      data: { title, slug, category, badge: badge || null, description: description || null, metric: metric || null, url: url || null, color: color || "from-slate-100 to-zinc-200", coverImage: coverImage || null, sortOrder: (maxOrder._max.sortOrder ?? 0) + 1, isActive, isFeatured },
-    });
-    res.status(201).json(c);
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
-  }
-});
 
-// Admin: update case
-app.put("/admin/cases/:id", requireAuth, async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const { title, slug, category, badge, description, metric, url, color, coverImage, sortOrder, isActive, isFeatured } = req.body;
-    const data = {};
-    if (title !== undefined) data.title = title;
-    if (slug !== undefined) data.slug = slug;
-    if (category !== undefined) data.category = category;
-    if (badge !== undefined) data.badge = badge || null;
-    if (description !== undefined) data.description = description || null;
-    if (metric !== undefined) data.metric = metric || null;
-    if (url !== undefined) data.url = url || null;
-    if (color !== undefined) data.color = color;
-    if (coverImage !== undefined) data.coverImage = coverImage || null;
-    if (sortOrder !== undefined) data.sortOrder = parseInt(sortOrder);
-    if (isActive !== undefined) data.isActive = Boolean(isActive);
-    if (isFeatured !== undefined) data.isFeatured = Boolean(isFeatured);
-    const c = await prisma.case.update({ where: { id }, data });
-    res.json(c);
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
-  }
-});
 
-// Admin: delete case
-app.delete("/admin/cases/:id", requireAuth, async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    await prisma.case.delete({ where: { id } });
-    res.status(204).end();
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
-  }
-});
 
 // ============================================================
 // TELEGRAM BOT  /tg/*
@@ -4719,90 +4509,10 @@ app.post("/ai-agent/chat", requireAuth, async (req, res) => {
 // SERVICE PRICING  /admin/prices
 // ============================================================
 
-/** GET /admin/prices — list all prices */
-app.get("/admin/prices", requireAuth, async (_req, res) => {
-  try {
-    const prices = await prisma.servicePrice.findMany({
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
-    res.json(prices);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
 
-/** GET /prices — public price list (active only) */
-app.get("/prices", async (_req, res) => {
-  try {
-    const prices = await prisma.servicePrice.findMany({
-      where: { isActive: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
-    res.json(prices);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
 
-/** POST /admin/prices — create price item */
-app.post("/admin/prices", requireAuth, async (req, res) => {
-  try {
-    const { title, description, priceFrom, priceTo, currency, category, isActive, sortOrder } = req.body || {};
-    if (!title) return res.status(400).json({ error: "title required" });
-    const price = await prisma.servicePrice.create({
-      data: {
-        title: String(title),
-        description: description != null ? String(description) : null,
-        priceFrom: priceFrom != null ? Number(priceFrom) : null,
-        priceTo: priceTo != null ? Number(priceTo) : null,
-        currency: currency || "RUB",
-        category: category || "general",
-        isActive: isActive !== false,
-        sortOrder: sortOrder != null ? Number(sortOrder) : 0,
-      },
-    });
-    upsertPriceToKb(price).catch((e) => console.warn("[pricing-kb]", e?.message));
-    res.status(201).json(price);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
 
-/** PUT /admin/prices/:id — update price item */
-app.put("/admin/prices/:id", requireAuth, async (req, res) => {
-  try {
-    const { title, description, priceFrom, priceTo, currency, category, isActive, sortOrder } = req.body || {};
-    const price = await prisma.servicePrice.update({
-      where: { id: req.params.id },
-      data: {
-        ...(title !== undefined && { title: String(title) }),
-        ...(description !== undefined && { description: description === null ? null : String(description) }),
-        ...(priceFrom !== undefined && { priceFrom: priceFrom === null ? null : Number(priceFrom) }),
-        ...(priceTo !== undefined && { priceTo: priceTo === null ? null : Number(priceTo) }),
-        ...(currency !== undefined && { currency: String(currency) }),
-        ...(category !== undefined && { category: String(category) }),
-        ...(isActive !== undefined && { isActive: Boolean(isActive) }),
-        ...(sortOrder !== undefined && { sortOrder: Number(sortOrder) }),
-      },
-    });
-    upsertPriceToKb(price).catch((e) => console.warn("[pricing-kb]", e?.message));
-    res.json(price);
-  } catch (e) {
-    if (e.code === "P2025") return res.status(404).json({ error: "Not found" });
-    res.status(500).json({ error: e.message });
-  }
-});
 
-/** DELETE /admin/prices/:id — delete price item */
-app.delete("/admin/prices/:id", requireAuth, async (req, res) => {
-  try {
-    await prisma.servicePrice.delete({ where: { id: req.params.id } });
-    res.status(204).end();
-  } catch (e) {
-    if (e.code === "P2025") return res.status(404).json({ error: "Not found" });
-    res.status(500).json({ error: e.message });
-  }
-});
 
 // ============================================================
 // GLOBAL KNOWLEDGE BASE  /admin/knowledge/*
