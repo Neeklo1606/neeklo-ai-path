@@ -454,8 +454,7 @@ export default function AdminAssistantEditor() {
               className="cursor-pointer"
               // @ts-expect-error non-standard attribute supported in Chromium browsers
               webkitdirectory=""
-              // @ts-expect-error non-standard attribute supported in Chromium browsers
-              directory=""
+                            directory=""
               multiple
               onChange={onObsidianFolder}
             />

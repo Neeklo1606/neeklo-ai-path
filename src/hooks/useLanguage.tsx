@@ -309,7 +309,7 @@ const translations = {
   "sdet.aiAgent.timeline": { ru: "14–30 дней", en: "14–30 days" },
 } as const;
 
-type TranslationKey = keyof typeof translations;
+export type TranslationKey = keyof typeof translations;
 
 interface LanguageContextType {
   lang: Lang;

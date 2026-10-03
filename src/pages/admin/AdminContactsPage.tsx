@@ -4,6 +4,7 @@ import { Search, Plus, X, Phone, Mail, Send, Copy, Check, ChevronDown, Loader2, 
 import { StatusBadge } from "./AdminCrmDashboard";
 import { motion, AnimatePresence } from "framer-motion";
 import NotConnectedNotice from "@/components/admin/NotConnectedNotice";
+import { apiErrorMessage } from "@/lib/api-error";
 
 const SOURCES = ["website", "telegram", "ads", "referral", "other"];
 const SOURCE_LABELS: Record<string, string> = {
@@ -420,8 +421,8 @@ function AddContactModal({ onClose, onCreated }: { onClose: () => void; onCreate
     try {
       await adminApi.post("/admin/crm/contacts", form);
       onCreated();
-    } catch (e: any) {
-      setError(e?.response?.data?.error || "Ошибка");
+    } catch (e: unknown) {
+      setError(apiErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -450,7 +451,7 @@ function AddContactModal({ onClose, onCreated }: { onClose: () => void; onCreate
             <div key={f.key}>
               <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#374151", marginBottom: 4 }}>{f.label}</label>
               <input
-                value={(form as any)[f.key]}
+                value={(form as unknown as Record<string, string>)[f.key] ?? ""}
                 onChange={e => set(f.key, e.target.value)}
                 placeholder={f.placeholder}
                 style={{ width: "100%", padding: "8px 12px", border: "1px solid #E5E7EB", borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box" }}

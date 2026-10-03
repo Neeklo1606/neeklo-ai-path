@@ -1,3 +1,5 @@
+const HELPERS_PATH = "../../server/clero-helpers.mjs";
+
 import { describe, it, expect } from "vitest";
 
 describe("isClientAvitoMessage", () => {
@@ -18,7 +20,7 @@ describe("isClientAvitoMessage", () => {
       process.env.NIKITA_AVITO_AUTHOR_ID = "999888777";
       // Re-import to pick up env change — use a cache-busting query param
       const { isClientAvitoMessage: fn } = await import(
-        "../../server/clero-helpers.mjs?envtest=1"
+        /* @vite-ignore */ `${HELPERS_PATH}?envtest=1`
       );
       expect(fn("999888777")).toBe(false);  // custom owner ID → blocked
       expect(fn("104436874")).toBe(true);   // old default → now a client
@@ -59,7 +61,7 @@ import { vi } from "vitest";
 describe("sendToCleroRaw", () => {
   it("POSTs correct payload and returns ok on 200", async () => {
     const mockFetch = vi.fn().mockResolvedValue({ ok: true, status: 200 });
-    const { sendToCleroRaw } = await import("../../server/clero-helpers.mjs?v=send1");
+    const { sendToCleroRaw } = await import(/* @vite-ignore */ `${HELPERS_PATH}?v=send1`);
     const result = await sendToCleroRaw("chat1", "999", "Хочу купить", mockFetch);
     expect(result.ok).toBe(true);
     expect(mockFetch).toHaveBeenCalledOnce();
@@ -77,7 +79,7 @@ describe("sendToCleroRaw", () => {
 
   it("throws on non-200 response", async () => {
     const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
-    const { sendToCleroRaw } = await import("../../server/clero-helpers.mjs?v=send2");
+    const { sendToCleroRaw } = await import(/* @vite-ignore */ `${HELPERS_PATH}?v=send2`);
     await expect(sendToCleroRaw("c", "a", "t", mockFetch)).rejects.toThrow("Clero 503");
   });
 });

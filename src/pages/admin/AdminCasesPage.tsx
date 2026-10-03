@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { adminApi } from "@/lib/admin-api";
 import { Plus, Pencil, Trash2, GripVertical, Eye, EyeOff, Star } from "lucide-react";
 import { toast } from "sonner";
+import { apiErrorMessage } from "@/lib/api-error";
 
 const CATEGORIES = ["Сайты","AI","Telegram","E-commerce","Видео","Платформы","Автоматизация"];
 
@@ -49,8 +50,8 @@ export default function AdminCasesPage() {
         toast.success("Кейс создан");
       }
       load(); closeModal();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.error ?? "Ошибка");
+    } catch (e: unknown) {
+      toast.error(apiErrorMessage(e, "Не удалось сохранить кейс"));
     } finally { setSaving(false); }
   };
 
@@ -77,7 +78,7 @@ export default function AdminCasesPage() {
     finally { setUploading(false); }
   };
 
-  const set = (k: keyof Case, v: any) => setModal(prev => prev ? { ...prev, [k]: v } : prev);
+  const set = (k: keyof Case, v: Case[keyof Case]) => setModal(prev => prev ? { ...prev, [k]: v } : prev);
 
   return (
     <div className="p-6 max-w-5xl mx-auto">

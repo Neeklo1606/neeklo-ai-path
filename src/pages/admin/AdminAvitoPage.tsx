@@ -119,7 +119,38 @@ function avitoMessageText(message: LooseObject) {
   return String(message.text ?? message.message ?? "");
 }
 
-function AvitoItemDetail({ item }: { item: LooseObject }) {
+/** Ответ Avito по объявлению: поля приходят в разных вариантах, фиксируем известные. */
+type AvitoItemDetails = {
+  id?: number | string;
+  item_id?: number | string;
+  title?: string;
+  category?: { name?: string } | null;
+  category_id?: number | string | null;
+  status?: string | null;
+  state?: string | null;
+  price?: number | null;
+  price_string?: string | null;
+  address?: string | null;
+  location?: { address?: string } | null;
+  region?: { name?: string } | null;
+  stats?: { views?: number; calls?: number; favorites?: number } | null;
+  views?: number | null;
+  time_created?: number | null;
+  time_changed?: number | null;
+  expired_at?: number | null;
+  time_expired?: number | null;
+  url?: string | null;
+  name?: string | null;
+  description?: string | null;
+  body?: string | null;
+  images?: unknown;
+  image?: unknown;
+  params?: unknown;
+  /** Avito присылает и другие поля — читаем их через приведение по месту */
+  [key: string]: unknown;
+};
+
+function AvitoItemDetail({ item }: { item: AvitoItemDetails }) {
   const images: string[] = (() => {
     const imgs = item.images ?? item.image ?? [];
     if (Array.isArray(imgs)) {

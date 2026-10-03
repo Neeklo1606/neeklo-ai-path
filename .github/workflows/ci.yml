@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  checks:
+    name: Линтер, типы, тесты, сборка
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: neeklo
+          POSTGRES_PASSWORD: neeklo
+          POSTGRES_DB: neeklo_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U neeklo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Тесты ходят только в эту базу внутри раннера; боевых данных здесь нет
+      TEST_DATABASE_URL: postgresql://neeklo:neeklo@localhost:5432/neeklo_test
+      DATABASE_URL: postgresql://neeklo:neeklo@localhost:5432/neeklo_test
+      JWT_SECRET: ci-secret-ci-secret-ci-secret-0123456789
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Установка зависимостей
+        run: npm ci
+
+      - name: Линтер
+        run: npm run lint
+
+      - name: Проверка типов
+        run: npm run typecheck
+
+      - name: Тесты фронтенда
+        run: npm run test
+
+      - name: Тесты сервера (с базой)
+        run: npm run test:server
+
+      - name: Сборка
+        run: npm run build
+
+      - name: Уязвимости в зависимостях (не блокирует)
+        run: npm audit --omit=dev || true

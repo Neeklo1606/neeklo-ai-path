@@ -191,7 +191,7 @@ export default function AdminTelegramPage() {
                 onClick={() => setFilter(f)}
                 className={`text-xs px-2.5 py-1 rounded-md transition-colors ${filter === f ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
               >
-                {f === "all" ? "Все" : statusLabels[f]?.replace(/[⏳✅❌🚫]\s/, "")}
+                {f === "all" ? "Все" : statusLabels[f]?.replace(/[\u{23F3}\u{2705}\u{274C}\u{1F6AB}]\s/u, "")}
               </button>
             ))}
           </div>

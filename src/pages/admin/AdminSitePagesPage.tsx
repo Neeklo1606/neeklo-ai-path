@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { adminApi } from "@/lib/admin-api";
 import { toast } from "sonner";
 
+/** Карточка внутри группового поля: произвольный набор текстовых значений. */
+type CardValue = Record<string, string>;
+
 interface PageConfig { slug: string; label: string; fields: { key: string; label: string; type: "text"|"textarea"|"group"; items?: { key: string; label: string; type: "text"|"textarea" }[] }[] }
 
 const PAGE_CONFIGS: PageConfig[] = [
@@ -48,7 +51,7 @@ const PAGE_CONFIGS: PageConfig[] = [
 
 export default function AdminSitePagesPage() {
   const [active, setActive] = useState<PageConfig>(PAGE_CONFIGS[0]);
-  const [data, setData] = useState<Record<string, any>>({});
+  const [data, setData] = useState<Record<string, string | CardValue[]>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -56,7 +59,7 @@ export default function AdminSitePagesPage() {
     setLoading(true);
     adminApi.get(`/settings/public`).then(r => {
       const settings = r.data as Record<string, string>;
-      const pageData: Record<string, any> = {};
+      const pageData: Record<string, string | CardValue[]> = {};
       active.fields.forEach(f => {
         const key = `page.${active.slug}.${f.key}`;
         try { pageData[f.key] = JSON.parse(settings[key] ?? "null") ?? settings[key] ?? ""; }
@@ -95,14 +98,14 @@ export default function AdminSitePagesPage() {
           <div key={f.key}>
             <label className="text-xs font-medium text-gray-600 mb-1 block">{f.label}</label>
             {f.type === "text" && (
-              <input className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20" value={data[f.key] ?? ""} onChange={e => setData(prev => ({ ...prev, [f.key]: e.target.value }))} />
+              <input className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20" value={typeof data[f.key] === "string" ? (data[f.key] as string) : ""} onChange={e => setData(prev => ({ ...prev, [f.key]: e.target.value }))} />
             )}
             {f.type === "textarea" && (
-              <textarea className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none resize-none" rows={4} value={data[f.key] ?? ""} onChange={e => setData(prev => ({ ...prev, [f.key]: e.target.value }))} />
+              <textarea className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none resize-none" rows={4} value={typeof data[f.key] === "string" ? (data[f.key] as string) : ""} onChange={e => setData(prev => ({ ...prev, [f.key]: e.target.value }))} />
             )}
             {f.type === "group" && f.items && (
               <div className="space-y-3">
-                {(Array.isArray(data[f.key]) ? data[f.key] : [{},{},{},{},{},{}]).map((item: any, idx: number) => (
+                {(Array.isArray(data[f.key]) ? (data[f.key] as CardValue[]) : ([{},{},{},{},{},{}] as CardValue[])).map((item: CardValue, idx: number) => (
                   <div key={idx} className="border border-gray-100 rounded-xl p-3 space-y-2">
                     <p className="text-xs font-semibold text-gray-400 uppercase">Карточка {idx+1}</p>
                     {f.items!.map(fi => (
@@ -110,13 +113,13 @@ export default function AdminSitePagesPage() {
                         <label className="text-xs text-gray-500 mb-0.5 block">{fi.label}</label>
                         {fi.type === "text" ? (
                           <input className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none" value={item[fi.key] ?? ""} onChange={e => {
-                            const arr = Array.isArray(data[f.key]) ? [...data[f.key]] : [{},{},{},{},{},{}];
+                            const arr: CardValue[] = Array.isArray(data[f.key]) ? [...(data[f.key] as CardValue[])] : [{},{},{},{},{},{}];
                             arr[idx] = { ...arr[idx], [fi.key]: e.target.value };
                             setData(prev => ({ ...prev, [f.key]: arr }));
                           }} />
                         ) : (
                           <textarea className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none resize-none" rows={2} value={item[fi.key] ?? ""} onChange={e => {
-                            const arr = Array.isArray(data[f.key]) ? [...data[f.key]] : [{},{},{},{},{},{}];
+                            const arr: CardValue[] = Array.isArray(data[f.key]) ? [...(data[f.key] as CardValue[])] : [{},{},{},{},{},{}];
                             arr[idx] = { ...arr[idx], [fi.key]: e.target.value };
                             setData(prev => ({ ...prev, [f.key]: arr }));
                           }} />

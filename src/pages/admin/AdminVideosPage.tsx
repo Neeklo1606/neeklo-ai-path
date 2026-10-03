@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { adminApi } from "@/lib/admin-api";
 import { Plus, Pencil, Trash2, Play, X, Settings, Eye, EyeOff, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { apiErrorMessage } from "@/lib/api-error";
 
 interface Category { id: number; name: string; slug: string; }
 interface Video {
@@ -48,7 +49,7 @@ export default function AdminVideosPage() {
   const openEdit = (v: Video) => setModal({ ...v });
   const close = () => { setModal(null); setPreview(null); };
 
-  const set = (k: keyof Video, v: any) => setModal(p => p ? { ...p, [k]: v } : p);
+  const set = (k: keyof Video, v: Video[keyof Video]) => setModal(p => p ? { ...p, [k]: v } : p);
 
   const uploadVideoFile = async (file: File) => {
     setUploading(true);
@@ -84,8 +85,8 @@ export default function AdminVideosPage() {
         toast.success("Видео добавлено");
       }
       loadAll(); close();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.error ?? "Ошибка");
+    } catch (e: unknown) {
+      toast.error(apiErrorMessage(e, "Не удалось сохранить видео"));
     } finally { setSaving(false); }
   };
 

@@ -731,8 +731,7 @@ export default function AdminKnowledgePage() {
                     style={{ display: "none" }}
                     // @ts-expect-error chromium-only attribute
                     webkitdirectory=""
-                    // @ts-expect-error chromium-only attribute
-                    directory=""
+                                        directory=""
                     multiple
                     onChange={onObsidianFolder}
                   />

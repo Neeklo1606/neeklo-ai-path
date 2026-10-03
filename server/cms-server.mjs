@@ -107,6 +107,9 @@ import { registerStatsRoutes } from "./routes/stats.routes.mjs";
 import { registerCaseRoutes } from "./routes/cases.routes.mjs";
 import { registerPriceRoutes } from "./routes/prices.routes.mjs";
 import { registerKpRoutes } from "./routes/kp.routes.mjs";
+import { registerAuthRoutes } from "./routes/auth.routes.mjs";
+import { registerLeadRoutes } from "./routes/leads.routes.mjs";
+import { requireAuth, requireAdmin, signToken } from "./lib/auth.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
@@ -567,20 +570,6 @@ function assistantDetailOut(a) {
   return { ...assistantListOut(a), provider_api_key: a.providerApiKey };
 }
 
-function requireAuth(req, res, next) {
-  const secret = JWT_SECRET || "dev-only-unsafe-secret-min-32-chars!!";
-  const h = req.headers.authorization;
-  if (!h?.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-  try {
-    const payload = jwt.verify(h.slice(7), secret);
-    req.authUser = { id: payload.sub, role: payload.role };
-    next();
-  } catch {
-    return res.status(401).json({ error: "Invalid or expired token" });
-  }
-}
 
 // ─── Модульные маршруты ───
 registerBlogRoutes(app, { prisma, requireAuth });
@@ -589,13 +578,15 @@ registerStatsRoutes(app, { prisma, requireAuth });
 registerCaseRoutes(app, { prisma, requireAuth });
 registerPriceRoutes(app, { prisma, requireAuth, upsertPriceToKb });
 registerKpRoutes(app, { prisma, requireAuth });
+registerAuthRoutes(app, { prisma });
+registerLeadRoutes(app, {
+  prisma,
+  notifyAll,
+  getApprovedTgChats,
+  escapeTgHtml,
+  rateLimit: (req) => rateLimitByKeyHash(`public-lead:${clientIp(req)}`, Math.max(10, getBillingConfig().rateLimitPerMin)),
+});
 
-function requireAdmin(req, res, next) {
-  if (req.authUser?.role !== "ADMIN") {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-  next();
-}
 
 function isUuid(s) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
@@ -609,10 +600,6 @@ function genApiKey() {
   return `nk_${crypto.randomBytes(24).toString("hex")}`;
 }
 
-function signToken(user) {
-  const secret = JWT_SECRET || "dev-only-unsafe-secret-min-32-chars!!";
-  return jwt.sign({ sub: user.id, role: user.role }, secret, { expiresIn: "7d" });
-}
 
 const AVITO_CONFIG_SETTING_KEY = "integrations.avito";
 const AVITO_CHAT_MAP_SETTING_KEY = "integrations.avito.chat_map";
@@ -1109,86 +1096,9 @@ app.get("/deploy/status", (_req, res) => {
 });
 
 // ─── Auth ───
-app.post("/auth/login", async (req, res) => {
-  const email = (req.body?.email || "").toString().trim().toLowerCase();
-  const password = (req.body?.password || "").toString();
-  if (!email || !password) {
-    return res.status(400).json({ error: "email and password required" });
-  }
-  try {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-    const token = signToken(user);
-    res.json({
-      token,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
-    });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Login failed" });
-  }
-});
 
-app.post("/auth/register", async (req, res) => {
-  try {
-    const count = await prisma.user.count();
-    const email = (req.body?.email || "").toString().trim().toLowerCase();
-    const password = (req.body?.password || "").toString();
-    const role = (req.body?.role || "MANAGER").toString().toUpperCase() === "ADMIN" ? "ADMIN" : "MANAGER";
 
-    if (!email || !password || password.length < 8) {
-      return res.status(400).json({ error: "email and password (min 8 chars) required" });
-    }
 
-    if (count === 0) {
-      const hash = await bcrypt.hash(password, 12);
-      const user = await prisma.user.create({
-        data: { email, passwordHash: hash, role: "ADMIN" },
-      });
-      const token = signToken(user);
-      return res.status(201).json({
-        token,
-        user: { id: user.id, email: user.email, name: user.name, role: user.role },
-      });
-    }
-
-    return res.status(403).json({ error: "Use authenticated admin to create users" });
-  } catch (e) {
-    if (e.code === "P2002") {
-      return res.status(409).json({ error: "Email already registered" });
-    }
-    console.error(e);
-    res.status(500).json({ error: "Register failed" });
-  }
-});
-
-app.post("/auth/users", requireAuth, requireAdmin, async (req, res) => {
-  const email = (req.body?.email || "").toString().trim().toLowerCase();
-  const password = (req.body?.password || "").toString();
-  const role = (req.body?.role || "MANAGER").toString().toUpperCase() === "ADMIN" ? "ADMIN" : "MANAGER";
-  if (!email || !password || password.length < 8) {
-    return res.status(400).json({ error: "email and password (min 8) required" });
-  }
-  try {
-    const hash = await bcrypt.hash(password, 12);
-    const user = await prisma.user.create({ data: { email, passwordHash: hash, role } });
-    res.status(201).json({ id: user.id, email: user.email, role: user.role });
-  } catch (e) {
-    if (e.code === "P2002") return res.status(409).json({ error: "Email exists" });
-    res.status(500).json({ error: "Failed" });
-  }
-});
-
-app.get("/auth/me", requireAuth, async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: { id: req.authUser.id },
-    select: { id: true, email: true, name: true, role: true, createdAt: true },
-  });
-  if (!user) return res.status(401).json({ error: "Unauthorized" });
-  res.json(user);
-});
 
 // ─── Public settings ───
 app.get("/settings/public", async (_req, res) => {
@@ -2663,129 +2573,6 @@ app.post("/crm/chat-session", async (req, res) => {
 });
 
 /** Окно, в котором повторная заявка с тем же контактом считается дублем. */
-const PUBLIC_LEAD_DEDUP_WINDOW_MS = Number(process.env.PUBLIC_LEAD_DEDUP_WINDOW_MS || 10 * 60 * 1000);
-
-/**
- * Telegram-уведомление о заявке с сайта: всем одобренным в /admin/telegram (notifyAll —
- * бот TG_BOT_TOKEN, до 3 попыток на чат через IPv4). Вызывается после ответа посетителю,
- * поэтому сбой или долгие ретраи Telegram не влияют на форму. Результат по каждому чату — в лог.
- */
-async function notifyPublicLeadTelegram(leadId, text) {
-  const tag = () => `[public-lead] ${new Date().toISOString()} lead=${leadId}`;
-  try {
-    // Тот же список, что notifyAll() прочитает следом; results идут в его порядке — нужен для chat в логе
-    const chats = await getApprovedTgChats().catch(() => []);
-    const results = await notifyAll(text);
-    if (!results.length) {
-      console.warn(`${tag()} tg SKIP: нет одобренных чатов в /admin/telegram`);
-      return;
-    }
-    results.forEach((r, i) => {
-      const v = r.status === "fulfilled" ? r.value : { ok: false, description: r.reason?.message || String(r.reason) };
-      const chat = v?.result?.chat?.id ?? (chats.length === results.length ? chats[i] : "?");
-      if (v?.ok) {
-        console.log(`${tag()} tg OK chat=${chat} message_id=${v.result?.message_id ?? "?"}`);
-      } else {
-        console.warn(`${tag()} tg FAIL chat=${chat} error_code=${v?.error_code ?? "-"} description=${v?.description || JSON.stringify(v)}`);
-      }
-    });
-  } catch (e) {
-    console.error(`${tag()} tg ERROR:`, e?.message || e);
-  }
-}
-
-/**
- * Публичный приём заявок с сайта: QuickLeadForm { phone, source?, page? } и визард брифа
- * (+ name, telegram, service, budget). Создаёт Lead, отвечает посетителю, затем шлёт
- * Telegram-уведомление через notifyPublicLeadTelegram.
- */
-app.post("/crm/public-lead", async (req, res) => {
-  try {
-    const billCfg = getBillingConfig();
-    const ipKey = `public-lead:${clientIp(req)}`;
-    if (!rateLimitByKeyHash(ipKey, Math.max(10, billCfg.rateLimitPerMin))) {
-      return res.status(429).json({ error: "Rate limit exceeded", retry_after_seconds: 60 });
-    }
-
-    // Базовые поля (QuickLeadForm): { phone, source, page }.
-    // Опциональные поля визарда брифа: { name, telegram, service, budget }.
-    // Без опциональных полей поведение прежнее: телефон обязателен, тот же summary и текст в Telegram.
-    const rawPhone = String(req.body?.phone || "").trim();
-    const digits = rawPhone.replace(/\D/g, "");
-    const name = String(req.body?.name || "").trim().slice(0, 100);
-    const rawTelegram = String(req.body?.telegram || "").trim();
-    const service = String(req.body?.service || "").trim().slice(0, 64);
-    const budget = String(req.body?.budget || "").trim().slice(0, 64);
-
-    let telegram = "";
-    if (rawTelegram) {
-      if (!/^@?[A-Za-z0-9_]{3,32}$/.test(rawTelegram)) {
-        return res.status(400).json({ error: "Некорректный Telegram" });
-      }
-      telegram = `@${rawTelegram.replace(/^@/, "")}`;
-    }
-
-    if (rawPhone || !telegram) {
-      // Телефон проверяется, если передан; без Telegram он обязателен (как раньше)
-      if (digits.length !== 11) {
-        return res.status(400).json({ error: "Некорректный телефон" });
-      }
-    }
-    const source = String(req.body?.source || "quick-form").slice(0, 64);
-    const page = String(req.body?.page || "").slice(0, 256);
-
-    const extraLines = [
-      service ? `Услуга: ${service}` : "",
-      budget ? `Бюджет: ${budget}` : "",
-      telegram ? `Telegram: ${telegram}` : "",
-    ].filter(Boolean);
-
-    // Отсечка повторов: тот же контакт в пределах окна не плодит лидов и уведомлений
-    // (двойной клик, обновление страницы, спам-скрипт в рамках лимита запросов).
-    const since = new Date(Date.now() - PUBLIC_LEAD_DEDUP_WINDOW_MS);
-    const duplicate = await prisma.lead
-      .findFirst({
-        where: {
-          createdAt: { gte: since },
-          ...(rawPhone ? { phone: rawPhone.slice(0, 32) } : { summary: { contains: `Telegram: ${telegram}` } }),
-        },
-        orderBy: { createdAt: "desc" },
-      })
-      .catch(() => null);
-    if (duplicate) {
-      console.log(`[public-lead] ${new Date().toISOString()} повтор заявки (${source}), лид ${duplicate.id} — пропускаем`);
-      return res.json({ ok: true, id: duplicate.id, duplicate: true });
-    }
-
-    const lead = await prisma.lead.create({
-      data: {
-        ...(name ? { name } : {}),
-        phone: rawPhone ? rawPhone.slice(0, 32) : null,
-        status: "new",
-        intentLabel: source,
-        summary:
-          `Быстрая заявка с сайта${page ? ` · ${page}` : ""} (источник: ${source})` +
-          (extraLines.length ? `\n${extraLines.join("\n")}` : ""),
-      },
-    });
-
-    res.json({ ok: true, id: lead.id });
-
-    // Telegram — после ответа посетителю: заявка уже в БД, форма уже показала успех.
-    // sendTgMessage шлёт с parse_mode HTML — пользовательский ввод экранируем.
-    const tgLines = [
-      "🔔 Новая заявка с сайта",
-      name ? `Имя: ${escapeTgHtml(name)}` : "",
-      `Телефон: ${escapeTgHtml(rawPhone) || "—"}`,
-      ...extraLines.map(escapeTgHtml),
-      `Страница: ${escapeTgHtml(page) || "—"}`,
-      `Источник: ${escapeTgHtml(source)}`,
-    ].filter(Boolean);
-    notifyPublicLeadTelegram(lead.id, tgLines.join("\n"));
-  } catch (e) {
-    res.status(500).json({ error: e.message || "Failed" });
-  }
-});
 
 /** Публичная выгрузка истории чата по ID */
 app.get("/crm/chat-transcript/:id", async (req, res) => {

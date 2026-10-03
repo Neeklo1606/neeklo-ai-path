@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, Video, Globe, Smartphone, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useLanguage } from "@/hooks/useLanguage";
+import { useLanguage, type TranslationKey } from "@/hooks/useLanguage";
 import ServiceRelatedCases from "@/components/services/ServiceRelatedCases";
 import type { ServiceSlug } from "@/data/serviceTags";
 
@@ -15,11 +15,11 @@ const SERVICE_SLUG_MAP: Record<string, ServiceSlug> = {
 
 interface ServiceData {
   icon: typeof Video;
-  titleKey: string;
-  priceKey: string;
-  descKey: string;
-  includeKeys: string[];
-  timelineKey: string;
+  titleKey: TranslationKey;
+  priceKey: TranslationKey;
+  descKey: TranslationKey;
+  includeKeys: TranslationKey[];
+  timelineKey: TranslationKey;
   steps: { titleRu: string; titleEn: string; descRu: string; descEn: string }[];
 }
 
@@ -121,11 +121,11 @@ const ServiceDetailPage = () => {
             <Icon size={22} className="text-primary" />
           </div>
           <div>
-            <h1 className="text-[24px] md:text-[32px] font-bold text-foreground leading-tight">{t(service.titleKey as string)}</h1>
+            <h1 className="text-[24px] md:text-[32px] font-bold text-foreground leading-tight">{t(service.titleKey)}</h1>
           </div>
         </div>
-        <p className="text-[17px] md:text-[18px] font-semibold text-primary mb-4">{t(service.priceKey as string)}</p>
-        <p className="text-[15px] md:text-[16px] text-muted-foreground leading-relaxed mb-8">{t(service.descKey as string)}</p>
+        <p className="text-[17px] md:text-[18px] font-semibold text-primary mb-4">{t(service.priceKey)}</p>
+        <p className="text-[15px] md:text-[16px] text-muted-foreground leading-relaxed mb-8">{t(service.descKey)}</p>
 
         <div className="mb-8">
           <h2 className="text-[18px] md:text-[20px] font-bold text-foreground mb-4">{t("sdet.included")}</h2>
@@ -135,7 +135,7 @@ const ServiceDetailPage = () => {
                 <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <Check size={12} className="text-primary" />
                 </div>
-                <span className="text-[14px] md:text-[15px] text-foreground">{t(key as string)}</span>
+                <span className="text-[14px] md:text-[15px] text-foreground">{t(key)}</span>
               </div>
             ))}
           </div>
@@ -143,7 +143,7 @@ const ServiceDetailPage = () => {
 
         <div className="rounded-xl border border-border bg-card p-4 md:p-5 mb-8">
           <p className="text-[13px] text-muted-foreground font-medium uppercase tracking-wide mb-1">{t("sdet.timeline")}</p>
-          <p className="text-[18px] md:text-[20px] font-bold text-foreground">{t(service.timelineKey as string)}</p>
+          <p className="text-[18px] md:text-[20px] font-bold text-foreground">{t(service.timelineKey)}</p>
         </div>
 
         <div className="mb-8">

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { adminApi } from "@/lib/admin-api";
 import { Plus, Pencil, Trash2, Globe, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { apiErrorMessage } from "@/lib/api-error";
 
 const CATEGORIES = ["AI","Сайты","Telegram","Автоматизация","Видео","Маркетинг","Боты"];
 
@@ -47,7 +48,7 @@ export default function AdminBlogPage() {
   const openCreate = () => setModal({ ...emptyPost });
   const openEdit = (p: Post) => setModal({ ...p });
   const closeModal = () => setModal(null);
-  const set = (k: keyof Post, v: any) => setModal(prev => prev ? { ...prev, [k]: v } : prev);
+  const set = (k: keyof Post, v: Post[keyof Post]) => setModal(prev => prev ? { ...prev, [k]: v } : prev);
 
   const save = async (publish?: boolean) => {
     if (!modal?.title || !modal?.slug) { toast.error("Укажите название и slug"); return; }
@@ -62,8 +63,8 @@ export default function AdminBlogPage() {
         toast.success("Статья создана");
       }
       load(); closeModal();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.error ?? "Ошибка");
+    } catch (e: unknown) {
+      toast.error(apiErrorMessage(e, "Не удалось сохранить статью"));
     } finally { setSaving(false); }
   };
 
